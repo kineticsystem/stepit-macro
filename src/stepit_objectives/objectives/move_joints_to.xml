@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: MoveJointsTo
+
+  Moves one or more joints to absolute positions, whatever position they are in
+  when the objective starts.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: MoveJointsTo,
+        payload: '{joints: [joint1, joint2], positions: [0.0, 1.57], duration: 3.0}'}"
+
+  This is the absolute counterpart of OffsetJointsBy: the positions are already
+  the targets, so neither the current state of the robot nor the sign convention
+  of a rotation are needed, and the objective goes straight to the controller.
+
+  The number of positions must match the number of joints.
+-->
+<root BTCPP_format="4" main_tree_to_execute="MoveJointsTo">
+
+  <BehaviorTree ID="MoveJointsTo" _description="Moves one or more joints to absolute positions, with the trajectory controller.">
+    <Sequence>
+
+      <!-- The motion is sent to the trajectory controller, so make sure that
+           this is the controller driving the robot, and no other. -->
+      <SubTree ID="EnsureControllers" controllers="joint_trajectory_controller"/>
+
+      <FollowJointTrajectory _description="Sends the joints straight to the requested positions, over the requested duration."
+                             action_name="/joint_trajectory_controller/follow_joint_trajectory"
+                             joint_names="{@joints}"
+                             positions="{@positions}"
+                             duration="{@duration}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+</root>
