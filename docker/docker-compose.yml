@@ -6,8 +6,10 @@
 # Dockerfiles, mounts and network settings stay defined in one place: the
 # modules. Relative paths in an extended file resolve against that file, so
 # each container still mounts its own module at ~/ws. Only what differs when the
-# three run together is set here: the names, the folder the editor opens, and
-# the command, which runs the application instead of `sleep infinity`.
+# three run together is set here: the dependencies between them, the folder
+# the editor opens, and the command, which runs the application instead of
+# `sleep infinity`. The containers and images are named after their modules, as
+# each module's own dock.sh names them.
 #
 # The ROS2 services install the system packages their code needs (rosdep, i.e.
 # `update.sh`) the first time their container starts. They cannot come from
@@ -23,9 +25,9 @@ services:
     extends:
       file: ../modules/stepit/docker/docker-compose.yml
       service: dev
-    image: workbench-stepit:latest
-    container_name: workbench-stepit
-    hostname: workbench-stepit
+    image: stepit:latest
+    container_name: stepit
+    hostname: stepit
     init: true
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
@@ -39,13 +41,13 @@ services:
 
   # The action server running objectives on the robot, and rosbridge on port
   # 9090 for the editor.
-  commander:
+  stepit-commander:
     extends:
       file: ../modules/stepit-commander/docker/docker-compose.yml
       service: dev
-    image: workbench-commander:latest
-    container_name: workbench-commander
-    hostname: workbench-commander
+    image: stepit-commander:latest
+    container_name: stepit-commander
+    hostname: stepit-commander
     init: true
     stop_signal: SIGINT
     depends_on:
@@ -59,16 +61,16 @@ services:
         && exec ros2 launch stepit_server commander.launch.py'
 
   # The web editor, on http://localhost:${EDITOR_PORT:-8080}.
-  editor:
+  stepit-editor:
     extends:
       file: ../modules/stepit-editor/docker/docker-compose.yml
       service: dev
-    image: workbench-editor:latest
-    container_name: workbench-editor
-    hostname: workbench-editor
+    image: stepit-editor:latest
+    container_name: stepit-editor
+    hostname: stepit-editor
     init: true
     depends_on:
-      - commander
+      - stepit-commander
     volumes:
       # Edit the commander's own objectives: it reads them again before each
       # goal, so what the editor saves is what the Run button executes.

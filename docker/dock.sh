@@ -9,7 +9,7 @@
 # of each module inside its container.
 
 # The services of docker-compose.yml, in the order they are built and started.
-SERVICES=(stepit commander editor)
+SERVICES=(stepit stepit-commander stepit-editor)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command> [service]\n
@@ -38,10 +38,10 @@ function check_service() {
 }
 
 function check_modules() {
-    local service
-    for service in stepit stepit-commander stepit-editor; do
-        if [ ! -f "../modules/$service/docker/docker-compose.yml" ]; then
-            echo "Module '$service' is missing: run ./docker/dock.sh download first." >&2
+    local module
+    for module in ${SERVICES[@]}; do
+        if [ ! -f "../modules/$module/docker/docker-compose.yml" ]; then
+            echo "Module '$module' is missing: run ./docker/dock.sh download first." >&2
             exit 1
         fi
     done

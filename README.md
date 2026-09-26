@@ -19,9 +19,9 @@ together three projects, checked out as git submodules under [`modules`](modules
 
 | Module | Container | What it does |
 |---|---|---|
-| [StepIt](https://github.com/kineticsystem/stepit) | `workbench-stepit` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
-| [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `workbench-commander` | The action server that runs *objectives*, behavior trees, on the robot, and rosbridge on port 9090. |
-| [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `workbench-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
+| [StepIt](https://github.com/kineticsystem/stepit) | `stepit` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
+| [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, on the robot, and rosbridge on port 9090. |
+| [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 
 Each module keeps its own Docker container and scripts; the workbench only
 starts the three together and wires them up: the editor opens the commander's
@@ -79,10 +79,10 @@ BehaviorTree.CPP.
 
 This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
-service: `stepit`, `commander` or `editor`.
+container: `stepit`, `stepit-commander` or `stepit-editor`.
 
 ```
-./docker/dock.sh build commander
+./docker/dock.sh build stepit-commander
 ```
 
 ## Running the Application
@@ -102,7 +102,7 @@ Follow the output of every service, or of one of them. Stop following with
 
 ```
 ./docker/dock.sh logs
-./docker/dock.sh logs commander
+./docker/dock.sh logs stepit-commander
 ```
 
 Show which containers are running:
@@ -115,7 +115,7 @@ Open a terminal into a container, e.g. to send an objective from the command
 line:
 
 ```
-./docker/dock.sh shell commander
+./docker/dock.sh shell stepit-commander
 ```
 
 ```
@@ -190,14 +190,17 @@ module, each extending the `dev` service of the module's own
 settings therefore stay defined in one place, the modules, and the workbench
 only overrides:
 
-- the names of the containers and images, prefixed with `workbench-`, so they
-  do not clash with the containers each module creates with its own
-  `dock.sh`;
 - the command, which runs the application instead of keeping an idle
   container: `ros2 launch robot_bringup launch.py`,
   `ros2 launch stepit_server commander.launch.py` and `serve.sh`;
 - the folder the editor opens: the commander's
   `src/stepit_objectives/objectives`, instead of the editor's examples.
+
+The containers and images have the names each module's own `dock.sh` gives
+them by default: `stepit`, `stepit-commander` and `stepit-editor`. Run one
+system or the other, not both: remove the containers made by a module's
+`dock.sh` before starting the workbench, e.g. with
+`./modules/stepit/docker/dock.sh stepit clean`, and the other way round.
 
 The robot and the commander use the host network, so they discover each other
 over DDS. The editor reaches the commander from the browser, through rosbridge
