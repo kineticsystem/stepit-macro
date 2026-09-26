@@ -1,0 +1,76 @@
+# The whole StepIt system: the robot, the commander and the editor, each in the
+# container defined by its own project. Driven by ./dock.sh, which supplies
+# USER_UID/USER_GID.
+#
+# Every service extends the `dev` service of the project it runs, so the
+# Dockerfiles, mounts and network settings stay defined in one place: the
+# modules. Relative paths in an extended file resolve against that file, so
+# each container still mounts its own module at ~/ws. Only what differs when the
+# three run together is set here: the names, the folder the editor opens, and
+# the command, which runs the application instead of `sleep infinity`.
+#
+# The ROS2 services install the system packages their code needs (rosdep, i.e.
+# `update.sh`) the first time their container starts. They cannot come from
+# `dock.sh build`: it compiles in a throwaway container, so only what it writes
+# into the bind-mounted module is kept. The marker file lives in the container,
+# so a recreated container installs them again.
+
+name: stepit-workbench
+
+services:
+  # The robot: ros2_control with fake motors by default, and RViz.
+  stepit:
+    extends:
+      file: ../modules/stepit/docker/docker-compose.yml
+      service: dev
+    image: workbench-stepit:latest
+    container_name: workbench-stepit
+    hostname: workbench-stepit
+    init: true
+    # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
+    stop_signal: SIGINT
+    command:
+      - bash
+      - -c
+      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+        && source /opt/ros/jazzy/setup.bash
+        && source install/setup.bash
+        && exec ros2 launch robot_bringup launch.py'
+
+  # The action server running objectives on the robot, and rosbridge on port
+  # 9090 for the editor.
+  commander:
+    extends:
+      file: ../modules/stepit-commander/docker/docker-compose.yml
+      service: dev
+    image: workbench-commander:latest
+    container_name: workbench-commander
+    hostname: workbench-commander
+    init: true
+    stop_signal: SIGINT
+    depends_on:
+      - stepit
+    command:
+      - bash
+      - -c
+      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+        && source /opt/ros/jazzy/setup.bash
+        && source install/setup.bash
+        && exec ros2 launch stepit_server commander.launch.py'
+
+  # The web editor, on http://localhost:${EDITOR_PORT:-8080}.
+  editor:
+    extends:
+      file: ../modules/stepit-editor/docker/docker-compose.yml
+      service: dev
+    image: workbench-editor:latest
+    container_name: workbench-editor
+    hostname: workbench-editor
+    init: true
+    depends_on:
+      - commander
+    volumes:
+      # Edit the commander's own objectives: it reads them again before each
+      # goal, so what the editor saves is what the Run button executes.
+      - ../modules/stepit-commander/src/stepit_objectives/objectives:/home/developer/behaviors
+    command: serve.sh

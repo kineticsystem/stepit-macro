@@ -1,0 +1,12 @@
+[submodule "modules/stepit"]
+	path = modules/stepit
+	url = git@github.com:kineticsystem/stepit.git
+	branch = main
+[submodule "modules/stepit-commander"]
+	path = modules/stepit-commander
+	url = git@github.com:kineticsystem/stepit-commander.git
+	branch = main
+[submodule "modules/stepit-editor"]
+	path = modules/stepit-editor
+	url = git@github.com:kineticsystem/stepit-editor.git
+	branch = main
