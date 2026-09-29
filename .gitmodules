@@ -10,3 +10,11 @@
 	path = modules/stepit-editor
 	url = git@github.com:kineticsystem/stepit-editor.git
 	branch = main
+[submodule "modules/stepit-camera"]
+	path = modules/stepit-camera
+	url = git@github.com:kineticsystem/stepit-camera.git
+	branch = main
+[submodule "modules/stepit-ui"]
+	path = modules/stepit-ui
+	url = git@github.com:kineticsystem/stepit-ui.git
+	branch = main

@@ -1,7 +1,8 @@
 #! /bin/bash -e
 
 # Use this script to download, build, start, stop and remove the whole StepIt
-# system: the robot, the commander and the editor, each in its own container.
+# Macro rig: the robot, the commander, the editor, the camera and the control
+# panel, each in its own container.
 #
 # The containers are defined in docker-compose.yml, which extends the compose
 # file of each module. This script only adds what compose cannot express: the
@@ -9,7 +10,7 @@
 # of each module inside its container.
 
 # The services of docker-compose.yml, in the order they are built and started.
-SERVICES=(stepit stepit-commander stepit-editor)
+SERVICES=(stepit stepit-commander stepit-editor stepit-camera stepit-ui)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command> [service]\n
@@ -96,6 +97,7 @@ case "$command" in
         xhost +local: &>/dev/null || true
         docker compose up --detach $service
         echo -e "\nThe editor is on http://localhost:${EDITOR_PORT:-8080}"
+        echo "The control panel is on http://localhost:${UI_PORT:-8090}"
         echo "Follow the output with ./docker/dock.sh logs [service]"
         ;;
     logs)

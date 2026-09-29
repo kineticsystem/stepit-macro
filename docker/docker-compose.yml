@@ -1,12 +1,12 @@
-# The whole StepIt system: the robot, the commander and the editor, each in the
-# container defined by its own project. Driven by ./dock.sh, which supplies
-# USER_UID/USER_GID.
+# The whole StepIt Macro rig: the robot, the commander, the editor, the camera
+# and the control panel, each in the container defined by its own project.
+# Driven by ./dock.sh, which supplies USER_UID/USER_GID.
 #
 # Every service extends the `dev` service of the project it runs, so the
 # Dockerfiles, mounts and network settings stay defined in one place: the
 # modules. Relative paths in an extended file resolve against that file, so
-# each container still mounts its own module at ~/ws. Only what differs when the
-# three run together is set here: the dependencies between them, the folder
+# each container still mounts its own module at ~/ws. Only what differs when
+# they run together is set here: the dependencies between them, the folder
 # the editor opens, and the command, which runs the application instead of
 # `sleep infinity`. The containers and images are named after their modules, as
 # each module's own dock.sh names them.
@@ -17,7 +17,7 @@
 # into the bind-mounted module is kept. The marker file lives in the container,
 # so a recreated container installs them again.
 
-name: stepit-workbench
+name: stepit-macro
 
 services:
   # The robot: ros2_control with fake motors by default, and RViz.
@@ -75,4 +75,37 @@ services:
       # Edit the commander's own objectives: it reads them again before each
       # goal, so what the editor saves is what the Run button executes.
       - ../modules/stepit-commander/src/stepit_objectives/objectives:/home/developer/behaviors
+    command: serve.sh
+
+  # The camera driver, with web_video_server on port 8081 and its own rosbridge
+  # on port 9091, for the control panel. It needs the camera on USB: the
+  # container is privileged and mounts /dev, see its compose file.
+  stepit-camera:
+    extends:
+      file: ../modules/stepit-camera/docker/docker-compose.yml
+      service: dev
+    image: stepit-camera:latest
+    container_name: stepit-camera
+    hostname: stepit-camera
+    init: true
+    stop_signal: SIGINT
+    command:
+      - bash
+      - -c
+      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+        && source /opt/ros/jazzy/setup.bash
+        && source install/setup.bash
+        && exec ros2 launch stepit_camera camera.launch.py'
+
+  # The control panel, on http://localhost:${UI_PORT:-8090}.
+  stepit-ui:
+    extends:
+      file: ../modules/stepit-ui/docker/docker-compose.yml
+      service: dev
+    image: stepit-ui:latest
+    container_name: stepit-ui
+    hostname: stepit-ui
+    init: true
+    depends_on:
+      - stepit-camera
     command: serve.sh
