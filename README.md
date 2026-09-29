@@ -43,7 +43,7 @@ projects, checked out as git submodules under [`modules`](modules):
 
 | Module | Container | What it does |
 |---|---|---|
-| [StepIt](https://github.com/kineticsystem/stepit) | `stepit` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
+| [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | `stepit-driver` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, on the robot, and rosbridge on port 9090. |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves web pages through web_video_server on port 8081 and its own rosbridge on port 9091. |
@@ -138,8 +138,8 @@ is based on ROS2 Jazzy desktop, and the editor's compiles BehaviorTree.CPP.
 
 This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
-container: `stepit`, `stepit-commander`, `stepit-editor`, `stepit-camera` or
-`stepit-ui`.
+container: `stepit-driver`, `stepit-commander`, `stepit-editor`,
+`stepit-camera` or `stepit-ui`.
 
 ```
 ./docker/dock.sh build stepit-commander
@@ -222,9 +222,9 @@ module's own container: `update`, `build`, `test`, for the editor `serve`,
 After changing the code of a module, compile it and restart its service:
 
 ```
-./docker/dock.sh build stepit
-./docker/dock.sh stop stepit
-./docker/dock.sh start stepit
+./docker/dock.sh build stepit-driver
+./docker/dock.sh stop stepit-driver
+./docker/dock.sh start stepit-driver
 ```
 
 The objectives need no build: the commander reads them again before each goal.
@@ -267,10 +267,11 @@ only overrides:
   `src/stepit_objectives/objectives`, instead of the editor's examples.
 
 The containers and images have the names each module's own `dock.sh` gives
-them by default: `stepit`, `stepit-commander`, `stepit-editor`,
+them by default: `stepit-driver`, `stepit-commander`, `stepit-editor`,
 `stepit-camera` and `stepit-ui`. Run one system or the other, not both: remove
 the containers made by a module's `dock.sh` before starting StepIt Macro, e.g.
-with `./modules/stepit/docker/dock.sh stepit clean`, and the other way round.
+with `./modules/stepit-driver/docker/dock.sh stepit-driver clean`, and the
+other way round.
 
 The robot, the commander and the camera use the host network, so they discover
 each other over DDS. The web pages reach them from the browser: the editor

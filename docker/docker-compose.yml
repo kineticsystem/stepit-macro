@@ -21,13 +21,13 @@ name: stepit-macro
 
 services:
   # The robot: ros2_control with fake motors by default, and RViz.
-  stepit:
+  stepit-driver:
     extends:
-      file: ../modules/stepit/docker/docker-compose.yml
+      file: ../modules/stepit-driver/docker/docker-compose.yml
       service: dev
-    image: stepit:latest
-    container_name: stepit
-    hostname: stepit
+    image: stepit-driver:latest
+    container_name: stepit-driver
+    hostname: stepit-driver
     init: true
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
@@ -51,7 +51,7 @@ services:
     init: true
     stop_signal: SIGINT
     depends_on:
-      - stepit
+      - stepit-driver
     command:
       - bash
       - -c

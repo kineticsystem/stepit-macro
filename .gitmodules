@@ -1,6 +1,6 @@
-[submodule "modules/stepit"]
-	path = modules/stepit
-	url = git@github.com:kineticsystem/stepit.git
+[submodule "modules/stepit-driver"]
+	path = modules/stepit-driver
+	url = git@github.com:kineticsystem/stepit-driver.git
 	branch = main
 [submodule "modules/stepit-commander"]
 	path = modules/stepit-commander

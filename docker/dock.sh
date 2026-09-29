@@ -10,7 +10,7 @@
 # of each module inside its container.
 
 # The services of docker-compose.yml, in the order they are built and started.
-SERVICES=(stepit stepit-commander stepit-editor stepit-camera stepit-ui)
+SERVICES=(stepit-driver stepit-commander stepit-editor stepit-camera stepit-ui)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command> [service]\n
