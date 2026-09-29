@@ -98,9 +98,13 @@ For the camera, we need a camera supported by
 [libgphoto2](http://www.gphoto.org/proj/libgphoto2/support.php), such as a
 Canon EOS 5D Mark II, connected over USB, with its AC adapter. See
 [Prepare the Camera](https://github.com/kineticsystem/stepit-camera#prepare-the-camera)
-in the README of StepIt Camera: the mode dial on M, and _Auto power off_ set to
-_Off_. Without a camera, the rest of the rig runs anyway, and the camera driver
-waits for one.
+in the README of StepIt Camera, e.g. the mode dial on M. Without a camera, the
+rest of the rig runs anyway, and the camera driver waits for one.
+
+> [!IMPORTANT]
+> **Set _Auto power off_ to _Off_ in the camera's menu.** Otherwise the camera
+> goes to sleep, as soon as a minute after the last use, and the driver loses
+> it until it wakes up: the live view stops, and no picture is downloaded.
 
 ## Install StepIt Macro
 
