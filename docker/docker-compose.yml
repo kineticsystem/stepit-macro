@@ -52,13 +52,19 @@ services:
     stop_signal: SIGINT
     depends_on:
       - stepit-driver
+    volumes:
+      # The rig's behaviors and objectives, in src, built as a workspace of
+      # their own on top of the commander's (see ../bin).
+      - ..:/home/developer/rig
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { update.sh && ~/rig/bin/update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
-        && exec ros2 launch stepit_server commander.launch.py'
+        && source ~/rig/install/setup.bash
+        && exec ros2 launch stepit_server commander.launch.py
+             params_file:=$$(ros2 pkg prefix stepit_objectives)/share/stepit_objectives/config/commander.yaml'
 
   # The web editor, on http://localhost:${EDITOR_PORT:-8080}.
   stepit-editor:
@@ -72,9 +78,9 @@ services:
     depends_on:
       - stepit-commander
     volumes:
-      # Edit the commander's own objectives: it reads them again before each
+      # Edit the rig's objectives: the commander reads them again before each
       # goal, so what the editor saves is what the Run button executes.
-      - ../modules/stepit-commander/src/stepit_objectives/objectives:/home/developer/behaviors
+      - ../src/stepit_objectives/objectives:/home/developer/behaviors
     command: serve.sh
 
   # The camera driver, with its test page and the pictures on
