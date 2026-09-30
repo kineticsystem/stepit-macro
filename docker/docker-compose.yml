@@ -1,5 +1,5 @@
-# The whole StepIt Macro rig: the robot, the commander, the editor, the camera
-# and the control panel, each in the container defined by its own project.
+# The whole StepIt Macro rig: the robot, the commander, the editor and the
+# camera, each in the container defined by its own project.
 # Driven by ./dock.sh, which supplies USER_UID/USER_GID.
 #
 # Every service extends the `dev` service of the project it runs, so the
@@ -77,9 +77,10 @@ services:
       - ../modules/stepit-commander/src/stepit_objectives/objectives:/home/developer/behaviors
     command: serve.sh
 
-  # The camera driver, with web_video_server on port 8081 and its own rosbridge
-  # on port 9091, for the control panel. It needs the camera on USB: the
-  # container is privileged and mounts /dev, see its compose file.
+  # The camera driver, with its test page and the pictures on
+  # http://localhost:8090, web_video_server on port 8081 and its own rosbridge
+  # on port 9091. It needs the camera on USB: the container is privileged and
+  # mounts /dev, see its compose file.
   stepit-camera:
     extends:
       file: ../modules/stepit-camera/docker/docker-compose.yml
@@ -96,16 +97,3 @@ services:
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch stepit_camera camera.launch.py'
-
-  # The control panel, on http://localhost:${UI_PORT:-8090}.
-  stepit-ui:
-    extends:
-      file: ../modules/stepit-ui/docker/docker-compose.yml
-      service: dev
-    image: stepit-ui:latest
-    container_name: stepit-ui
-    hostname: stepit-ui
-    init: true
-    depends_on:
-      - stepit-camera
-    command: serve.sh
