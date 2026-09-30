@@ -1,0 +1,16 @@
+# ROS: the rig's packages in src are built as a workspace of their own, on top
+# of the commander's, inside the commander's container.
+build
+install
+log
+.cache
+
+# CMake
+compile_commands.json
+
+# VSCode
+.vscode
+
+# Python
+__pycache__
+*.egg-info

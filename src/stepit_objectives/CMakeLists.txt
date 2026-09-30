@@ -14,4 +14,8 @@ find_package(ament_cmake REQUIRED)
 install(DIRECTORY objectives DESTINATION share/${PROJECT_NAME}/
   PATTERN stepit_behaviors.xml EXCLUDE)
 
+# The parameters of the commander server that load these objectives, and the
+# behaviors they are built from.
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
+
 ament_package()

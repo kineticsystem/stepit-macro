@@ -18,39 +18,49 @@ ros2 action send_goal /commander/execute_objective \
 
 ```
 Stack
-├── SubTree EnsureControllers   (joint_trajectory_controller only)
+├── SubTree EnsureControllers   (position_controller only)
 ├── GetJointPositions           -> {home}
 ├── OffsetVector                joint1 by +10π      -> {joint1_end}
 ├── Steps                       {home} to {joint1_end}, 11 values   -> {row}
 │   └── Sequence
-│       ├── GetJointPositions, TrapezoidalTrajectory, FollowJointTrajectory   to {row}
+│       ├── CommandJointPositions   to {row}
 │       ├── OffsetVector        joint2 by +10π      -> {row_end}
 │       └── Steps               {row} to {row_end}, 11 values       -> {target}
 │           └── Sequence
-│               ├── GetJointPositions, TrapezoidalTrajectory, FollowJointTrajectory   to {target}
+│               ├── CommandJointPositions   to {target}
 │               └── (the photo, to add)
-└── GetJointPositions, TrapezoidalTrajectory, FollowJointTrajectory   back to {home}
+└── CommandJointPositions       back to {home}
 ```
+
+Every move goes through the position controller, as in
+[`MoveJointsDirectlyTo`](MoveJointsDirectlyTo.md): the microcontroller plans it
+on its own profile, as fast as the motors allow, with no trajectory to trail,
+and `CommandJointPositions` starts the next move once the joints have arrived
+within 0.01 rad and stopped. That is the moment to take the photo.
 
 Five details are worth knowing:
 
 - **All five joints in every move.** `Steps` steps the positions of all five
   joints at once, and only joint1, or joint2, changes from one value to the
-  next. Every trajectory therefore commands joints 3, 4 and 5 too, at the
-  positions read at the start, and the controller holds them there.
+  next. Every command therefore holds joints 3, 4 and 5 at the positions read
+  at the start.
 - **10 steps are 11 positions.** The first position of each loop is where the
   joint already is, so the first move of each loop does not move, and the photo
   there is the first of the stack.
 - **Joint2 goes back to its start** with each step of joint1: the move to the
-  next row sends joint2 back 5 turns while joint1 steps half a turn.
+  next row sends joint2 back 5 turns while joint1 steps half a turn. The two
+  are not synchronised: each runs its own profile, and the move ends when both
+  have stopped.
 - **Home only after a complete grid.** The way back is the last step of the
   sequence, so a grid that is cancelled, or whose move fails, leaves the joints
-  where they stopped.
+  where they stopped. Cancelling deactivates the position controller, and the
+  hardware brakes every joint to rest.
 - **Counter-clockwise.** 5 turns is +10π rad; clockwise turns are negative, as
   in [SpinTest](SpinTest.md).
 
 Each step is half a turn, π rad, too short to reach the top speed: a triangle
-at the acceleration limit of `TrapezoidalTrajectory`, about 1.05 s. Each return
-of joint2 is a trapezoid over 5 turns, about 3.4 s, and so is the way home,
-where joint1 and joint2 each come back 5 turns together. The whole objective
-takes about 2.5 minutes. It has not run on the robot yet.
+at the acceleration of the motors, 2 turns/s², about 1 s. Each return of joint2
+is a trapezoid over 5 turns at the motors' 3 turns/s, about 3.2 s, and so is
+the way home, where joint1 and joint2 each come back 5 turns. The whole
+objective takes about 2.5 minutes, plus the moment each joint needs to settle.
+It has not run on the robot yet in this form.

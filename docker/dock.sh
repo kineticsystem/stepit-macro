@@ -54,7 +54,13 @@ function check_modules() {
 function compile() {
     local service="$1"
     echo "Compiling $service"
-    docker compose run --rm --no-deps $service bash -c "update.sh && build.sh"
+    local steps="update.sh && build.sh"
+    # The commander also builds the rig's own behaviors and objectives, in
+    # ../src, on top of its workspace.
+    if [ "$service" = stepit-commander ]; then
+        steps="$steps && ~/rig/bin/update.sh && ~/rig/bin/build.sh"
+    fi
+    docker compose run --rm --no-deps $service bash -c "$steps"
 }
 
 # Compose resolves the paths in docker-compose.yml against the directory that

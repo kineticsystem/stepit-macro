@@ -4,7 +4,8 @@
   <name>stepit_behaviors</name>
   <version>0.1.0</version>
   <description>
-    BehaviorTree.CPP nodes used by the objectives of the commander: they are the
+    BehaviorTree.CPP nodes used by the objectives of the StepIt macro rig, which
+    the commander runs: they are the
     only place where the robot interfaces (topics, actions, services) are known.
   </description>
   <maintainer email="lentigrams@gmail.com">developer</maintainer>

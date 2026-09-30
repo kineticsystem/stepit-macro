@@ -4,8 +4,8 @@
   <name>stepit_tests</name>
   <version>0.1.0</version>
   <description>
-    Tests of the commander: the logic of the behaviors, the payload of a command
-    and the objectives themselves, run against a fake robot.
+    Tests of the StepIt macro rig's behaviors and objectives: the logic of the
+    behaviors, and the objectives themselves, run against a fake robot.
   </description>
   <maintainer email="lentigrams@gmail.com">developer</maintainer>
   <license>MIT</license>

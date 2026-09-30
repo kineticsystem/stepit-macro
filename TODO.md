@@ -1,9 +1,9 @@
 # TODO
 
-Open questions and concerns, written down as they came up. The code builds, the
-tests pass and the objectives were run on the robot: these are decisions we
-deferred, and measurements we made while deferring them. Item 15 is the one to
-read before running the tests.
+Open questions and concerns about the rig's behaviors and objectives, written
+down as they came up. The code builds, the tests pass and the objectives were
+run on the robot: these are decisions we deferred, and measurements we made
+while deferring them. Item 10 is the one to read before running the tests.
 
 ## Commanding motion
 
@@ -187,12 +187,14 @@ runs until the client cancels. Wrapping `FollowJointTrajectory` in the built-in
 `{controllers: velocity_controller}` and `{controllers: [velocity_controller]}`
 are both accepted, because those ports go through `stepit_behaviors::getNames`,
 and so are `{offset: -1.0}` and `{offset: [-1.0]}`, through its numeric twin
-`getNumbers`, like `max_velocity` and `max_acceleration`. `joints` and
-`positions` must always be lists: `{joints: joint1, offset: -1.0}` fails.
-Making them symmetric means routing the ports of `GetJointPositions`,
-`CubicTrajectory` and `TrapezoidalTrajectory` through the same two helpers, and
-declaring them `BT::AnyTypeAllowed`. Small, but it is new API surface, so it was
-left alone.
+`getNumbers`, like `max_velocity` and `max_acceleration`. A single joint name
+works too, `{joints: joint1, offset: -1.0}`, as tried on the robot:
+BehaviorTree.CPP converts the string into a list of one. `positions` is the
+exception: `MoveJointsTo` passes it to `TrapezoidalTrajectory`, whose port only
+takes a list, while `MoveJointsDirectlyTo` reads it through `getNumbers`.
+Making it symmetric means routing the `positions` ports of `CubicTrajectory` and
+`TrapezoidalTrajectory` through `getNumbers`, and declaring them
+`BT::AnyTypeAllowed`. Small, but it is new API surface, so it was left alone.
 
 ### 9. Radians are assumed everywhere
 
@@ -201,60 +203,23 @@ and rad/s². Nothing in the behaviors is
 bound to rotary joints, but a prismatic joint would carry metres in the same
 field, with no way to tell them apart. Only a documentation problem today.
 
-## Tooling and operations
+## Tests
 
-### 10. The hooks need the container
-
-The three ament linters come from the ROS workspace, so `git commit` on the host
-fails unless they are skipped:
-
-```bash
-SKIP=ament_copyright,ament_lint_cmake,ament_cpplint git commit ...
-```
-
-Committing from inside the container is the intended path: it has `pre-commit`,
-`clang-format` and ROS. `pre-commit install` has not been run in either place.
-
-### 11. No CI
-
-StepIt has three GitHub Actions workflows (industrial_ci, format, ros-lint).
-This repository has none, so nothing checks a pull request. The hooks and
-`./bin/test.sh` already define what CI would have to run.
-
-### 12. Two servers collide on port 1667
-
-Running a second `stepit_server` makes every goal fail with
-`Behavior Tree exception: Address already in use`: BehaviorTree.ROS2 publishes
-the state of the running tree on port 1667, and both servers try to. Worth
-knowing before debugging the tree itself.
-
-### 13. The submodule tracks a branch
-
-`modules/BehaviorTree.ROS2` is pinned to a commit, as git always does, but
-`.gitmodules` names the branch `humble`, so `git submodule update --remote`
-would move it. There is no released Debian package to depend on instead.
-
-### 14. The Dockerfile carries the container passwords
-
-`developer:developer` and `root:docker` are in `docker/Dockerfile`, inherited
-from the StepIt template. Intentional for a development container, but visible
-to anyone who can read the repository.
-
-### 15. The tests reach the robot
+### 10. The tests reach the robot
 
 The fake robot and the fake controller manager of the tests use the real names:
 `/joint_states`, `/joint_trajectory_controller/follow_joint_trajectory` and
-`/controller_manager/...`. The robot and the commander share the host network,
-so on the default ROS domain the tests read the real joint states, switch the
-real controllers and send goals to the real trajectory controller: a test run
-once moved motors 1 and 2 of the robot. Until the tests isolate themselves, run
-them with `ROS_DOMAIN_ID` set to an unused domain, e.g.
-`ROS_DOMAIN_ID=77 ./bin/test.sh`. Setting it in `src/stepit_tests/CMakeLists.txt`
-for every test would make that automatic.
+`/controller_manager/...`. The robot and the commander's container, where the
+tests run, share the host network, so on the default ROS domain the tests read
+the real joint states, switch the real controllers and send goals to the real
+trajectory controller: a test run once moved motors 1 and 2 of the robot. Until
+the tests isolate themselves, run them with `ROS_DOMAIN_ID` set to an unused
+domain, e.g. `ROS_DOMAIN_ID=77 ~/rig/bin/test.sh`. Setting it in
+`src/stepit_tests/CMakeLists.txt` for every test would make that automatic.
 
 ## Worth considering
 
-### 16. Node patterns from Nav2
+### 11. Node patterns from Nav2
 
 There is no library of ready-made behaviors for `ros2_control` robots, but
 `nav2_behavior_tree` has domain-agnostic control and decorator nodes worth

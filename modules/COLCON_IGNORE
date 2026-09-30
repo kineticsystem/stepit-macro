@@ -1,0 +1,2 @@
+# The modules are workspaces of their own: colcon must not build their
+# packages again as part of the rig's.
