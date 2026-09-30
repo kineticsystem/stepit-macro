@@ -53,7 +53,9 @@ build; a new or changed behavior needs `~/rig/bin/build.sh` and a restart of the
 | `stepit_tests` | All tests of the behaviors and objectives; the other packages carry none. |
 
 **Nothing is wired up by hand.** An objective is an XML file dropped into
-`stepit_objectives/objectives`. A new behavior needs a line in `stepit_behaviors::registerNodes`
+`stepit_objectives/objectives`, whose `<root>` names it in `main_tree_to_execute`; a tree it
+does not name is a subtree (e.g. `EnsureControllers`), which the commander refuses to run on its
+own. A new behavior needs a line in `stepit_behaviors::registerNodes`
 (`src/register_nodes.cpp`) and a regenerated node model; `plugin.cpp` exports the whole package
 as one `BT_PLUGIN_EXPORT` plugin, installed into `share/stepit_behaviors/bt_plugins`.
 
