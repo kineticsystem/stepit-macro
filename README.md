@@ -303,6 +303,12 @@ measurements behind them.
    client asks for reads the payload (`{@controllers}`). See how
    `ActivateController` forwards its payload to `EnsureControllers`.
 
+   An objective is the main tree of its file: its `<root>` names it in
+   `main_tree_to_execute`, as the editor does when it creates one. A tree the
+   file does not name is a subtree: it runs only inside another tree, and the
+   commander refuses to run it on its own. The editor switches a tree between
+   the two with **Kind**, in place.
+
    Declare the payload of the objective in a `<TreeNodesModel>` of its file, as
    the ports of a `<SubTree>` with the objective's ID: one `input_port` per
    entry, named after it, whose description ends with an example of its value,
