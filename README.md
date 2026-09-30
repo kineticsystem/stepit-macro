@@ -19,7 +19,7 @@ is consistent and synchronized with each capture.
 
 - [Features](#features)
 - [The Modules](#the-modules)
-- [The Control Panel](#the-control-panel)
+- [The Camera's Test Page](#the-cameras-test-page)
 - [Prerequisites](#prerequisites)
 - [Install StepIt Macro](#install-stepit-macro)
   - [Check out the Git Repository](#check-out-the-git-repository)
@@ -39,45 +39,47 @@ is consistent and synchronized with each capture.
 ## The Modules
 
 StepIt Macro runs the whole rig with one command. It brings together five
-projects, checked out as git submodules under [`modules`](modules):
+projects, checked out as git submodules under [`modules`](modules), four of
+which run in a container:
 
 | Module | Container | What it does |
 |---|---|---|
 | [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | `stepit-driver` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, on the robot, and rosbridge on port 9090. |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
-| [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves web pages through web_video_server on port 8081 and its own rosbridge on port 9091. |
-| [StepIt UI](https://github.com/kineticsystem/stepit-ui) | `stepit-ui` | The control panel of the rig, on <http://localhost:8090>. |
+| [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
+| [StepIt UI](https://github.com/kineticsystem/stepit-ui) | none | The application of the whole rig, not started yet. |
 
 Each module keeps its own Docker container and scripts; StepIt Macro only
 starts them together and wires them up: the editor opens the commander's
 objectives, so a tree saved in the editor is the tree the commander runs, and
-the control panel reaches the camera through the camera's own servers.
+the camera's test page reaches the camera through the camera's own servers.
 
-## The Control Panel
+## The Camera's Test Page
 
-The control panel has one section per part of the rig. Today there is one, the
-**Camera**:
+StepIt Camera comes with a test page, to try the camera from a browser:
 
 - it shows what the camera sees, live;
 - it sets the ISO, the shutter speed, the aperture and the white balance;
 - it takes a test shot, and shows it.
 
-The rail and the rotary stage, driven through StepIt Commander, and the lights
-will come as other sections.
+It is not the application of the rig: that will be
+[StepIt UI](https://github.com/kineticsystem/stepit-ui), with the rail, the
+rotary stage and the lights too.
 
-The control panel talks to the rig straight from the browser, so it needs no
-ROS itself:
+The page talks to the camera straight from the browser, so it needs no ROS
+itself:
 
+- through the camera's web server, which serves the page and the pictures;
 - through [rosbridge](https://github.com/RobotWebTools/rosbridge_suite), a
   WebSocket that speaks JSON, to call the services, set the parameters and
-  receive the pictures;
+  hear of the pictures;
 - through [web_video_server](https://github.com/RobotWebTools/web_video_server),
   which streams the live view as MJPEG into a plain `<img>`.
 
-Both run next to the camera driver, whose launch file starts them. See the
-README of [StepIt UI](https://github.com/kineticsystem/stepit-ui) for how to
-use it.
+All three run next to the camera driver, whose launch file starts them. See
+[The Test Page](https://github.com/kineticsystem/stepit-camera#the-test-page)
+in the README of StepIt Camera for how to use it.
 
 ## Prerequisites
 
@@ -143,7 +145,7 @@ is based on ROS2 Jazzy desktop, and the editor's compiles BehaviorTree.CPP.
 This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
 container: `stepit-driver`, `stepit-commander`, `stepit-editor`,
-`stepit-camera` or `stepit-ui`.
+or `stepit-camera`.
 
 ```
 ./docker/dock.sh build stepit-commander
@@ -165,7 +167,7 @@ Start the whole rig in the background:
 
 RViz opens with the robot. The editor is on <http://localhost:8080>: open an
 objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot.
-The control panel is on <http://localhost:8090>, with the live view of the
+The camera's test page is on <http://localhost:8090>, with the live view of the
 camera. The pictures the camera takes are saved in
 `modules/stepit-camera/pictures`.
 
@@ -210,8 +212,8 @@ Finally, run this to remove the containers and their images:
 ./docker/dock.sh clean
 ```
 
-To publish the editor or the control panel on another port, set `EDITOR_PORT`
-or `UI_PORT` when starting them, e.g. `EDITOR_PORT=9000 ./docker/dock.sh start`.
+To publish the editor on another port, set `EDITOR_PORT` when starting it,
+e.g. `EDITOR_PORT=9000 ./docker/dock.sh start`.
 
 ## Working on a Module
 
@@ -221,7 +223,7 @@ edit, commit and push it as usual. Its README tells how to build and test it.
 Inside a container, opened with `./docker/dock.sh shell <service>`, the module is
 mounted at `~/ws`, and its scripts are on the `PATH` and aliased as in the
 module's own container: `update`, `build`, `test`, for the editor `serve`,
-`dev` and `validate`, and for the control panel `serve` and `dev`.
+`dev` and `validate`, and for the camera `dev`, for its test page.
 
 After changing the code of a module, compile it and restart its service:
 
@@ -265,21 +267,20 @@ only overrides:
 - the command, which runs the application instead of keeping an idle
   container: `ros2 launch robot_bringup launch.py`,
   `ros2 launch stepit_server commander.launch.py`,
-  `ros2 launch stepit_camera camera.launch.py`, and `serve.sh` for the editor
-  and the control panel;
+  `ros2 launch stepit_camera camera.launch.py`, and `serve.sh` for the editor;
 - the folder the editor opens: the commander's
   `src/stepit_objectives/objectives`, instead of the editor's examples.
 
 The containers and images have the names each module's own `dock.sh` gives
-them by default: `stepit-driver`, `stepit-commander`, `stepit-editor`,
-`stepit-camera` and `stepit-ui`. Run one system or the other, not both: remove
+them by default: `stepit-driver`, `stepit-commander`, `stepit-editor` and
+`stepit-camera`. Run one system or the other, not both: remove
 the containers made by a module's `dock.sh` before starting StepIt Macro, e.g.
 with `./modules/stepit-driver/docker/dock.sh stepit-driver clean`, and the
 other way round.
 
 The robot, the commander and the camera use the host network, so they discover
 each other over DDS. The web pages reach them from the browser: the editor
-through the commander's rosbridge on `ws://localhost:9090`, the control panel
-through the camera's rosbridge on `ws://localhost:9091` and its
-web_video_server on `http://localhost:8081`. Each module serves its own
+through the commander's rosbridge on `ws://localhost:9090`, the camera's test
+page through the camera's web server on `http://localhost:8090`, its rosbridge
+on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`. Each module serves its own
 rosbridge, because a rosbridge only knows the messages installed next to it.
