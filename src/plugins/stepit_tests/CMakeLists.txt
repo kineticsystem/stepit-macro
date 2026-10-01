@@ -145,6 +145,16 @@ if(BUILD_TESTING)
     ${std_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
+  ament_add_gtest(test_activate_teleop_objective
+    tests/test_activate_teleop_objective.cpp)
+  target_include_directories(test_activate_teleop_objective PRIVATE tests)
+  target_link_libraries(test_activate_teleop_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    ${controller_manager_msgs_TARGETS})
+
   ament_add_gtest(test_activate_controller_objective
     tests/test_activate_controller_objective.cpp)
   target_include_directories(test_activate_controller_objective PRIVATE tests)

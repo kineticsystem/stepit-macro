@@ -1,6 +1,6 @@
 # Stack
 
-[`stack.xml`](../src/stepit_objectives/objectives/stack.xml) steps joint1 and
+[`stack.xml`](../src/plugins/stepit_objectives/objectives/stack.xml) steps joint1 and
 joint2 through a grid, e.g. to take a photo at every position of a photo stack:
 joint1 goes from where it is to 5 turns further in 10 steps, and at each of its
 11 positions joint2 does the same, starting again from where it was at the

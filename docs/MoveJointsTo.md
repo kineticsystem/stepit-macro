@@ -1,6 +1,6 @@
 # MoveJointsTo
 
-[`move_joints_to.xml`](../src/stepit_objectives/objectives/move_joints_to.xml) is
+[`move_joints_to.xml`](../src/plugins/stepit_objectives/objectives/move_joints_to.xml) is
 the absolute counterpart of [`OffsetJointsBy`](OffsetJointsBy.md): it moves the joints **to** the given
 positions, whatever position they are in when the objective starts, as fast as
 the motors allow.

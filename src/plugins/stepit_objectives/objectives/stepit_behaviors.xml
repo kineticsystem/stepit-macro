@@ -5,7 +5,7 @@
   Generated: do not edit. After changing a behavior, regenerate it from the
   workspace root with
 
-    ros2 run stepit_behaviors write_nodes_model src/stepit_objectives/objectives/stepit_behaviors.xml
+    ros2 run stepit_behaviors write_nodes_model src/plugins/stepit_objectives/objectives/stepit_behaviors.xml
 -->
 <root BTCPP_format="4">
     <TreeNodesModel>

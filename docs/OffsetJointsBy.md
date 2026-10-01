@@ -1,6 +1,6 @@
 # OffsetJointsBy
 
-[`offset_joints_by.xml`](../src/stepit_objectives/objectives/offset_joints_by.xml)
+[`offset_joints_by.xml`](../src/plugins/stepit_objectives/objectives/offset_joints_by.xml)
 offsets one or more joints, at the same time, **relative** to the position they
 have when the objective starts, as fast as the motors allow. It is the relative
 counterpart of [`MoveJointsTo`](MoveJointsTo.md): the two names say how they

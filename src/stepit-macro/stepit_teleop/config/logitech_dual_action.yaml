@@ -1,0 +1,56 @@
+# The gamepad mapping of a Logitech Dual Action, read by joy_linux_node from
+# /dev/input/js0 and published on /joy as sensor_msgs/Joy.
+#
+# axes, each in [-1, 1]:
+#
+#   0 - left stick     left/right
+#   1 - left stick     up/down
+#   2 - right stick    left/right
+#   3 - right stick    up/down
+#   4 - D-pad          left/right (only -1, 0 or 1)
+#   5 - D-pad          up/down    (only -1, 0 or 1)
+#
+# buttons, each 0 or 1, numbered from 0 while the gamepad prints them from 1:
+#
+#   0 - button 1        6 - left bottom trigger
+#   1 - button 2        7 - right bottom trigger
+#   2 - button 3        8 - button 9
+#   3 - button 4        9 - button 10
+#   4 - left shoulder  10 - left stick pressed
+#   5 - right shoulder 11 - right stick pressed
+#
+# jstest-gtk shows the same numbers: see docs/Teleop.md.
+
+gamepad_teleop:
+  ros__parameters:
+    # The button that stops whatever moves the robot and hands it to the
+    # gamepad: it runs the objective below, which the commander runs in place
+    # of the running one.
+    stop_button: 0
+
+    # The objective that hands the robot to the gamepad, from
+    # stepit_objectives: it activates the controller below.
+    objective: ActivateTeleop
+
+    # The controller the sticks command, a JointGroupVelocityController: the
+    # one the objective above activates.
+    controller: velocity_controller
+
+    # The joints of the controller, in the order of its configuration in the
+    # driver's controllers.yaml: the controller takes one velocity per joint,
+    # by position. A joint left without an axis is held at 0.
+    joints: [joint1, joint2, joint3, joint4, joint5]
+
+    # The axis that drives each joint, and its velocity at full deflection, in
+    # rad/s: 12.566 is 2 turns/s, the motors allow 18.85. A negative scale
+    # reverses the direction.
+    joint1: { axis: 0, scale: 12.566 }
+    joint2: { axis: 1, scale: 12.566 }
+    joint3: { axis: 2, scale: 12.566 }
+    joint4: { axis: 3, scale: 12.566 }
+    # The D-pad is all or nothing, hence a slower speed: half a turn per second.
+    joint5: { axis: 4, scale: 3.1416 }
+
+    # With no /joy message for this long, in seconds, the joints are stopped.
+    # joy_linux_node repeats its message 20 times a second, see the launch file.
+    joy_timeout: 0.5
