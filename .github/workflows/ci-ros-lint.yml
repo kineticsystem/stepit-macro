@@ -27,16 +27,11 @@ jobs:
         shell: bash
         run: |
           source /opt/ros/jazzy/setup.bash
-          status=0
-          for package in \
+          # Every package in one call: a linter fails on a package with no file
+          # of its kind, e.g. cpplint on a package of messages only.
+          ament_${{ matrix.linter }} ${{ matrix.arguments }} \
             src/plugins/stepit_behaviors \
             src/plugins/stepit_objectives \
             src/plugins/stepit_tests \
             src/stepit-macro/stepit_teleop \
             src/stepit-macro/stepit_macro_tests
-          do
-            echo "::group::$package"
-            ament_${{ matrix.linter }} ${{ matrix.arguments }} "$package" || status=1
-            echo "::endgroup::"
-          done
-          exit $status
