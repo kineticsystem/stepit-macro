@@ -1,5 +1,9 @@
 # StepIt Macro
 
+[![CI](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci.yml)
+[![Format](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml)
+[![Linters](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml)
+
 > [!WARNING]
 > This project is a work in progress and not fully implemented yet. Today it
 > only controls the camera: the rail, the rotary stage and the lights are
@@ -36,6 +40,7 @@ is consistent and synchronized with each capture.
 - [Working on a Module](#working-on-a-module)
 - [Updating the Modules](#updating-the-modules)
 - [How It Works](#how-it-works)
+- [Continuous Integration](#continuous-integration)
 
 ## Features
 
@@ -495,3 +500,22 @@ through the commander's rosbridge on `ws://localhost:9090`, the camera's test
 page through the camera's web server on `http://localhost:8090`, its rosbridge
 on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`. Each module serves its own
 rosbridge, because a rosbridge only knows the messages installed next to it.
+
+## Continuous Integration
+
+Three GitHub Actions workflows run on every push and pull request, as in the
+modules:
+
+| Workflow | What it checks |
+|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests both workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule. |
+| [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files. |
+| [`ci-ros-lint.yml`](.github/workflows/ci-ros-lint.yml) | The ament linters of every package: copyright, lint_cmake and cpplint. |
+
+The build cannot use `industrial_ci`, as the modules do: it builds one
+workspace from the sources of the repo, and `src/plugins` is built on top of
+the commander's. CI checks out only the `stepit-commander` submodule, over
+HTTPS; the other modules have CI of their own.
+
+The workflows run locally with [Nektos `act`](https://github.com/nektos/act),
+e.g. `act -W .github/workflows/ci.yml`.

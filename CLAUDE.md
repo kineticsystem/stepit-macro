@@ -123,6 +123,14 @@ no controller manager are needed. New behaviors and objectives are expected to b
 same way. The fakes use the real topic, action and service names, so on the robot's ROS domain
 they reach the real robot: run them with `ROS_DOMAIN_ID=77`.
 
+## CI
+
+`.github/workflows`: `ci.yml` builds and tests each workspace with the `bin/<workspace>` scripts in
+`ros:jazzy-ros-base` (the `plugins` job builds `modules/stepit-commander` first, checked out over
+HTTPS: `.gitmodules` lists SSH URLs); `ci-format.yml` runs pre-commit without the ament hooks;
+`ci-ros-lint.yml` runs those, per package. A new package must be added to the `package-name` lists
+of `ci-ros-lint.yml` and to the paths of the ament hooks in `.pre-commit-config.yaml`.
+
 ## Conventions
 
 - Every source file carries the MIT copyright header (`ament_copyright` enforces it).

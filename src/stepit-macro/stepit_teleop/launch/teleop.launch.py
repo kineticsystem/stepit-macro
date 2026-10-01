@@ -39,7 +39,11 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "config",
                 default_value=PathJoinSubstitution(
-                    [FindPackageShare("stepit_teleop"), "config", "logitech_dual_action.yaml"]
+                    [
+                        FindPackageShare("stepit_teleop"),
+                        "config",
+                        "logitech_dual_action.yaml",
+                    ]
                 ),
                 description="The mapping of the gamepad: the stop button, and the axis of each joint.",
             ),
