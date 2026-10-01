@@ -480,7 +480,8 @@ only overrides:
   [`src/plugins`](src/plugins) holds the rig's behaviors and objectives, built
   on top of the commander's workspace;
 - the folder the editor opens: the rig's `src/plugins/stepit_objectives/objectives`,
-  instead of the editor's examples;
+  instead of the editor's examples, through `BEHAVIORS_DIR`, with this repo
+  mounted at `~/rig`;
 - a service of the rig's own, `stepit-macro`, on an image defined in
   [`docker/Dockerfile`](docker/Dockerfile): it mounts this repo at `~/ws`, and
   `/dev/input` from the host for the gamepad, and runs
@@ -508,14 +509,28 @@ modules:
 
 | Workflow | What it checks |
 |---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests both workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule. |
+| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests both workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule. A third job, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
 | [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files. |
 | [`ci-ros-lint.yml`](.github/workflows/ci-ros-lint.yml) | The ament linters of every package: copyright, lint_cmake and cpplint. |
 
 The build cannot use `industrial_ci`, as the modules do: it builds one
 workspace from the sources of the repo, and `src/plugins` is built on top of
-the commander's. CI checks out only the `stepit-commander` submodule, over
+the commander's. CI checks out only the `stepit-commander` and `stepit-editor` submodules, over
 HTTPS; the other modules have CI of their own.
+
+The `objectives` job runs the editor's validator, `validate`, on
+[`src/plugins/stepit_objectives/objectives`](src/plugins/stepit_objectives/objectives):
+the editor's own checks, then BehaviorTree.CPP loading every file with the node
+models of the rig's behaviors, built from the ROS package, the library and the
+version the commander loads them with. A broken objective, e.g. an unknown node
+or port, or a subtree that does not exist, fails the pull request instead of
+being refused by the commander on the robot. Run the same check by hand in the
+editor's container, where it validates that folder by default:
+
+```
+./docker/dock.sh shell stepit-editor
+validate.sh
+```
 
 The workflows run locally with [Nektos `act`](https://github.com/nektos/act),
 e.g. `act -W .github/workflows/ci.yml`.

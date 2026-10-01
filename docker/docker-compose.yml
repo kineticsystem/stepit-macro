@@ -112,10 +112,15 @@ services:
     init: true
     depends_on:
       - stepit-commander
+    # Edit the rig's objectives: the commander reads them again before each
+    # goal, so what the editor saves is what the Run button executes. The whole
+    # repo is mounted, not the folder alone: git deletes and recreates a folder
+    # when a branch it switches to lacks it, and a mount of the folder would
+    # then show the deleted one, empty, until the container is recreated.
     volumes:
-      # Edit the rig's objectives: the commander reads them again before each
-      # goal, so what the editor saves is what the Run button executes.
-      - ../src/plugins/stepit_objectives/objectives:/home/developer/behaviors
+      - ..:/home/developer/rig
+    environment:
+      BEHAVIORS_DIR: /home/developer/rig/src/plugins/stepit_objectives/objectives
     command: serve.sh
 
   # The camera driver, with its test page and the pictures on
