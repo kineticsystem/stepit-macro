@@ -21,7 +21,8 @@
 name: stepit-macro
 
 services:
-  # The robot: ros2_control with fake motors by default, and RViz.
+  # The robot: ros2_control with fake motors by default, and RViz when
+  # LAUNCH_RVIZ=true.
   stepit-driver:
     extends:
       file: ../modules/stepit-driver/docker/docker-compose.yml
@@ -38,7 +39,7 @@ services:
       - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
-        && exec ros2 launch robot_bringup launch.py'
+        && exec ros2 launch robot_bringup launch.py launch_rviz:=${LAUNCH_RVIZ:-false}'
 
   # The action server running objectives on the robot, and rosbridge on port
   # 9090 for the editor.
