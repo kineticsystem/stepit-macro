@@ -18,23 +18,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
+#include "stepit_behaviors/nodes_model.hpp"
 
-#include <string>
+#include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/xml_parsing.h>
+
+#include "stepit_behaviors/register_nodes.hpp"
 
 namespace stepit_behaviors
 {
 
-/**
- * @brief The <TreeNodesModel> of every behavior of this package, as the complete
- * content of an XML file.
- *
- * Editors such as the StepIt Editor cannot load the plugin, so they learn the
- * node types and their ports from this file instead. It is generated from the
- * real registration, ports added by behaviortree_ros2 included. The committed
- * copy is src/stepit_objectives/objectives/stepit_behaviors.xml, written by the
- * write_nodes_model program, and test_nodes_model checks it is up to date.
- */
-std::string nodesModel();
+namespace
+{
+constexpr auto kHeader = R"(<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The behaviors of stepit_behaviors, for editors that cannot load the plugin.
+
+  Generated: do not edit. After changing a behavior, regenerate it from the
+  workspace root with
+
+    ros2 run stepit_behaviors write_nodes_model src/plugins/stepit_objectives/objectives/stepit_behaviors.xml
+-->
+)";
+}  // namespace
+
+std::string nodesModel()
+{
+  BT::BehaviorTreeFactory factory;
+  // Registering only reads the ports of each behavior: no ROS node is needed.
+  registerNodes(factory, BT::RosNodeParams());
+  return kHeader + BT::writeTreeNodesModelXML(factory, false);
+}
 
 }  // namespace stepit_behaviors

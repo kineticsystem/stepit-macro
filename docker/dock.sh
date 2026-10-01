@@ -1,8 +1,8 @@
 #! /bin/bash -e
 
 # Use this script to download, build, start, stop and remove the whole StepIt
-# Macro rig: the robot, the commander, the editor and the camera, each in its
-# own container.
+# Macro rig: the robot, the commander, the rig's own programs, the editor and
+# the camera, each in its own container.
 #
 # The containers are defined in docker-compose.yml, which extends the compose
 # file of each module. This script only adds what compose cannot express: the
@@ -10,7 +10,11 @@
 # of each module inside its container.
 
 # The services of docker-compose.yml, in the order they are built and started.
-SERVICES=(stepit-driver stepit-commander stepit-editor stepit-camera)
+SERVICES=(stepit-driver stepit-commander stepit-macro stepit-editor stepit-camera)
+
+# The services that run a module, from its own folder in ../modules. The others
+# are this repo's own, e.g. stepit-macro.
+MODULES=(stepit-driver stepit-commander stepit-editor stepit-camera)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command> [service]\n
@@ -40,7 +44,7 @@ function check_service() {
 
 function check_modules() {
     local module
-    for module in ${SERVICES[@]}; do
+    for module in ${MODULES[@]}; do
         if [ ! -f "../modules/$module/docker/docker-compose.yml" ]; then
             echo "Module '$module' is missing: run ./docker/dock.sh download first." >&2
             exit 1
@@ -55,10 +59,10 @@ function compile() {
     local service="$1"
     echo "Compiling $service"
     local steps="update.sh && build.sh"
-    # The commander also builds the rig's own behaviors and objectives, in
-    # ../src, on top of its workspace.
+    # The commander also builds the rig's plugin, its behaviors and objectives
+    # in ../src/plugins, on top of its workspace.
     if [ "$service" = stepit-commander ]; then
-        steps="$steps && ~/rig/bin/update.sh && ~/rig/bin/build.sh"
+        steps="$steps && ~/rig/bin/plugins/update.sh && ~/rig/bin/plugins/build.sh"
     fi
     docker compose run --rm --no-deps $service bash -c "$steps"
 }

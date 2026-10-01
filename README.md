@@ -30,6 +30,9 @@ is consistent and synchronized with each capture.
   - [Objectives](#objectives)
   - [Adding an Objective](#adding-an-objective)
   - [Tests](#tests)
+- [The Rig's Own Programs](#the-rigs-own-programs)
+  - [The Gamepad](#the-gamepad)
+  - [The Two Workspaces](#the-two-workspaces)
 - [Working on a Module](#working-on-a-module)
 - [Updating the Modules](#updating-the-modules)
 - [How It Works](#how-it-works)
@@ -50,14 +53,14 @@ which run in a container:
 | Module | Container | What it does |
 |---|---|---|
 | [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | `stepit-driver` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
-| [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src`](src), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
+| [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
 | [StepIt UI](https://github.com/kineticsystem/stepit-ui) | none | The application of the whole rig, not started yet. |
 
 Each module keeps its own Docker container and scripts; StepIt Macro only
 starts them together and wires them up: the commander runs the rig's own
-objectives, from [`src`](src), and the editor opens them, so a tree saved in the
+objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the
 editor is the tree the commander runs, and
 the camera's test page reaches the camera through the camera's own servers.
 
@@ -150,8 +153,9 @@ is based on ROS2 Jazzy desktop, and the editor's compiles BehaviorTree.CPP.
 
 This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
-container: `stepit-driver`, `stepit-commander`, `stepit-editor`,
-or `stepit-camera`.
+container: `stepit-driver`, `stepit-commander`, `stepit-macro` (the rig's own
+programs, see [The Rig's Own Programs](#the-rigs-own-programs)),
+`stepit-editor`, or `stepit-camera`.
 
 ```
 ./docker/dock.sh build stepit-commander
@@ -224,11 +228,11 @@ e.g. `EDITOR_PORT=9000 ./docker/dock.sh start`.
 ## The Behaviors and Objectives
 
 The objectives the rig runs, and the behaviors they are built from, are the
-rig's own: they live here, in [`src`](src), not in StepIt Commander, whose
-server runs any robot's. They are built as a ROS workspace of their own, on top
-of the commander's, inside the commander's container, where this repo is mounted
-at `~/rig`. The server loads them from the folders listed in
-[`commander.yaml`](src/stepit_objectives/config/commander.yaml), which the rig
+rig's own: they live here, in [`src/plugins`](src/plugins), not in StepIt
+Commander, whose server runs any robot's. They are built as a ROS workspace of
+their own, on top of the commander's, inside the commander's container, where
+this repo is mounted at `~/rig`, see [The Two Workspaces](#the-two-workspaces). The server loads them from the folders listed in
+[`commander.yaml`](src/plugins/stepit_objectives/config/commander.yaml), which the rig
 passes to it as `params_file`.
 
 ### Packages
@@ -251,6 +255,7 @@ the objective, i.e. after the `target_tree` of the command:
 | [`OffsetJointsDirectlyBy`](docs/OffsetJointsDirectlyBy.md) | Like `OffsetJointsBy`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
 | [`MoveJointsDirectlyTo`](docs/MoveJointsDirectlyTo.md) | Like `MoveJointsTo`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
 | [`ActivateController`](docs/ActivateController.md) | Stops the controller driving the robot and activates another one. |
+| [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. The gamepad's stop button runs it. |
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
 
@@ -259,7 +264,7 @@ Run one from a terminal in the commander's container, opened with
 one turn clockwise:
 
 ```bash
-source ~/rig/install/setup.bash
+source ~/rig/install/plugins/setup.bash
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
   "{target_tree: OffsetJointsBy,
@@ -293,7 +298,7 @@ measurements behind them.
 
 ### Adding an Objective
 
-1. Write the XML in `src/stepit_objectives/objectives`. Nothing else to do: the
+1. Write the XML in `src/plugins/stepit_objectives/objectives`. Nothing else to do: the
    folder is already loaded by the server, which reads the files again before
    each goal whenever one was added, changed or removed, so the next goal runs
    it, with no build and no restart. A step that more than one objective needs
@@ -323,22 +328,22 @@ measurements behind them.
      </SubTree>
    </TreeNodesModel>
    ```
-2. If it needs a new behavior, add it to `src/stepit_behaviors` and register it
+2. If it needs a new behavior, add it to `src/plugins/stepit_behaviors` and register it
    in `stepit_behaviors::registerNodes`. It is picked up automatically, because
    the whole package is loaded as one plugin. Then rebuild the rig and
    regenerate the node models that editors read (`test_nodes_model` fails until
    you do):
 
    ```bash
-   ~/rig/bin/build.sh
-   source ~/rig/install/setup.bash
-   ros2 run stepit_behaviors write_nodes_model ~/rig/src/stepit_objectives/objectives/stepit_behaviors.xml
+   ~/rig/bin/plugins/build.sh
+   source ~/rig/install/plugins/setup.bash
+   ros2 run stepit_behaviors write_nodes_model ~/rig/src/plugins/stepit_objectives/objectives/stepit_behaviors.xml
    ```
 
    The running server loaded the behaviors when it started: restart it with
    `./docker/dock.sh stop stepit-commander` and `./docker/dock.sh start
    stepit-commander`.
-3. Add a test to `src/stepit_tests`.
+3. Add a test to `src/plugins/stepit_tests`.
 4. Document its parameters in `docs/<ObjectiveName>.md` and add it to the
    [Objectives](#objectives) table.
 
@@ -351,7 +356,7 @@ position controller, so no hardware and no controller are needed. Run them in
 the commander's container:
 
 ```bash
-ROS_DOMAIN_ID=77 ~/rig/bin/test.sh
+ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh
 ```
 
 > [!WARNING]
@@ -359,6 +364,56 @@ ROS_DOMAIN_ID=77 ~/rig/bin/test.sh
 > on the same network and ROS domain, the tests read its joint states, switch
 > its controllers and **move it**: always run them on a domain of their own, as
 > above.
+
+## The Rig's Own Programs
+
+The behaviors and objectives run inside the commander, as a plugin. The rig's
+programs that run on their own, as ROS nodes next to the modules, run in the
+`stepit-macro` container instead, whose image is defined here, in
+[`docker/Dockerfile`](docker/Dockerfile).
+
+### The Gamepad
+
+A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velocity of the joints, through the robot's velocity controller, and its button 1 stops whatever moves the robot and hands it to the gamepad. It runs in the `stepit-macro` container, from the package [`stepit_teleop`](src/stepit-macro/stepit_teleop).
+
+It belongs to StepIt Macro, not to StepIt Driver, because it needs the commander: the stop button runs the objective [`ActivateTeleop`](docs/ActivateTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
+
+### The Two Workspaces
+
+The rig's packages are two ROS workspaces, one per container, side by side in
+[`src`](src):
+
+| Workspace | Built and run in | Scripts | Output |
+|---|---|---|---|
+| [`src/plugins`](src/plugins) | `stepit-commander`, which loads it as a plugin | [`bin/plugins`](bin/plugins) | `build/plugins`, `install/plugins` |
+| [`src/stepit-macro`](src/stepit-macro) | `stepit-macro` | [`bin/stepit-macro`](bin/stepit-macro) | `build/stepit-macro`, `install/stepit-macro` |
+
+They cannot be one workspace: the plugin must be built against the commander's
+own workspace, which only its container has, and two containers building into
+the same `build` and `install` would undo each other's work.
+
+Inside `stepit-macro` this repo is mounted at `~/ws`, and the scripts of
+`bin/stepit-macro` are on the `PATH` and aliased as `update`, `build` and
+`test`. Its packages:
+
+| Package | Role |
+|---|---|
+| `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ActivateTeleop`. |
+| `stepit_macro_tests` | Tests of the packages above, e.g. the gamepad against a fake commander. |
+
+This workspace also builds `btcpp_ros2_interfaces`, the type of the commander's
+action, from the commander's own copy in `modules/stepit-commander`, so that
+it always matches the commander's. Build it, and run its tests on a domain of
+their own:
+
+```
+./docker/dock.sh build stepit-macro
+./docker/dock.sh shell stepit-macro
+ROS_DOMAIN_ID=77 test
+```
+
+A new program goes into `src/stepit-macro` as a package, and into the command of
+`stepit-macro` in [`docker/docker-compose.yml`](docker/docker-compose.yml).
 
 ## Working on a Module
 
@@ -370,7 +425,7 @@ mounted at `~/ws`, and its scripts are on the `PATH` and aliased as in the
 module's own container: `update`, `build`, `test`, for the editor `serve`,
 `dev` and `validate`, and for the camera `dev`, for its test page.
 
-After changing the code of a module, or of the rig's behaviors in [`src`](src),
+After changing the code of a module, or of the rig's behaviors in [`src/plugins`](src/plugins),
 which `./docker/dock.sh build stepit-commander` builds too, compile it and
 restart its service:
 
@@ -416,19 +471,25 @@ only overrides:
   `ros2 launch stepit_server commander.launch.py` with the rig's
   `params_file`, `ros2 launch stepit_camera camera.launch.py`, and `serve.sh`
   for the editor;
-- the commander's mounts: this repo, at `~/rig`, whose [`src`](src) holds the
-  rig's behaviors and objectives, built on top of the commander's workspace;
-- the folder the editor opens: the rig's `src/stepit_objectives/objectives`,
-  instead of the editor's examples.
+- the commander's mounts: this repo, at `~/rig`, whose
+  [`src/plugins`](src/plugins) holds the rig's behaviors and objectives, built
+  on top of the commander's workspace;
+- the folder the editor opens: the rig's `src/plugins/stepit_objectives/objectives`,
+  instead of the editor's examples;
+- a service of the rig's own, `stepit-macro`, on an image defined in
+  [`docker/Dockerfile`](docker/Dockerfile): it mounts this repo at `~/ws`, and
+  `/dev/input` from the host for the gamepad, and runs
+  `ros2 launch stepit_teleop teleop.launch.py`.
 
 The containers and images have the names each module's own `dock.sh` gives
 them by default: `stepit-driver`, `stepit-commander`, `stepit-editor` and
-`stepit-camera`. Run one system or the other, not both: remove
+`stepit-camera`; the rig's own container and image are `stepit-macro`. Run
+one system or the other, not both: remove
 the containers made by a module's `dock.sh` before starting StepIt Macro, e.g.
 with `./modules/stepit-driver/docker/dock.sh stepit-driver clean`, and the
 other way round.
 
-The robot, the commander and the camera use the host network, so they discover
+The robot, the commander, the rig's own programs and the camera use the host network, so they discover
 each other over DDS. The web pages reach them from the browser: the editor
 through the commander's rosbridge on `ws://localhost:9090`, the camera's test
 page through the camera's web server on `http://localhost:8090`, its rosbridge

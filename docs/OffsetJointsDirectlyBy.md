@@ -1,6 +1,6 @@
 # OffsetJointsDirectlyBy
 
-[`offset_joints_directly_by.xml`](../src/stepit_objectives/objectives/offset_joints_directly_by.xml)
+[`offset_joints_directly_by.xml`](../src/plugins/stepit_objectives/objectives/offset_joints_directly_by.xml)
 moves the joints **by** a signed offset, relative to where they are when the
 objective starts, through the position controller: the microcontroller plans
 each move itself, on its own trapezoid, as fast as the motors allow. It is the

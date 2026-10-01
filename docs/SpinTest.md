@@ -1,6 +1,6 @@
 # SpinTest
 
-[`spin_test.xml`](../src/stepit_objectives/objectives/spin_test.xml) is a
+[`spin_test.xml`](../src/plugins/stepit_objectives/objectives/spin_test.xml) is a
 hardware test: joint *k* turns *k* full turns clockwise, joint1 once up to
 joint5 five times, as fast as the motors allow within 90% of their limits, and
 then every joint returns to where it started.

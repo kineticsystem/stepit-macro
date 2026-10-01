@@ -214,8 +214,8 @@ tests run, share the host network, so on the default ROS domain the tests read
 the real joint states, switch the real controllers and send goals to the real
 trajectory controller: a test run once moved motors 1 and 2 of the robot. Until
 the tests isolate themselves, run them with `ROS_DOMAIN_ID` set to an unused
-domain, e.g. `ROS_DOMAIN_ID=77 ~/rig/bin/test.sh`. Setting it in
-`src/stepit_tests/CMakeLists.txt` for every test would make that automatic.
+domain, e.g. `ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh`. Setting it in
+`src/plugins/stepit_tests/CMakeLists.txt` for every test would make that automatic.
 
 ## Worth considering
 

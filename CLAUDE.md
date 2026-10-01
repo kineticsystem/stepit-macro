@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 StepIt Macro runs the whole focus stacking rig: `docker/docker-compose.yml` starts one container
 per module, the git submodules under `modules/` (driver, commander, editor, camera, UI), and
-wires them together. It also holds the rig's **own ROS packages** in `src/`: the behaviors and
-the objectives the commander runs. StepIt Commander is a generic server and knows nothing about
-the rig: never move rig behaviors or objectives back into it.
+wires them together. It also holds the rig's **own ROS packages** in `src/`, as two workspaces,
+one per container: `src/plugins`, the behaviors and objectives the commander loads, and
+`src/stepit-macro`, the rig's own programs, e.g. the gamepad. StepIt Commander is a generic server
+and knows nothing about the rig: never move rig behaviors or objectives back into it.
 
 ## Working environment
 
@@ -22,17 +23,22 @@ Everything is built, tested and run **inside the containers**, never on the host
 ./docker/dock.sh stop [service]
 ```
 
-`src/` is a ROS workspace of its own, built **on top of the commander's**, inside the commander's
-container, where this repo is mounted at `~/rig` (the commander's own repo is `~/ws`).
-`modules/COLCON_IGNORE` keeps colcon out of the submodules. `./docker/dock.sh build
-stepit-commander` builds both workspaces; by hand, in `./docker/dock.sh shell stepit-commander`:
+Each workspace has its scripts in `bin/<workspace>/` and builds into `build/<workspace>`,
+`install/<workspace>` and `log/<workspace>`, naming its folders explicitly: colcon never crawls the
+repo, and `modules/COLCON_IGNORE` keeps it out of the submodules anyway.
+
+`src/plugins` is built **on top of the commander's workspace**, inside the commander's container,
+where this repo is mounted at `~/rig` (the commander's own repo is `~/ws`): the commander loads the
+plugin into its process, so it must be built against the commander's BehaviorTree libraries.
+`./docker/dock.sh build stepit-commander` builds both; by hand, in
+`./docker/dock.sh shell stepit-commander`:
 
 ```bash
-~/rig/bin/update.sh   # rosdep install for src/
-~/rig/bin/build.sh    # colcon build of src/, sourcing ~/ws/install first
-ROS_DOMAIN_ID=77 ~/rig/bin/test.sh   # ALWAYS on a domain of its own: the tests move the robot otherwise
+~/rig/bin/plugins/update.sh   # rosdep install for src/plugins
+~/rig/bin/plugins/build.sh    # colcon build of src/plugins, sourcing ~/ws/install first
+ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh   # ALWAYS on a domain of its own: the tests move the robot otherwise
 
-source ~/rig/install/setup.bash
+source ~/rig/install/plugins/setup.bash
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
   "{target_tree: OffsetJointsBy, payload: '{joints: [joint1], offset: -6.28}'}"
@@ -40,8 +46,8 @@ ros2 action send_goal /commander/execute_objective \
 
 The commander starts with `params_file:=` the installed `stepit_objectives/config/commander.yaml`,
 which lists `stepit_behaviors/bt_plugins` and `stepit_objectives/objectives`. The editor opens
-`src/stepit_objectives/objectives` directly. An edited or new XML runs on the next goal with no
-build; a new or changed behavior needs `~/rig/bin/build.sh` and a restart of the commander
+`src/plugins/stepit_objectives/objectives` directly. An edited or new XML runs on the next goal with no
+build; a new or changed behavior needs `~/rig/bin/plugins/build.sh` and a restart of the commander
 (`./docker/dock.sh stop stepit-commander && ./docker/dock.sh start stepit-commander`).
 
 ## Architecture
@@ -49,8 +55,21 @@ build; a new or changed behavior needs `~/rig/bin/build.sh` and a restart of the
 | Package | Rule |
 |---|---|
 | `stepit_objectives` | XML only, no code: objectives, the subtrees they reuse, the generated node models, all in `objectives/`; and `config/commander.yaml`. |
-| `stepit_behaviors` | The **only** place that names robot topics, actions and services. |
+| `stepit_behaviors` | The **only** place the objectives name robot topics, actions and services. |
 | `stepit_tests` | All tests of the behaviors and objectives; the other packages carry none. |
+
+**`src/stepit-macro`** holds the rig's own programs, ROS nodes that run on their own rather than
+inside the commander: it is built and run in the `stepit-macro` container, on the image of
+`docker/Dockerfile`, where this repo is mounted at `~/ws` and `bin/stepit-macro` is on the `PATH`
+(`update.sh`, `build.sh`, `ROS_DOMAIN_ID=77 test.sh`). It also builds `btcpp_ros2_interfaces` from
+`modules/stepit-commander`, the type of the commander's action, which has no Debian package. Its
+tests go in `stepit_macro_tests`. A new program needs a line in the command of `stepit-macro` in
+`docker/docker-compose.yml`.
+
+| Package | Rule |
+|---|---|
+| `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ActivateTeleop`, which the commander runs in place of the running one. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
+| `stepit_macro_tests` | All tests of `src/stepit-macro`. |
 
 **Nothing is wired up by hand.** An objective is an XML file dropped into
 `stepit_objectives/objectives`, whose `<root>` names it in `main_tree_to_execute`; a tree it
@@ -66,7 +85,7 @@ plugin, and it sits next to the objectives so that opening that one folder shows
 type. The server does not read it: `stepit_objectives/CMakeLists.txt` excludes it from the
 install, so it never reaches the installed folder listed in `behavior_trees`.
 `test_nodes_model` fails when it is out of date; regenerate it with
-`ros2 run stepit_behaviors write_nodes_model ~/rig/src/stepit_objectives/objectives/stepit_behaviors.xml`.
+`ros2 run stepit_behaviors write_nodes_model ~/rig/src/plugins/stepit_objectives/objectives/stepit_behaviors.xml`.
 
 **Payload.** The commander writes the payload of a goal into the **global** blackboard, which is
 why objectives read it with the `@` prefix (`{@joints}`), while values passed between nodes of
@@ -89,9 +108,17 @@ they are) and waits on `/joint_states` until the moved ones have arrived and sto
 microcontroller plans each move alone. Faster, not synchronised. A halt deactivates
 `position_controller` (asynchronously), and `StepitHardware` sends velocity 0 to the released
 joints; never stop by sending the current positions, a moving joint brakes past them and comes back.
+Velocity 0, from a release or from `/velocity_controller/commands`, is a smooth stop: the firmware
+(AccelStepper `stop()`) and the fake motor decelerate at the motor's acceleration, 2 turns/s².
+
+**The commander preempts** (its parameter `preempt`, on by default): a goal sent while an objective
+runs replaces it, halted at its next tick. Stopping the robot is therefore asking for another
+objective, as the gamepad's stop button does with `ActivateTeleop`; to stop without starting
+anything, cancel every goal: `ros2 service call /commander/execute_objective/_action/cancel_goal
+action_msgs/srv/CancelGoal "{}"`.
 
 **Tests** run the real objective XML and the real behaviors against a fake robot
-(`src/stepit_tests/tests/fake/fake_robot.hpp`, `fake_controller_manager.hpp`), so no hardware and
+(`src/plugins/stepit_tests/tests/fake/fake_robot.hpp`, `fake_controller_manager.hpp`), so no hardware and
 no controller manager are needed. New behaviors and objectives are expected to be covered the
 same way. The fakes use the real topic, action and service names, so on the robot's ROS domain
 they reach the real robot: run them with `ROS_DOMAIN_ID=77`.

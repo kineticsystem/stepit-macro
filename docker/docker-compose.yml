@@ -1,5 +1,6 @@
 # The whole StepIt Macro rig: the robot, the commander, the editor and the
-# camera, each in the container defined by its own project.
+# camera, each in the container defined by its own project, and the rig's own
+# programs, e.g. the gamepad, in the stepit-macro container defined here.
 # Driven by ./dock.sh, which supplies USER_UID/USER_GID.
 #
 # Every service extends the `dev` service of the project it runs, so the
@@ -53,18 +54,52 @@ services:
     depends_on:
       - stepit-driver
     volumes:
-      # The rig's behaviors and objectives, in src, built as a workspace of
-      # their own on top of the commander's (see ../bin).
+      # The rig's plugin: its behaviors and objectives, in src/plugins, built
+      # as a workspace of their own on top of the commander's (see
+      # ../bin/plugins).
       - ..:/home/developer/rig
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && ~/rig/bin/update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
-        && source ~/rig/install/setup.bash
+        && source ~/rig/install/plugins/setup.bash
         && exec ros2 launch stepit_server commander.launch.py
              params_file:=$$(ros2 pkg prefix stepit_objectives)/share/stepit_objectives/config/commander.yaml'
+
+  # The rig's own programs, from src/stepit-macro (see ../bin/stepit-macro), on an image
+  # of their own: today the gamepad, whose sticks drive the joints through the
+  # velocity controller and whose stop button hands the robot to it through
+  # the commander. The gamepad can be plugged in at any time: /dev/input is
+  # mounted, not copied when the container starts.
+  stepit-macro:
+    build:
+      context: .
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    image: stepit-macro:latest
+    container_name: stepit-macro
+    hostname: stepit-macro
+    init: true
+    stop_signal: SIGINT
+    # Reads the gamepad, a device which may appear after the container started.
+    privileged: true
+    # Required for DDS discovery between this container and the others.
+    network_mode: host
+    depends_on:
+      - stepit-commander
+    volumes:
+      - ..:/home/developer/ws
+      - /dev/input:/dev/input
+    command:
+      - bash
+      - -c
+      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+        && source /opt/ros/jazzy/setup.bash
+        && source install/stepit-macro/setup.bash
+        && exec ros2 launch stepit_teleop teleop.launch.py'
 
   # The web editor, on http://localhost:${EDITOR_PORT:-8080}.
   stepit-editor:
@@ -80,7 +115,7 @@ services:
     volumes:
       # Edit the rig's objectives: the commander reads them again before each
       # goal, so what the editor saves is what the Run button executes.
-      - ../src/stepit_objectives/objectives:/home/developer/behaviors
+      - ../src/plugins/stepit_objectives/objectives:/home/developer/behaviors
     command: serve.sh
 
   # The camera driver, with its test page and the pictures on

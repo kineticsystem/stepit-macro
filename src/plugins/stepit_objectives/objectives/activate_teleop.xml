@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: ActivateTeleop
+
+  Hands the robot to the gamepad: stops whichever controllers are driving the
+  robot and activates the velocity controller, which the gamepad's sticks
+  command. The gamepad's stop button runs it: the commander halts the running
+  objective, if any, and runs this one in its place.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: ActivateTeleop, payload: ''}"
+
+  The controllers stop smoothly: the motors released by a controller brake to 0
+  at their acceleration.
+
+  Another objective can hand the robot to the user the same way:
+
+    <SubTree ID="ActivateTeleop"/>
+
+  The controller must be the one the gamepad publishes to, `controller` in
+  stepit_teleop's configuration.
+-->
+<root BTCPP_format="4" main_tree_to_execute="ActivateTeleop">
+
+  <BehaviorTree ID="ActivateTeleop" _description="Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller.">
+    <SubTree ID="EnsureControllers" controllers="velocity_controller"/>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: it takes none. -->
+  <TreeNodesModel>
+    <SubTree ID="ActivateTeleop"/>
+  </TreeNodesModel>
+
+</root>

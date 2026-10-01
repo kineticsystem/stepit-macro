@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>stepit_teleop</name>
+  <version>0.1.0</version>
+  <description>
+    Drives the StepIt macro rig with a gamepad: the sticks set the velocity of
+    the joints through the velocity controller, and a button stops whatever
+    moves the robot and hands it to the gamepad, through the commander.
+  </description>
+  <maintainer email="lentigrams@gmail.com">developer</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>btcpp_ros2_interfaces</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <!-- Reads the gamepad from /dev/input/js0 and publishes /joy. -->
+  <exec_depend>joy_linux</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1,6 +1,6 @@
 # MoveJointsDirectlyTo
 
-[`move_joints_directly_to.xml`](../src/stepit_objectives/objectives/move_joints_directly_to.xml)
+[`move_joints_directly_to.xml`](../src/plugins/stepit_objectives/objectives/move_joints_directly_to.xml)
 moves the joints **to** the given positions through the position controller:
 the microcontroller plans each move itself, on its own trapezoid, as fast as the
 motors allow. It is the direct counterpart of [`MoveJointsTo`](MoveJointsTo.md),
