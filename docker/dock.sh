@@ -52,22 +52,54 @@ function check_modules() {
     done
 }
 
-# Install the dependencies and compile the code of a service, in a throwaway
-# container of its image: the code lives in the bind-mounted module, so what
-# is built stays on the host for the service's own container to run.
+# Install the dependencies and compile the code of a service, in a container
+# of its image, then save that container as the service's image: the code lives
+# in the bind-mounted module, so what is built stays on the host, and the
+# dependencies, with the marker file of docker-compose.yml, stay in the image,
+# so that the service's own container does not install them again.
 function compile() {
     local service="$1"
+    local image="$service:latest"
+    local container="$service-compile"
     echo "Compiling $service"
     # Refresh the package lists first: the image's own come from a cached
     # layer, and once Ubuntu replaces a package they name a version that is
     # gone, so rosdep's apt-get install fails with 404 Not Found.
-    local steps="sudo apt-get update && update.sh && build.sh"
+    local dependencies="sudo apt-get update && update.sh"
+    local builds="build.sh"
     # The commander also builds the rig's plugin, its behaviors and objectives
     # in ../src/plugins, on top of its workspace.
     if [ "$service" = stepit-commander ]; then
-        steps="$steps && ~/rig/bin/plugins/update.sh && ~/rig/bin/plugins/build.sh"
+        dependencies="$dependencies && ~/rig/bin/plugins/update.sh"
+        builds="$builds && ~/rig/bin/plugins/build.sh"
     fi
-    docker compose run --rm --no-deps $service bash -c "$steps"
+    # The command and labels of the container would replace the image's.
+    local cmd=$(docker image inspect --format '{{json .Config.Cmd}}' $image)
+    docker rm --force $container &>/dev/null || true
+    if ! docker compose run --name $container --no-deps $service \
+        bash -c "$dependencies && touch ~/.dependencies && $builds"; then
+        docker rm $container >/dev/null
+        return 1
+    fi
+    docker commit --change "CMD $cmd" --change "LABEL stepit.compiled=true" \
+        $container $image >/dev/null
+    docker rm $container >/dev/null
+}
+
+# Start the package cache, and wait until it listens, so that the images built
+# next download through it: set build_args to the proxy argument of the builds.
+build_args=()
+function start_cache() {
+    docker compose up --detach --build apt-cache
+    local i
+    for i in {1..20}; do
+        if (exec 3<>/dev/tcp/127.0.0.1/3142) 2>/dev/null; then
+            build_args=(--build-arg http_proxy=http://127.0.0.1:3142)
+            return 0
+        fi
+        sleep 0.5
+    done
+    echo "The package cache is not listening: downloading directly." >&2
 }
 
 # Compose resolves the paths in docker-compose.yml against the directory that
@@ -96,12 +128,16 @@ case "$command" in
         ;;
     build)
         check_modules
+        start_cache
         # Rebuilds only the layers that a Dockerfile changed since last time,
-        # so there is no need to clean first.
-        docker compose build $service
+        # so there is no need to clean first. The proxy is a predefined build
+        # argument: it does not invalidate the cached layers.
+        docker compose build "${build_args[@]}" $service
         for s in ${service:-${SERVICES[@]}}; do
             compile $s
         done
+        # The images that earlier builds compiled, replaced by these.
+        docker image prune --force --filter label=stepit.compiled=true >/dev/null
         ;;
     start)
         check_modules

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Called by apt for each repository: print the rig's package cache when it is
+# listening, DIRECT otherwise, so that apt still works without it.
+
+if (exec 3<>/dev/tcp/127.0.0.1/3142) 2>/dev/null; then
+    echo http://127.0.0.1:3142
+else
+    echo DIRECT
+fi
