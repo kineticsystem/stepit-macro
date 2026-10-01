@@ -19,6 +19,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(stepit_server REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 
 ######################################################
@@ -48,6 +49,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   behaviortree_cpp::behaviortree_cpp
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
+  stepit_server::progress
   ${control_msgs_TARGETS}
   ${controller_manager_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
@@ -99,6 +101,7 @@ ament_export_dependencies(
   rclcpp_action
   sensor_msgs
   std_msgs
+  stepit_server
   trajectory_msgs)
 
 ament_package()

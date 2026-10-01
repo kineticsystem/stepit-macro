@@ -21,6 +21,8 @@
   <depend>rclcpp_action</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <!-- The interface of a node reporting its progress, header only. -->
+  <depend>stepit_server</depend>
   <depend>trajectory_msgs</depend>
 
   <export>

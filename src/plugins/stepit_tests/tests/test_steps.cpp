@@ -236,6 +236,29 @@ TEST(StepsNode, StartsOverAfterBeingHalted)
   EXPECT_EQ(indices(), (std::vector<int>{ 0, 1, 2 }));
 }
 
+// The commander reports it as the progress of the node: the iterations done,
+// out of all of them, while it runs.
+TEST(StepsNode, ReportsTheIterationsDoneWhileItRuns)
+{
+  auto tree = makeTree(R"(<Steps start="0" end="2" count="3" value="{value}" index="{index}">
+                            <Move value="{value}" index="{index}"/>
+                          </Steps>)");
+  const auto* steps = dynamic_cast<const Steps*>(tree.rootNode());
+  ASSERT_NE(steps, nullptr);
+  EXPECT_FALSE(steps->progress().has_value()) << "not started";
+
+  tree.tickOnce();
+  ASSERT_TRUE(steps->progress().has_value());
+  EXPECT_EQ(steps->progress()->done, 0.0);
+  EXPECT_EQ(steps->progress()->total, 3.0);
+
+  tree.tickOnce();  // The first move ends, the second starts.
+  EXPECT_EQ(steps->progress()->done, 1.0);
+
+  EXPECT_EQ(tree.tickWhileRunning(), BT::NodeStatus::SUCCESS);
+  EXPECT_FALSE(steps->progress().has_value()) << "ended";
+}
+
 // Nested: the inner Steps runs through all of its values at every value of
 // the outer one, and goes back to its first value every time.
 TEST(StepsNode, NestedStepsMakeAGrid)
