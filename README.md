@@ -57,7 +57,7 @@ which run in a container:
 
 | Module | Container | What it does |
 |---|---|---|
-| [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | `stepit-driver` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz. |
+| [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | `stepit-driver` | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz on demand. |
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
@@ -180,11 +180,15 @@ Start the whole rig in the background:
 ./docker/dock.sh start
 ```
 
-RViz opens with the robot. The editor is on <http://localhost:8080>: open an
+The editor is on <http://localhost:8080>: open an
 objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot.
 The camera's test page is on <http://localhost:8090>, with the live view of the
 camera. The pictures the camera takes are saved in
 `modules/stepit-camera/pictures`.
+
+RViz does not open by default. To see the robot in RViz, start the driver with
+`LAUNCH_RVIZ=true`, e.g. `LAUNCH_RVIZ=true ./docker/dock.sh start stepit-driver`
+(restart it first if it is running).
 
 Follow the output of every service, or of one of them. Stop following with
 `Ctrl+C`: the services keep running.
