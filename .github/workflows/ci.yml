@@ -8,6 +8,13 @@
 #
 # industrial_ci, which the modules use, builds one workspace from the sources
 # of the repo: it cannot build one on top of a submodule's.
+#
+# The Debian packages the jobs download, mostly rosdep's, are kept in the
+# Actions cache, so that the next run installs them without downloading them.
+# A job restores the newest cache of its own, and saves a new one, named after
+# the packages it then holds, only when it downloaded any. The ROS image
+# deletes every package after installing it: the jobs delete that setting,
+# docker-clean, first.
 
 name: CI
 
@@ -29,6 +36,13 @@ jobs:
       # Where bin/plugins finds the commander's workspace.
       COMMANDER_WS: ${{ github.workspace }}/modules/stepit-commander
     steps:
+      - name: Keep the downloaded packages
+        run: rm /etc/apt/apt.conf.d/docker-clean
+      - uses: actions/cache/restore@v4
+        with:
+          path: /var/cache/apt/archives/*.deb
+          key: apt-${{ matrix.workspace }}-
+          restore-keys: apt-${{ matrix.workspace }}-
       - name: Install git
         run: apt-get update -qq && apt-get install -qq -y git
       - uses: actions/checkout@v4
@@ -47,6 +61,19 @@ jobs:
           modules/stepit-commander/bin/build.sh
       - name: Install the dependencies
         run: bin/${{ matrix.workspace }}/update.sh
+      - name: Name the downloaded packages
+        id: packages
+        run: |
+          apt-get autoclean -qq   # Drops the versions the repositories no longer serve.
+          # Empty when there is no package, which skips saving.
+          if ls /var/cache/apt/archives/*.deb &>/dev/null; then
+            echo "hash=$(ls /var/cache/apt/archives/*.deb | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/cache/save@v4
+        if: steps.packages.outputs.hash != ''
+        with:
+          path: /var/cache/apt/archives/*.deb
+          key: apt-${{ matrix.workspace }}-${{ steps.packages.outputs.hash }}
       - name: Build
         run: bin/${{ matrix.workspace }}/build.sh
       - name: Test
@@ -66,10 +93,31 @@ jobs:
         shell: bash
     steps:
       # nodejs runs the JavaScript actions below under act, which does not
-      # provide one in a container as GitHub does; setup-node installs the
-      # Node.js the editor uses.
-      - name: Install git, BehaviorTree.CPP and Node.js
-        run: apt-get update -qq && apt-get install -qq -y git ros-jazzy-behaviortree-cpp nodejs
+      # provide one in a container as GitHub does, so it comes before the
+      # cache; setup-node installs the Node.js the editor uses.
+      - name: Install git and Node.js
+        run: |
+          rm /etc/apt/apt.conf.d/docker-clean
+          apt-get update -qq && apt-get install -qq -y git nodejs
+      - uses: actions/cache/restore@v4
+        with:
+          path: /var/cache/apt/archives/*.deb
+          key: apt-objectives-
+          restore-keys: apt-objectives-
+      - name: Install BehaviorTree.CPP
+        id: packages
+        run: |
+          apt-get install -qq -y ros-jazzy-behaviortree-cpp
+          apt-get autoclean -qq
+          # Empty when there is no package, which skips saving.
+          if ls /var/cache/apt/archives/*.deb &>/dev/null; then
+            echo "hash=$(ls /var/cache/apt/archives/*.deb | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/cache/save@v4
+        if: steps.packages.outputs.hash != ''
+        with:
+          path: /var/cache/apt/archives/*.deb
+          key: apt-objectives-${{ steps.packages.outputs.hash }}
       - uses: actions/checkout@v4
       # Only the editor's submodule, over HTTPS, as for the commander above.
       - name: Check out the editor
