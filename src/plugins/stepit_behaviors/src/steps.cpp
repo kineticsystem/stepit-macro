@@ -135,9 +135,9 @@ std::vector<std::vector<double>> Steps::readValues() const
     value.reserve(start.size());
     for (std::size_t j = 0; j < start.size(); ++j)
     {
-      value.push_back(count == 1 ? start[j] :
-                                   start[j] + (end[j] - start[j]) * static_cast<double>(i) /
-                                                  static_cast<double>(count - 1));
+      value.push_back(count == 1 ?
+                          start[j] :
+                          start[j] + (end[j] - start[j]) * static_cast<double>(i) / static_cast<double>(count - 1));
     }
     values.push_back(std::move(value));
   }

@@ -1,0 +1,53 @@
+# Builds and tests the rig's two workspaces, each the way its container does,
+# with the scripts of ../../bin, in a plain ROS image:
+#
+# - src/plugins, on top of the commander's workspace, which is built first from
+#   the stepit-commander submodule;
+# - src/stepit-macro, with the commander's interfaces, which it builds from the
+#   same submodule.
+#
+# industrial_ci, which the modules use, builds one workspace from the sources
+# of the repo: it cannot build one on top of a submodule's.
+
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.workspace }}
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [plugins, stepit-macro]
+    defaults:
+      run:
+        shell: bash
+    env:
+      # Where bin/plugins finds the commander's workspace.
+      COMMANDER_WS: ${{ github.workspace }}/modules/stepit-commander
+    steps:
+      - name: Install git
+        run: apt-get update -qq && apt-get install -qq -y git
+      - uses: actions/checkout@v4
+      # Only the commander's submodule, with its own BehaviorTree.ROS2: the
+      # other modules have their own CI. .gitmodules lists SSH URLs, which the
+      # runner cannot use: the repositories are public, so HTTPS needs no key.
+      - name: Check out the commander
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global url.https://github.com/.insteadOf git@github.com:
+          git submodule update --init --recursive --depth 1 modules/stepit-commander
+      - name: Build the commander
+        if: matrix.workspace == 'plugins'
+        run: |
+          modules/stepit-commander/bin/update.sh
+          modules/stepit-commander/bin/build.sh
+      - name: Install the dependencies
+        run: bin/${{ matrix.workspace }}/update.sh
+      - name: Build
+        run: bin/${{ matrix.workspace }}/build.sh
+      - name: Test
+        run: bin/${{ matrix.workspace }}/test.sh

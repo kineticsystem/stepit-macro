@@ -164,8 +164,8 @@ TEST(StepsNode, EndsExactlyOnTheEnd)
 
 TEST(StepsNode, ACountOfOneGivesTheStart)
 {
-  auto tree = makeTree(std::string(R"(<Steps start="4" end="8" count="1" value="{value}" index="{index}">)") +
-                       kRecord + "</Steps>");
+  auto tree = makeTree(std::string(R"(<Steps start="4" end="8" count="1" value="{value}" index="{index}">)") + kRecord +
+                       "</Steps>");
   EXPECT_EQ(tree.tickWhileRunning(), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(values(), (std::vector<std::vector<double>>{ { 4.0 } }));
 }
@@ -177,9 +177,10 @@ TEST(StepsNode, TakesItsParametersFromThePayload)
   blackboard->set("start", 1.0);
   blackboard->set("end", 2.0);
   blackboard->set("count", 3.0);
-  auto tree = makeTree(std::string(R"(<Steps start="{@start}" end="{@end}" count="{@count}" value="{value}" index="{index}">)") +
-                           kRecord + "</Steps>",
-                       blackboard);
+  auto tree = makeTree(
+      std::string(R"(<Steps start="{@start}" end="{@end}" count="{@count}" value="{value}" index="{index}">)") +
+          kRecord + "</Steps>",
+      blackboard);
   EXPECT_EQ(tree.tickWhileRunning(), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(values(), (std::vector<std::vector<double>>{ { 1.0 }, { 1.5 }, { 2.0 } }));
 }
@@ -188,9 +189,8 @@ TEST(StepsNode, StepsThroughAListOfValues)
 {
   auto blackboard = BT::Blackboard::create();
   blackboard->set("values", std::vector<double>{ 0.0, 0.1, 0.15, 0.175 });
-  auto tree = makeTree(std::string(R"(<Steps values="{@values}" value="{value}" index="{index}">)") + kRecord +
-                           "</Steps>",
-                       blackboard);
+  auto tree = makeTree(
+      std::string(R"(<Steps values="{@values}" value="{value}" index="{index}">)") + kRecord + "</Steps>", blackboard);
   EXPECT_EQ(tree.tickWhileRunning(), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(values(), (std::vector<std::vector<double>>{ { 0.0 }, { 0.1 }, { 0.15 }, { 0.175 } }));
   EXPECT_EQ(indices(), (std::vector<int>{ 0, 1, 2, 3 }));
@@ -272,25 +272,25 @@ TEST_P(StepsRejects, BadParameters)
   EXPECT_TRUE(seen.empty());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    StepsNode, StepsRejects,
-    ::testing::Values(std::make_pair("no count", R"(start="0" end="1")"),
-                      std::make_pair("a count of zero", R"(start="0" end="1" count="0")"),
-                      std::make_pair("a fractional count", R"(start="0" end="1" count="2.5")"),
-                      std::make_pair("no end", R"(start="0" count="2")"),
-                      std::make_pair("lengths that differ", R"(start="0;1" end="1" count="2")"),
-                      std::make_pair("values and a range", R"(values="1;2" start="0" end="1" count="2")"),
-                      std::make_pair("a missing payload entry", R"(values="{@nope}")")),
-    [](const auto& test) {
-      std::string name = test.param.first;
-      for (auto& c : name)
-      {
-        if (!std::isalnum(static_cast<unsigned char>(c)))
-        {
-          c = '_';
-        }
-      }
-      return name;
-    });
+INSTANTIATE_TEST_SUITE_P(StepsNode, StepsRejects,
+                         ::testing::Values(std::make_pair("no count", R"(start="0" end="1")"),
+                                           std::make_pair("a count of zero", R"(start="0" end="1" count="0")"),
+                                           std::make_pair("a fractional count", R"(start="0" end="1" count="2.5")"),
+                                           std::make_pair("no end", R"(start="0" count="2")"),
+                                           std::make_pair("lengths that differ", R"(start="0;1" end="1" count="2")"),
+                                           std::make_pair("values and a range",
+                                                          R"(values="1;2" start="0" end="1" count="2")"),
+                                           std::make_pair("a missing payload entry", R"(values="{@nope}")")),
+                         [](const auto& test) {
+                           std::string name = test.param.first;
+                           for (auto& c : name)
+                           {
+                             if (!std::isalnum(static_cast<unsigned char>(c)))
+                             {
+                               c = '_';
+                             }
+                           }
+                           return name;
+                         });
 
 }  // namespace stepit_behaviors::test
