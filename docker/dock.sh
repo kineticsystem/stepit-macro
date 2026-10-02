@@ -58,7 +58,10 @@ function check_modules() {
 function compile() {
     local service="$1"
     echo "Compiling $service"
-    local steps="update.sh && build.sh"
+    # Refresh the package lists first: the image's own come from a cached
+    # layer, and once Ubuntu replaces a package they name a version that is
+    # gone, so rosdep's apt-get install fails with 404 Not Found.
+    local steps="sudo apt-get update && update.sh && build.sh"
     # The commander also builds the rig's plugin, its behaviors and objectives
     # in ../src/plugins, on top of its workspace.
     if [ "$service" = stepit-commander ]; then
