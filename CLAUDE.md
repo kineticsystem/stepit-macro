@@ -23,6 +23,12 @@ Everything is built, tested and run **inside the containers**, never on the host
 ./docker/dock.sh stop [service]
 ```
 
+`dock.sh build` starts `apt-cache` first (`docker/apt-cache`, an apt-cacher-ng proxy on port 3142
+whose packages live in the volume `stepit-macro_apt-cache`): the image builds and every rosdep install
+download through it. It compiles each service in a container that it then commits as the service's
+image, so the image holds the rosdep packages and the `~/.dependencies` marker and the service does
+not run `update.sh` again on start.
+
 Each workspace has its scripts in `bin/<workspace>/` and builds into `build/<workspace>`,
 `install/<workspace>` and `log/<workspace>`, naming its folders explicitly: colcon never crawls the
 repo, and `modules/COLCON_IGNORE` keeps it out of the submodules anyway.

@@ -156,6 +156,15 @@ is based on ROS2 Jazzy desktop, and the editor's compiles BehaviorTree.CPP.
 ./docker/dock.sh build
 ```
 
+The packages it downloads, for the images and for the dependencies of each
+module (rosdep), are kept on this machine by `stepit-apt-cache`, a local proxy
+that `build` starts, so that later builds take them from the disk. They are in
+the Docker volume `stepit-macro_apt-cache`, which `clean` keeps; remove it with
+`docker volume rm stepit-macro_apt-cache` to free the space. The dependencies
+are installed into each image while compiling, so the containers start without
+installing them again. See [The Package Cache](docs/PackageCache.md), which also
+describes the cache of CI.
+
 This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
 container: `stepit-driver`, `stepit-commander`, `stepit-macro` (the rig's own

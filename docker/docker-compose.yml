@@ -13,30 +13,59 @@
 # each module's own dock.sh names them.
 #
 # The ROS2 services install the system packages their code needs (rosdep, i.e.
-# `update.sh`) the first time their container starts. They cannot come from
-# `dock.sh build`: it compiles in a throwaway container, so only what it writes
-# into the bind-mounted module is kept. The marker file lives in the container,
-# so a recreated container installs them again.
+# `update.sh`) the first time their container starts, unless their image has
+# them already: `dock.sh build` installs them while compiling, and saves that
+# container as the service's image, marker file included. Both refresh the
+# package lists first: the image's own come from a cached layer, and name
+# versions that Ubuntu may since have replaced, which apt can no longer fetch. The marker file lives
+# in the container, so a recreated container of an image without it installs
+# them again.
+#
+# Every package apt downloads, while building the images or from rosdep, goes
+# through apt-cache, a proxy that keeps it on this machine, so that it is
+# downloaded only once. The ROS2 services mount its apt configuration, which
+# falls back to the internet when the proxy is not running; `dock.sh build`
+# starts it and passes it to the image builds, which run on the host network to
+# reach it.
 
 name: stepit-macro
 
 services:
+  # The package cache, on port 3142 of the host. Its packages are in the volume
+  # apt-cache, which `dock.sh clean` keeps; `docker volume rm stepit-macro_apt-cache`
+  # empties it.
+  apt-cache:
+    build: apt-cache
+    image: stepit-apt-cache:latest
+    container_name: stepit-apt-cache
+    hostname: stepit-apt-cache
+    init: true
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - apt-cache:/var/cache/apt-cacher-ng
+
   # The robot: ros2_control with fake motors by default, and RViz when
   # LAUNCH_RVIZ=true.
   stepit-driver:
     extends:
       file: ../modules/stepit-driver/docker/docker-compose.yml
       service: dev
+    build:
+      network: host
     image: stepit-driver:latest
     container_name: stepit-driver
     hostname: stepit-driver
     init: true
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
+    volumes:
+      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
+      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch robot_bringup launch.py launch_rviz:=${LAUNCH_RVIZ:-false}'
@@ -47,6 +76,8 @@ services:
     extends:
       file: ../modules/stepit-commander/docker/docker-compose.yml
       service: dev
+    build:
+      network: host
     image: stepit-commander:latest
     container_name: stepit-commander
     hostname: stepit-commander
@@ -59,10 +90,12 @@ services:
       # as a workspace of their own on top of the commander's (see
       # ../bin/plugins).
       - ..:/home/developer/rig
+      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
+      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && source ~/rig/install/plugins/setup.bash
@@ -77,6 +110,7 @@ services:
   stepit-macro:
     build:
       context: .
+      network: host
       args:
         USER_UID: ${USER_UID:-1000}
         USER_GID: ${USER_GID:-1000}
@@ -94,10 +128,12 @@ services:
     volumes:
       - ..:/home/developer/ws
       - /dev/input:/dev/input
+      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
+      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/stepit-macro/setup.bash
         && exec ros2 launch stepit_teleop teleop.launch.py'
@@ -107,6 +143,8 @@ services:
     extends:
       file: ../modules/stepit-editor/docker/docker-compose.yml
       service: dev
+    build:
+      network: host
     image: stepit-editor:latest
     container_name: stepit-editor
     hostname: stepit-editor
@@ -132,15 +170,23 @@ services:
     extends:
       file: ../modules/stepit-camera/docker/docker-compose.yml
       service: dev
+    build:
+      network: host
     image: stepit-camera:latest
     container_name: stepit-camera
     hostname: stepit-camera
     init: true
     stop_signal: SIGINT
+    volumes:
+      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
+      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch stepit_camera camera.launch.py'
+
+volumes:
+  apt-cache:
