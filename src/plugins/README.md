@@ -12,13 +12,13 @@ This folder holds the rig's behaviors and objectives. It is not built or run in 
 
 **What the commander reads, and when.** It loads the plugin from `install/plugins` when it starts, so a changed behavior needs a build and a restart of the commander. It reads the XML of the objectives again before each goal, and the StepIt Editor opens [`stepit_objectives/objectives`](stepit_objectives/objectives) directly, so a changed objective needs nothing.
 
-Build and test it in the commander's container, the tests on a ROS domain of their own, as they would move the real robot otherwise:
+Build and test it in the commander's container. `test.sh` always runs the tests on a ROS domain of their own, 77 or `STEPIT_TEST_DOMAIN_ID`, as they would move the real robot otherwise: never run them with a plain `colcon test`.
 
 ```
 ./docker/dock.sh build stepit-commander
 ./docker/dock.sh shell stepit-commander
 ~/rig/bin/plugins/build.sh
-ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh
+~/rig/bin/plugins/test.sh
 ```
 
 The rig's own programs, which run on their own rather than inside the commander, e.g. the gamepad, are in [`../stepit-macro`](../stepit-macro), built in the `stepit-macro` container. See [The Two Workspaces](../../README.md#the-two-workspaces) and [The Behaviors and Objectives](../../README.md#the-behaviors-and-objectives) in the README.

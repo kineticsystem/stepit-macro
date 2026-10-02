@@ -365,14 +365,16 @@ position controller, so no hardware and no controller are needed. Run them in
 the commander's container:
 
 ```bash
-ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh
+~/rig/bin/plugins/test.sh
 ```
 
 > [!WARNING]
 > The fake robot uses the names of the real one. With the StepIt robot running
 > on the same network and ROS domain, the tests read its joint states, switch
-> its controllers and **move it**: always run them on a domain of their own, as
-> above.
+> its controllers and **move it**. The test scripts therefore always run them
+> on ROS domain 77, or on `STEPIT_TEST_DOMAIN_ID` if set, whatever
+> `ROS_DOMAIN_ID` the shell has. Run them through the scripts, never with a
+> plain `colcon test`, which runs them on the robot's domain.
 
 ## The Rig's Own Programs
 
@@ -412,13 +414,13 @@ Inside `stepit-macro` this repo is mounted at `~/ws`, and the scripts of
 
 This workspace also builds `btcpp_ros2_interfaces`, the type of the commander's
 action, from the commander's own copy in `modules/stepit-commander`, so that
-it always matches the commander's. Build it, and run its tests on a domain of
-their own:
+it always matches the commander's. Build it, and run its tests, which
+`test.sh` runs on a ROS domain of their own, as for the plugin:
 
 ```
 ./docker/dock.sh build stepit-macro
 ./docker/dock.sh shell stepit-macro
-ROS_DOMAIN_ID=77 test
+test
 ```
 
 A new program goes into `src/stepit-macro` as a package, and into the command of
