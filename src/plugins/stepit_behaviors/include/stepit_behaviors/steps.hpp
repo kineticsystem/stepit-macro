@@ -21,10 +21,12 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <behaviortree_cpp/decorator_node.h>
+#include <stepit_server/progress.hpp>
 
 namespace stepit_behaviors
 {
@@ -47,9 +49,12 @@ namespace stepit_behaviors
  * fails as soon as its child fails. Every time it runs again, e.g. nested in the
  * child of another Steps, it starts again from the first value.
  *
+ * While it runs, it reports its progress to the commander: the iterations done
+ * out of all of them.
+ *
  * Pure logic: the node knows nothing about joints or motion.
  */
-class Steps : public BT::DecoratorNode
+class Steps : public BT::DecoratorNode, public stepit_server::ProgressReporter
 {
 public:
   Steps(const std::string& name, const BT::NodeConfig& config);
@@ -57,6 +62,8 @@ public:
   static BT::PortsList providedPorts();
 
   void halt() override;
+
+  std::optional<stepit_server::Progress> progress() const override;
 
 private:
   BT::NodeStatus tick() override;

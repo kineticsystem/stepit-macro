@@ -195,6 +195,15 @@ BT::NodeStatus Steps::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+std::optional<stepit_server::Progress> Steps::progress() const
+{
+  if (!started_)
+  {
+    return std::nullopt;
+  }
+  return stepit_server::Progress{ static_cast<double>(index_), static_cast<double>(values_.size()) };
+}
+
 void Steps::halt()
 {
   started_ = false;

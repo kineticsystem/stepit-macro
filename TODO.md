@@ -227,3 +227,105 @@ copying (Apache-2.0): `recovery_node` (run an action, run a recovery, retry) and
 `rate_controller` (tick a branch at N Hz) are the two that would earn their place
 here. They are built on Nav2's own base classes, so they would have to be ported
 to `BehaviorTree.ROS2`, not linked against.
+
+## Feedback
+
+### 12. How far along a running objective is
+
+**Done in part:** step 1 below, its catch included, and `Steps`: the commander
+reports the progress of a node implementing `stepit_server::ProgressReporter`,
+and the StepIt Editor shows it on the running rows. `FollowJointTrajectory`,
+`CommandJointPositions` and the objective's percentage (step 3) remain. What
+follows is the analysis, as it was before.
+
+Nothing reports progress. The commander's feedback, a single
+`string message` of `ExecuteTree`, is the JSON of `ExecutionStatus`
+(`modules/stepit-commander/src/stepit_server/include/stepit_server/execution_status.hpp`):
+the tree, then the status of every node that changed, at most every 50 ms. A
+client sees *which* node runs, never *how far* it is. None of our behaviors
+read the feedback of their own action either.
+
+Most behaviors can know their progress:
+
+| Behavior | Progress | From |
+|---|---|---|
+| `FollowJointTrajectory`, so every `TrapezoidalTrajectory` and `CubicTrajectory` move | exact | the `time_from_start` of the last point, known before the goal is sent, against the time elapsed or the `desired.time_from_start` of the controller's feedback |
+| `Steps` | exact | `index` over `count`, both already ports |
+| `CommandJointPositions` | estimate | the share of the distance covered, on `/joint_states`, start and target being known; or a time from the trapezoid of the motor limits (2 turns/s²). The MCU plans the move, so there is no timeline to read |
+| `SwitchController`, `GetJointPositions`, … | not worth it | instantaneous |
+| a camera trigger, once there is one | estimate | the exposure |
+
+The objective as a whole has no percentage in general: a `Fallback`, a
+condition, a retry or a loop of unknown length has no defined total, and the
+commander must stay generic. Ours are plain sequences with fixed counts, though:
+`Stack` is `(row_index · 11 + shot) / 121`, refined by the move in flight.
+
+Possible answer, in three steps:
+
+1. **Commander, generic:** an interface such as
+   `ProgressReporter { virtual std::optional<double> progress() const; }`.
+   `ExecutionStatus` asks every RUNNING node that implements it and adds
+   `"progress": {"12": 0.42}` to the JSON, by `_uid`. Existing clients ignore
+   the new key, and the commander still knows nothing about the rig. A node
+   that counts, like `Steps`, could send `{"done": 3, "total": 11}` instead:
+   "row 4 of 11" says more than 27%.
+
+   **Catch:** `ExecutionStatus::feedback` sends nothing while no status
+   changes, and during a 10 s move only one node runs and nothing changes: the
+   progress would jump from 0 to 100% when the move ends. A changed progress
+   must count as a change, still at most one message per period (5 Hz is
+   plenty for a progress bar).
+2. **`stepit_behaviors`:** implement it in `Steps` and `FollowJointTrajectory`,
+   exact, and in `CommandJointPositions`, by distance.
+3. **The objective:** the progress of the outermost running `Steps`, refined by
+   that of its running child, computed by the client (e.g. the StepIt Editor)
+   from the per-node values: it has the executed tree, the server need not.
+
+**In the StepIt Editor** (`modules/stepit-editor`), the execution view is
+already built on feedback by `_uid`, so it is small:
+
+- `parseFeedback` (`src/client/execution.ts`) reads `progress` next to
+  `nodes`. Today it ignores unknown keys, so step 1 breaks nothing.
+- `applyFeedback` (`src/client/store/execution.ts`) keeps
+  `execution.progress` next to `statuses`; `endExecution` drops that of the
+  nodes it marks HALTED.
+- `StatusCell` (`src/client/components/ExecutionPanel.tsx`) shows a bar, or
+  "row 4 of 11", on a RUNNING row that has one; `RunState`, in the header,
+  shows the objective's percentage of step 3.
+- Tests in `tests/execution.test.ts`.
+
+**Why not a topic** on which each behavior publishes its `_uid` and progress,
+which was considered:
+
+- **No run.** A `_uid` is unique within one tree only. With preemption, the
+  last message of a halted objective can arrive after the next one started,
+  and land on a node of the new tree with the same `_uid`. Fixing it needs the
+  goal id in every message, which behaviors do not know.
+- **Two unordered channels.** The statuses come by the action, the progress by
+  the topic, and nothing orders them: 42% after HALTED, or a progress before
+  the first message, the one with the tree, when the client cannot yet tell
+  which row a `_uid` is.
+- **ROS where none is needed.** `Steps` is a plain BehaviorTree.CPP control
+  node, with no ROS node: it would need one to publish, and every behavior a
+  publisher and a rate limit of its own.
+- **Its one advantage already exists.** Action feedback is an ordinary topic,
+  `/commander/execute_objective/_action/feedback`: a dashboard or a gamepad
+  light can subscribe without sending a goal, and every message carries its
+  goal id.
+
+The action feedback gives one channel, per goal, ordered with the statuses,
+throttled in one place, and behaviors that only implement `progress()`. Its
+cost is a change in the commander's repository, a generic one. A topic remains
+right for a progress tied to no run, e.g. a camera's buffer filling up: that is
+the status of a device, not of a node.
+
+The alternative without touching the commander is a `Script` node writing
+`{@progress}` from the `Steps` indices, but every objective then keeps a
+formula of its own in step with its loops.
+
+A time left instead of a percentage is the same problem: exact for a
+trajectory, an estimate for a direct move, and for a whole `Stack` it also
+needs the duration of a photo, which does not exist yet.
+
+Start with step 1, its catch included, and `Steps` alone: that already gives
+`Stack` a correct percentage.
