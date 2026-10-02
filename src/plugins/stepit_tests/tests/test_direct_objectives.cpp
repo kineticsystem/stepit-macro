@@ -23,8 +23,10 @@
 // run the trees against a fake robot that follows the commands of a position
 // controller.
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -154,6 +156,46 @@ TEST_F(DirectObjectives, OffsetsEachJointByItsOwnAmount)
   ASSERT_EQ(commands.size(), 1u);
   EXPECT_NEAR(commands.front()[4], 3.0, 1e-9);
   EXPECT_NEAR(commands.front()[0], 0.0, 1e-9);
+}
+
+// The commander preempts as here: it halts the running objective, which
+// deactivates the position controller without waiting for the answer, and only
+// then starts the new one, which activates it again. The controller manager
+// handles the deactivation first, so the new move is not lost to a controller
+// switched off behind its back.
+TEST_F(DirectObjectives, AnotherDirectObjectiveTakesOverAHaltedOne)
+{
+  auto global_blackboard = BT::Blackboard::create();
+  stepit_server::writeToBlackboard(stepit_server::parsePayload("{joints: [joint1], offset: 100.0}"), *global_blackboard);
+  auto first = factory_.createTree("OffsetJointsDirectlyBy", BT::Blackboard::create(global_blackboard));
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{ 10 };
+  while (robot_->positionCommands().empty() && std::chrono::steady_clock::now() < deadline)
+  {
+    ASSERT_EQ(first.tickExactlyOnce(), BT::NodeStatus::RUNNING);
+    std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+  }
+  ASSERT_EQ(robot_->positionCommands().size(), 1u);
+  first.haltTree();
+
+  ASSERT_EQ(runObjective(factory_, "MoveJointsDirectlyTo", "{joints: [joint2], positions: 1.5}"),
+            BT::NodeStatus::SUCCESS);
+
+  // A deactivation still on its way would land after this point: give it time.
+  const auto settled = std::chrono::steady_clock::now() + std::chrono::seconds{ 1 };
+  while (std::chrono::steady_clock::now() < settled)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+  }
+  EXPECT_EQ(manager_->stateOf("position_controller"), "active");
+  const auto switches = manager_->switches();
+  ASSERT_EQ(switches.size(), 3u);
+  const std::vector<std::string> position_controller{ "position_controller" };
+  // The first objective's EnsureControllers, the halt, the second objective's EnsureControllers.
+  EXPECT_EQ(switches[0].activate_controllers, position_controller);
+  EXPECT_EQ(switches[1].deactivate_controllers, position_controller);
+  EXPECT_TRUE(switches[1].activate_controllers.empty());
+  EXPECT_EQ(switches[2].activate_controllers, position_controller);
+  EXPECT_NEAR(robot_->positions()[1], 1.5, 0.01);
 }
 
 // A joint the robot does not have fails the objective, and nothing moves.

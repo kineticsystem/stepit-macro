@@ -212,10 +212,13 @@ The fake robot and the fake controller manager of the tests use the real names:
 `/controller_manager/...`. The robot and the commander's container, where the
 tests run, share the host network, so on the default ROS domain the tests read
 the real joint states, switch the real controllers and send goals to the real
-trajectory controller: a test run once moved motors 1 and 2 of the robot. Until
-the tests isolate themselves, run them with `ROS_DOMAIN_ID` set to an unused
-domain, e.g. `ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh`. Setting it in
-`src/plugins/stepit_tests/CMakeLists.txt` for every test would make that automatic.
+trajectory controller: a test run once moved motors 1 and 2 of the robot.
+
+**Done in part:** both `test.sh` scripts set `ROS_DOMAIN_ID` to 77, or to
+`STEPIT_TEST_DOMAIN_ID`, overriding whatever the shell has, which is the
+robot's. A plain `colcon test`, or a test binary run by hand, still runs on the
+shell's domain. Setting the domain on each test, through the `ENV` argument of
+`ament_add_gtest` in the two tests' `CMakeLists.txt`, would close that too.
 
 ## Worth considering
 

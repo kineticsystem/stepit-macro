@@ -36,7 +36,7 @@ plugin into its process, so it must be built against the commander's BehaviorTre
 ```bash
 ~/rig/bin/plugins/update.sh   # rosdep install for src/plugins
 ~/rig/bin/plugins/build.sh    # colcon build of src/plugins, sourcing ~/ws/install first
-ROS_DOMAIN_ID=77 ~/rig/bin/plugins/test.sh   # ALWAYS on a domain of its own: the tests move the robot otherwise
+~/rig/bin/plugins/test.sh    # on ROS domain 77 (or STEPIT_TEST_DOMAIN_ID): never a plain colcon test
 
 source ~/rig/install/plugins/setup.bash
 ros2 action send_goal /commander/execute_objective \
@@ -61,7 +61,7 @@ build; a new or changed behavior needs `~/rig/bin/plugins/build.sh` and a restar
 **`src/stepit-macro`** holds the rig's own programs, ROS nodes that run on their own rather than
 inside the commander: it is built and run in the `stepit-macro` container, on the image of
 `docker/Dockerfile`, where this repo is mounted at `~/ws` and `bin/stepit-macro` is on the `PATH`
-(`update.sh`, `build.sh`, `ROS_DOMAIN_ID=77 test.sh`). It also builds `btcpp_ros2_interfaces` from
+(`update.sh`, `build.sh`, `test.sh`). It also builds `btcpp_ros2_interfaces` from
 `modules/stepit-commander`, the type of the commander's action, which has no Debian package. Its
 tests go in `stepit_macro_tests`. A new program needs a line in the command of `stepit-macro` in
 `docker/docker-compose.yml`.
@@ -121,7 +121,9 @@ action_msgs/srv/CancelGoal "{}"`.
 (`src/plugins/stepit_tests/tests/fake/fake_robot.hpp`, `fake_controller_manager.hpp`), so no hardware and
 no controller manager are needed. New behaviors and objectives are expected to be covered the
 same way. The fakes use the real topic, action and service names, so on the robot's ROS domain
-they reach the real robot: run them with `ROS_DOMAIN_ID=77`.
+they reach the real robot: both `test.sh` scripts therefore set `ROS_DOMAIN_ID` to 77, or to
+`STEPIT_TEST_DOMAIN_ID`, overriding the shell's. Run the tests through them, never with a plain
+`colcon test`.
 
 ## CI
 
