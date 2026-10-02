@@ -15,7 +15,9 @@
 # The ROS2 services install the system packages their code needs (rosdep, i.e.
 # `update.sh`) the first time their container starts, unless their image has
 # them already: `dock.sh build` installs them while compiling, and saves that
-# container as the service's image, marker file included. The marker file lives
+# container as the service's image, marker file included. Both refresh the
+# package lists first: the image's own come from a cached layer, and name
+# versions that Ubuntu may since have replaced, which apt can no longer fetch. The marker file lives
 # in the container, so a recreated container of an image without it installs
 # them again.
 #
@@ -63,7 +65,7 @@ services:
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch robot_bringup launch.py launch_rviz:=${LAUNCH_RVIZ:-false}'
@@ -93,7 +95,7 @@ services:
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && source ~/rig/install/plugins/setup.bash
@@ -131,7 +133,7 @@ services:
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/stepit-macro/setup.bash
         && exec ros2 launch stepit_teleop teleop.launch.py'
@@ -181,7 +183,7 @@ services:
     command:
       - bash
       - -c
-      - '{ [ -f ~/.dependencies ] || { update.sh && touch ~/.dependencies; }; }
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch stepit_camera camera.launch.py'

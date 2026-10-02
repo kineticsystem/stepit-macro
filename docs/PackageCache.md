@@ -87,6 +87,10 @@ A container started from an image that `dock.sh build` did not compile, e.g.
 after a plain `docker compose build`, still runs `update.sh` on its first start,
 as before.
 
+Both run `sudo apt-get update` before `update.sh`. The image's package lists
+come from a cached layer and grow old: once Ubuntu replaces a package, they name
+a version that is gone, and apt fails with `404 Not Found`.
+
 ### Day to day
 
 Nothing to do: `./docker/dock.sh build` and `./docker/dock.sh start` start the
