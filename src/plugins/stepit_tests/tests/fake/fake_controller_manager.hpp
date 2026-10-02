@@ -40,8 +40,9 @@ namespace stepit_tests
 /**
  * @brief A stand-in for the controller manager of the robot.
  *
- * It answers list_controllers and switch_controller, keeps the state of each
- * controller, and records the last switch it was asked for.
+ * It answers list_controllers and switch_controller, one request at a time
+ * and in the order they arrive, as the real one does, keeps the state of each
+ * controller, and records the switches it was asked for.
  */
 class FakeControllerManager
 {
@@ -97,6 +98,13 @@ public:
     return last_switch_;
   }
 
+  /// @brief Every switch the controller manager was asked for, in the order it handled them.
+  std::vector<SwitchController::Request> switches() const
+  {
+    const std::lock_guard<std::mutex> lock{ mutex_ };
+    return switches_;
+  }
+
   /// @brief The state of a controller: "active", "inactive" or "" if unknown.
   std::string stateOf(const std::string& name) const
   {
@@ -128,6 +136,7 @@ private:
   {
     const std::lock_guard<std::mutex> lock{ mutex_ };
     last_switch_ = *request;
+    switches_.push_back(*request);
 
     const auto find = [this](const std::string& name) {
       return std::find_if(controllers_.begin(), controllers_.end(), [&name](const auto& c) { return c.name == name; });
@@ -167,6 +176,7 @@ private:
   mutable std::mutex mutex_;
   std::vector<Controller> controllers_;
   std::optional<SwitchController::Request> last_switch_;
+  std::vector<SwitchController::Request> switches_;
 
   rclcpp::executors::SingleThreadedExecutor executor_;
   std::thread spinner_;
