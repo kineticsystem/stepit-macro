@@ -14,6 +14,7 @@
 - [Running the Rig](#running-the-rig)
   - [Open the Pages](#open-the-pages)
   - [Start the Rig with the Pi](#start-the-rig-with-the-pi)
+- [Logging in with an SSH Key](#logging-in-with-an-ssh-key)
 - [Troubleshooting](#troubleshooting)
 
 ## Introduction
@@ -190,6 +191,44 @@ docker update --restart unless-stopped stepit-macro
 ```
 
 Docker then starts the rig with the Pi, until we stop it with `./docker/dock.sh stop`. The setting lasts until the container is recreated, e.g. by `./docker/dock.sh clean`: run the command again after that.
+
+## Logging in with an SSH Key
+
+A key lets a PC log in to the Pi without its password: we type the password once, to install the key. Scripts and tools on the PC, e.g. a coding assistant checking the rig, can then run commands on the Pi. Run these commands on the PC, in a terminal, replacing `<user>` with the user name on the Pi.
+
+Create a key of its own for the Pi, so that it can be withdrawn without touching the PC's other keys. It has no passphrase, so that nothing has to be typed when it is used; it only opens the Pi:
+
+```
+ssh-keygen -t ed25519 -f ~/.ssh/id_stepit -N "" -C "stepit-macro PC"
+```
+
+Install it on the Pi. This asks for the Pi's password, once:
+
+```
+ssh-copy-id -i ~/.ssh/id_stepit.pub <user>@stepit.local
+```
+
+Tell SSH to use it for the Pi, under the short name `stepit`:
+
+```
+cat >> ~/.ssh/config <<'EOF'
+
+Host stepit stepit.local
+    HostName stepit.local
+    User <user>
+    IdentityFile ~/.ssh/id_stepit
+    IdentitiesOnly yes
+EOF
+chmod 600 ~/.ssh/config
+```
+
+Check it. This prints the Pi's name, without asking for a password:
+
+```
+ssh stepit hostname
+```
+
+To withdraw the access, delete the line of the key, which ends with `stepit-macro PC`, from `~/.ssh/authorized_keys` on the Pi, and the files `~/.ssh/id_stepit` and `~/.ssh/id_stepit.pub` on the PC.
 
 ## Troubleshooting
 
