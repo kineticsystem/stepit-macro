@@ -147,6 +147,8 @@ Build the image, then install the dependencies and compile the code of every mod
 
 The packages it downloads, for the image and for the dependencies of each module (rosdep), are kept on this machine by `stepit-apt-cache`, a local proxy that `build` starts, so that later builds take them from the disk. They are in the Docker volume `stepit-macro_apt-cache`, which `clean` keeps; remove it with `docker volume rm stepit-macro_apt-cache` to free the space. The dependencies are installed into the image while compiling, so the container starts without installing them again. See [The Package Cache](docs/PackageCache.md), which also describes the cache of CI.
 
+To install the rig on the Raspberry Pi 5 that runs it, see [Running the Rig on a Raspberry Pi 5](docs/pi5.md).
+
 This is also how we pick up a change to the `Dockerfile` or to the code: it rebuilds only the image layers that changed, and colcon only the packages that changed. To build part of the rig, see [Working on a Module](#working-on-a-module).
 
 ## Running the Application
