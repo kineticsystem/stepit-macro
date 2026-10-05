@@ -13,7 +13,7 @@ export function CameraSettings() {
   const busy = useCommander((s) => s.busy);
 
   return (
-    <section className="card">
+    <div className="camera-settings">
       <h2>Camera</h2>
       {error && <p className="message error">{error}</p>}
       {!error && settings.length === 0 && <p className="muted">Reading the settings…</p>}
@@ -38,6 +38,6 @@ export function CameraSettings() {
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

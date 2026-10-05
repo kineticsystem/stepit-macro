@@ -1,15 +1,16 @@
 import { useRef, type PointerEvent } from 'react';
 import { axisAt, turnsPerSecond } from '../motion/axis';
 
-/** The diameter of the knob, in pixels: a finger's width. Keep in step with styles.css. */
-const KNOB = 56;
+/** The diameter of the knob, in pixels: a thumb's width. Keep in step with styles.css. */
+const KNOB = 64;
 
 /**
- * A slider that works like a stick of a gamepad: the knob rests at the centre;
- * dragging it away asks for a speed, up to the motors' limit at the ends, one
- * way or the other; letting it go brings it back to the centre, and stops.
+ * A vertical slider that works like a stick of a gamepad, for a thumb at the
+ * edge of a tablet: the knob rests at the centre; pushing it up or down asks
+ * for a speed, up to the motors' limit at the ends; letting it go brings it
+ * back to the centre, and stops.
  *
- * It follows the pointer that grabbed it, so that two fingers drive two
+ * It follows the pointer that grabbed it, so that two thumbs drive the two
  * sliders at once on a touch screen.
  */
 export function Slider(props: {
@@ -23,7 +24,7 @@ export function Slider(props: {
 
   const valueAt = (e: PointerEvent) => {
     const rect = track.current!.getBoundingClientRect();
-    return axisAt(e.clientX, rect.left + KNOB / 2, rect.width - KNOB);
+    return axisAt(e.clientY, rect.top + KNOB / 2, rect.height - KNOB);
   };
   const down = (e: PointerEvent<HTMLDivElement>) => {
     if (props.disabled || pointer.current !== undefined) return;
@@ -43,10 +44,7 @@ export function Slider(props: {
   const speed = turnsPerSecond(props.value);
   return (
     <div className={`slider${props.disabled ? ' disabled' : ''}${props.value !== 0 ? ' moving' : ''}`}>
-      <div className="slider-label">
-        <span>{props.label}</span>
-        <span className="mono">{speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(2)} turns/s`}</span>
-      </div>
+      <div className="slider-label">{props.label}</div>
       <div
         ref={track}
         className="slider-track"
@@ -56,13 +54,17 @@ export function Slider(props: {
         onPointerCancel={up}
         onLostPointerCapture={up}
       >
-        <span className="slider-end">−</span>
-        <span className="slider-centre" />
         <span className="slider-end">+</span>
+        <span className="slider-centre" />
+        <span className="slider-end">−</span>
         <span
           className="slider-knob"
-          style={{ left: `calc(50% + ${props.value} * (50% - ${KNOB / 2}px))` }}
+          style={{ top: `calc(50% - ${props.value} * (50% - ${KNOB / 2}px))` }}
         />
+      </div>
+      <div className="slider-speed mono">
+        {speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(1)}`}
+        {speed !== 0 && <span className="muted"> turns/s</span>}
       </div>
     </div>
   );

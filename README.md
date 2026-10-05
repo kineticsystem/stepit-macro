@@ -23,7 +23,7 @@ StepIt UI is the application of [StepIt Macro](https://github.com/kineticsystem/
 - See what the camera sees, live, and set the ISO, the shutter speed, the aperture, the white balance and the exposure compensation.
 - Take a shot, fired by the Freezer board with the lights, and see and download its pictures.
 - Switch the lights on and off.
-- Drive the rotary stage and the rail by hand, with two sliders that work like the sticks of a gamepad.
+- Drive the rotary stage and the rail by hand, with two vertical sliders under the thumbs, which work like the sticks of a gamepad.
 - Stop whatever the rig does, from a button always in the top bar.
 
 It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS in the browser: it talks to the rig through [rosbridge](https://github.com/RobotWebTools/rosbridge_suite), a WebSocket that speaks JSON.
@@ -33,15 +33,17 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | Part | What it does | Through |
 |---|---|---|
 | Top bar | Whether the page reaches the rig, which task runs, and **Stop**, which stops every task, whoever started it, and the sliders. | the commander |
-| Live view | The camera's live view, started and stopped from the page. | the camera's driver, and web_video_server |
-| Shot | **Take a shot** runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. Each picture is shown as it arrives, the latest large, with **Download**. | the commander, then the camera's driver |
-| Lights | A switch, which shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
-| Camera | The settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
-| Motion | **Manual drive** runs the objective `ActivateTeleop`; the sliders then drive the rotary stage (`joint1`) and the rail (`joint2`). The button stays, and shows **On** while the sliders drive the joints. | the commander, then `ui_teleop` |
+| **Live view** | The camera's live view, in the middle, started and stopped from the toolbar above it. The messages of the shot and of the lights show over the bottom of the picture. | the camera's driver, and web_video_server |
+| **Take a shot** | Runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. | the commander, then the camera's driver |
+| **Lights** | A switch, which shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
+| **Manual drive** | Runs the objective `ActivateTeleop`; the sliders then drive the joints. The button stays, and shows **On** while they do. | the commander |
+| **Camera** | A panel of the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
+| **Pictures** | A panel of the pictures of the session, the latest large, each with **Download**. It opens by itself when a picture arrives. | the camera's driver |
+| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, the rail (`joint2`) on the right. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.
 
-On a screen wider than 900 px, e.g. a tablet held sideways, the live view and the sliders are on the left and the cards on the right; on a narrower one, they are one below the other. The settings menu, under the gear, chooses the theme and, for debugging, other servers than those of the computer that served the page.
+The page is made for a tablet held in both hands, sideways or upright: the sliders take the two edges, the live view the middle, and the toolbar above it wraps on several rows on a narrow screen. The settings menu, under the gear, chooses the theme and, for debugging, other servers than those of the computer that served the page.
 
 ## Running the Application
 
@@ -120,7 +122,7 @@ The sliders never send velocities. The page sends them as a gamepad, a `sensor_m
 
 - While a slider is held away from its centre, the axes are sent 20 times a second, even when they do not change. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints. The velocity controller would otherwise keep the last velocity.
 - Letting a slider go sends it once at rest, and then nothing: `ui_teleop` leaves the velocity controller to others, e.g. the gamepad.
-- Each slider follows the finger that grabbed it, so two fingers drive both at once. The page stops both when it is hidden, e.g. when the tablet goes to sleep.
+- Each slider follows the thumb that grabbed it, so two thumbs drive both at once. The page stops both when it is hidden, e.g. when the tablet goes to sleep.
 - A small zone around the centre is 0: a finger never rests exactly there.
 
 The sliders work while the velocity controller runs, which the page reads from the controller manager every 2 seconds: any objective may change it, e.g. a move, which takes the trajectory controller instead.
