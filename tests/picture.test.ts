@@ -2,17 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadPicture } from '../src/camera/picture';
 import { tiff } from './tiff';
 
-/** A web server that serves one file, with or without ranges, and records the ranges asked for. */
+/**
+ * A web server that serves one file, with or without ranges, and records the
+ * ranges asked for. Like the camera's, cpp-httplib 0.14, it answers a range
+ * past the end of the file with a Content-Length longer than the file, which a
+ * browser drops: the test fails on such a range.
+ */
 function serve(file: Uint8Array, ranges = true) {
   const asked: string[] = [];
   vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+    if (init?.method === 'HEAD') return new Response(null, { status: 200, headers: { 'Content-Length': String(file.length) } });
     const range = new Headers(init?.headers).get('Range') ?? '';
     asked.push(range);
     const [, from, to] = /bytes=(\d+)-(\d+)/.exec(range)!.map(Number);
+    if (to >= file.length) throw new TypeError('Failed to fetch: the range goes past the end of the file');
     if (!ranges) return new Response(file as BlobPart, { status: 200 });
-    const end = Math.min(to, file.length - 1);
-    return new Response(file.slice(from, end + 1) as BlobPart, {
-      status: 206, headers: { 'Content-Range': `bytes ${from}-${end}/${file.length}` },
+    return new Response(file.slice(from, to + 1) as BlobPart, {
+      status: 206, headers: { 'Content-Range': `bytes ${from}-${to}/${file.length}` },
     });
   }));
   return asked;
@@ -24,9 +30,17 @@ describe('a picture from the web server', () => {
   beforeEach(() => vi.stubGlobal('URL', { createObjectURL: () => 'blob:preview' }));
   afterEach(() => vi.unstubAllGlobals());
 
-  it('is a JPEG shown as it is', async () => {
-    serve(new Uint8Array([...jpeg, ...new Array(100).fill(0)]));
+  it('is a JPEG shown as it is, of which only the size is asked', async () => {
+    const asked = serve(new Uint8Array([...jpeg, ...new Array(100).fill(0)]));
     await expect(loadPicture('/pictures/IMG_0001.JPG', 'IMG_0001.JPG')).resolves.toEqual({ size: 107, url: '/pictures/IMG_0001.JPG' });
+    expect(asked).toEqual([]);
+  });
+
+  it('is a RAW smaller than the start read, without a range past its end', async () => {
+    const file = tiff(jpeg);
+    const asked = serve(file);
+    await expect(loadPicture('/pictures/IMG_0001.CR2', 'IMG_0001.CR2')).resolves.toMatchObject({ size: file.length, preview: true });
+    expect(asked).toEqual([`bytes=0-${file.length - 1}`]);
   });
 
   it('is a RAW shown through its preview, read without the rest of the file', async () => {

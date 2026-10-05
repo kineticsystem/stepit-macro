@@ -2,6 +2,11 @@
 // page to show it. A JPEG is shown from the server as it is. A RAW file, e.g.
 // 29 MB for a 5D Mark II, is never loaded whole: only its start, to find its
 // JPEG preview, and then the preview, with two Range requests.
+//
+// The size comes first, from a HEAD request, and no range goes past the end of
+// the file: the camera's web server, cpp-httplib 0.14, answers a range past
+// the end with a Content-Length longer than what it sends, and the browser
+// drops the answer. A JPEG smaller than the start read, e.g. 55 KB, did.
 
 import { isJpeg, previewLocation } from './raw';
 
@@ -18,8 +23,11 @@ export interface LoadedPicture {
 }
 
 export async function loadPicture(file: string, name: string): Promise<LoadedPicture> {
-  const head = await fetchRange(file, 0, HEAD_SIZE - 1);
-  if (/\.jpe?g$/i.test(name)) return { size: head.size, url: file };
+  const size = await fetchSize(file);
+  if (/\.jpe?g$/i.test(name)) return { size, url: file };
+  if (size === 0) return { size };
+
+  const head = await fetchRange(file, 0, Math.min(HEAD_SIZE, size) - 1);
 
   const at = previewLocation(head.bytes);
   if (!at || at.offset + at.length > head.size) return { size: head.size };
@@ -28,6 +36,15 @@ export async function loadPicture(file: string, name: string): Promise<LoadedPic
     : (await fetchRange(file, at.offset, at.offset + at.length - 1)).bytes;
   if (!isJpeg(jpeg)) return { size: head.size };
   return { size: head.size, url: URL.createObjectURL(new Blob([jpeg as BlobPart], { type: 'image/jpeg' })), preview: true };
+}
+
+/** The size of a file, in bytes, from the Content-Length of a HEAD request. */
+async function fetchSize(url: string): Promise<number> {
+  const response = await fetch(url, { method: 'HEAD' });
+  if (!response.ok) throw new Error(`Cannot load ${url}: ${response.status} ${response.statusText}`.trim());
+  const size = Number(response.headers.get('Content-Length'));
+  if (!Number.isFinite(size)) throw new Error(`Cannot load ${url}: no size`);
+  return size;
 }
 
 /** The bytes from start to end, both included, and the size of the whole file. */

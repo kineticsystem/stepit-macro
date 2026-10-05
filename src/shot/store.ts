@@ -2,10 +2,14 @@
 // objective TakeShot, which StepIt Freezer fires through the camera's jack,
 // with the lights. The camera driver then downloads the picture by itself, and
 // tells of it on <camera>/picture; the page loads it from the camera's web
-// server.
+// server, and shows the latest in place of the live view.
+//
+// A shot stops the live view first: the two do not go together. A Canon EOS
+// breaks its live view during a shot anyway, and the picture then takes the
+// place of the live view.
 
 import { create } from 'zustand';
-import { camera } from '../camera/store';
+import { camera, useCamera } from '../camera/store';
 import { Camera } from '../camera/camera';
 import { loadPicture } from '../camera/picture';
 import { useCommander } from '../commander/store';
@@ -49,6 +53,7 @@ export const useShot = create<ShotState>((set) => ({
 
   async takeShot() {
     set({ state: 'shooting', message: 'Shooting…' });
+    if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
     let arrived = 0;
     let first: () => void = () => {};
     const came = new Promise<void>((resolve) => (first = resolve));

@@ -17,9 +17,11 @@ describe('a vertical slider as an axis', () => {
     expect(axisAt(200 - DEAD_ZONE * 100 * 2, 100, 200)).toBeGreaterThan(0);
   });
 
-  it('asks for the motors limit, 3 turns/s, at the ends', () => {
+  it('asks for the motors limit, 3 turns/s, at the ends, or for the speed of the slider', () => {
     expect(turnsPerSecond(1)).toBe(3);
     expect(turnsPerSecond(-0.5)).toBe(-1.5);
+    expect(turnsPerSecond(1, 1.5)).toBe(1.5);
+    expect(turnsPerSecond(-0.5, 1.5)).toBe(-0.75);
   });
 
   it('is 0 on a slider that has no height, e.g. before it is laid out', () => {

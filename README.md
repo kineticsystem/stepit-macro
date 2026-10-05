@@ -33,13 +33,12 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | Part | What it does | Through |
 |---|---|---|
 | Top bar | Whether the page reaches the rig, which task runs, and **Stop**, which stops every task, whoever started it, and the sliders. | the commander |
-| **Live view** | The camera's live view, in the middle, started and stopped from the toolbar above it. The messages of the shot and of the lights show over the bottom of the picture. | the camera's driver, and web_video_server |
-| **Take a shot** | Runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. | the commander, then the camera's driver |
-| **Lights** | A switch, which shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
+| **Live view** | The camera's live view, in the middle, started and stopped from the toolbar above it. When it is off, the middle shows the last photo, with its name and **Download**. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
+| **Take a shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. The picture takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
+| **Lights** | A button, lit yellow while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | Runs the objective `ActivateTeleop`; the sliders then drive the joints. The button stays, and shows **On** while they do. | the commander |
 | **Camera** | A panel of the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
-| **Pictures** | A panel of the pictures of the session, the latest large, each with **Download**. It opens by itself when a picture arrives. | the camera's driver |
-| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, the rail (`joint2`) on the right. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
+| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, up to 1.5 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.
 
@@ -118,7 +117,7 @@ The page knows whether an objective runs, whoever started it, from the status to
 
 ### The Sliders
 
-The sliders never send velocities. The page sends them as a gamepad, a `sensor_msgs/Joy` on `/ui/joy` with one axis per slider, from -1 to 1, and `ui_teleop` in the rig, a second `gamepad_teleop`, turns the axes into velocities for the velocity controller, up to the motors' limit at the ends, 3 turns/s.
+The sliders never send velocities. The page sends them as a gamepad, a `sensor_msgs/Joy` on `/ui/joy` with one axis per slider, from -1 to 1, and `ui_teleop` in the rig, a second `gamepad_teleop`, turns the axes into velocities for the velocity controller, up to their speed at the ends: 1.5 turns/s for the rotary stage, which the subject turns on, and the motors' limit, 3 turns/s, for the rail. The page only labels the sliders with these speeds (`SLIDERS` in `motion/store.ts`); `ui_teleop`'s configuration, in the rig's `rig.yaml`, sets them.
 
 - While a slider is held away from its centre, the axes are sent 20 times a second, even when they do not change. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints. The velocity controller would otherwise keep the last velocity.
 - Letting a slider go sends it once at rest, and then nothing: `ui_teleop` leaves the velocity controller to others, e.g. the gamepad.
@@ -129,7 +128,9 @@ The sliders work while the velocity controller runs, which the page reads from t
 
 ### The Pictures
 
-The camera is fired by StepIt Freezer, through its jack, not over USB: the camera's driver sees the new file, downloads it, and tells of it on `/camera/picture`. The page listens before the shot, so that the picture cannot come first, and loads it from the camera's web server, as StepIt Camera's test page does: a JPEG as it is, the preview inside a RAW with two `Range` requests. The server allows every origin, so the page, served from another port, can load the pictures and download them: the `download` attribute of a link is ignored across origins, so **Download** fetches the file first.
+We stream to frame the subject, and take pictures with the live view off: a shot stops it, and the last picture takes its place. A Canon EOS breaks its live view during a shot anyway.
+
+The camera is fired by StepIt Freezer, through its jack, not over USB: the camera's driver sees the new file, downloads it, and tells of it on `/camera/picture`. The page listens before the shot, so that the picture cannot come first, and loads it from the camera's web server, as StepIt Camera's test page does: a JPEG as it is, the preview inside a RAW with two `Range` requests. The server allows every origin, so the page, served from another port, can load the pictures and download them: the `download` attribute of a link is ignored across origins, so **Download** fetches the file first. The page asks the size of a picture first, with a `HEAD` request, and never reads past its end: the server, cpp-httplib 0.14, answers a range past the end with a wrong `Content-Length`, which the browser drops.
 
 ## Tests
 
