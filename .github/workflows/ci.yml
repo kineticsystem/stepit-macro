@@ -1,10 +1,13 @@
-# Builds and tests the rig's two workspaces, each the way its container does,
-# with the scripts of ../../bin, in a plain ROS image:
+# Builds and tests the rig's two workspaces with the scripts of ../../bin, in a
+# plain ROS image:
 #
 # - src/plugins, on top of the commander's workspace, which is built first from
-#   the stepit-commander submodule;
+#   the stepit-commander submodule; in the container, it is on top of the
+#   modules' workspace, which holds the commander too;
 # - src/stepit-macro, with the commander's interfaces, which it builds from the
 #   same submodule.
+#
+# The modules are not built here: each has its own CI.
 #
 # industrial_ci, which the modules use, builds one workspace from the sources
 # of the repo: it cannot build one on top of a submodule's.
@@ -33,8 +36,8 @@ jobs:
       run:
         shell: bash
     env:
-      # Where bin/plugins finds the commander's workspace.
-      COMMANDER_WS: ${{ github.workspace }}/modules/stepit-commander
+      # The workspace that bin/plugins builds on: the commander's alone.
+      UNDERLAY: ${{ github.workspace }}/modules/stepit-commander/install
     steps:
       - name: Keep the downloaded packages
         run: rm /etc/apt/apt.conf.d/docker-clean

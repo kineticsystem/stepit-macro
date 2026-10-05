@@ -2,12 +2,20 @@
 # sourced from ~/.bashrc. Variables are set with ENV in the Dockerfile instead.
 
 source /opt/ros/jazzy/setup.bash
-if [ -f ~/ws/install/stepit-macro/setup.bash ]; then
-    source ~/ws/install/stepit-macro/setup.bash
-fi
 
-# Short names for the scripts in bin/stepit-macro, which are on the PATH. Aliases
-# rather than symlinks: `test` is a bash builtin, which wins over a PATH lookup.
+# The three workspaces, in the order they are built: the modules, the rig's
+# plugin on top of them, and the rig's own programs.
+for workspace in modules plugins stepit-macro; do
+    if [ -f ~/ws/install/$workspace/setup.bash ]; then
+        source ~/ws/install/$workspace/setup.bash
+    fi
+done
+
+# Short names for the scripts in bin, which are on the PATH: the whole rig.
+# Aliases rather than symlinks: `test` is a bash builtin, which wins over a PATH
+# lookup.
 alias build='build.sh'
 alias test='test.sh'
 alias update='update.sh'
+# The editor's validator, on the rig's objectives.
+alias validate='~/ws/modules/stepit-editor/bin/validate.sh'

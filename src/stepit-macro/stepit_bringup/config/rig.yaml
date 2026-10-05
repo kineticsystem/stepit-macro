@@ -1,0 +1,92 @@
+# The configuration of the whole rig: the one file to edit to set it up, e.g.
+# the serial ports of the controllers. rig.launch.py reads it when the rig
+# starts: restart the rig to apply a change, no build is needed.
+#
+# It has two parts:
+#
+# - `launch`: the launch arguments of each module, given to its launch file.
+#   An argument the launch file does not declare stops the rig, so that a typo
+#   is not silently ignored.
+# - every other section: the parameters of a node, as in any ROS2 parameter
+#   file. The launch file gives them to the commander, the camera and the
+#   Freezer as their `params_file`, loaded after the module's own: only the
+#   values that differ from the module's need to be here. A launch argument
+#   that sets the same parameter, e.g. the Freezer's usb_port, wins.
+#
+# The serial ports are best named by /dev/serial/by-id, e.g.
+# /dev/serial/by-id/usb-Teensyduino_USB_Serial_12345-if00: /dev/ttyACM0 and
+# /dev/ttyUSB0 depend on which controller was plugged in first. List them with
+# `ls -l /dev/serial/by-id`.
+
+launch:
+  # StepIt Driver, the robot: robot_bringup/launch.py.
+  robot:
+    # Fake motors, or the microcontroller on usb_port.
+    use_dummy: true
+    usb_port: /dev/ttyACM0
+    baud_rate: 9600
+    # RViz, on the host's display.
+    launch_rviz: false
+
+  # StepIt Commander, the action server running the objectives, and the
+  # rosbridge the editor reaches it through: stepit_server/commander.launch.py.
+  commander:
+    rosbridge_port: 9090
+
+  # StepIt Camera, the camera on USB, found by libgphoto2: there is no port to
+  # set. stepit_camera/camera.launch.py.
+  camera:
+    fake: false
+    stream: false
+    web_port: 8090        # the test page and the pictures
+    web_video_port: 8081  # the live view
+    rosbridge_port: 9091
+
+  # Freezer Driver, the board that fires the cameras and the flashes:
+  # freezer_node/freezer.launch.py.
+  freezer:
+    # A fake controller, or the Arduino Nano on usb_port.
+    use_fake: true
+    usb_port: /dev/ttyUSB0
+    web_port: 8092        # the board page
+    rosbridge_port: 9092
+
+  # The gamepad: stepit_teleop/teleop.launch.py.
+  teleop:
+    dev: /dev/input/js0
+
+  # StepIt Editor, the web editor of the objectives, which opens the rig's own.
+  # Not a launch file: these are the only arguments it takes.
+  editor:
+    port: 8080
+
+# The commander: the behaviors and the trees it loads, as
+# "package_name/subfolder".
+stepit_server:
+  ros__parameters:
+    plugins:
+      - stepit_behaviors/bt_plugins
+    behavior_trees:
+      - stepit_objectives/objectives
+
+# The camera, and its web server, which serves the pictures from the same
+# folder. The repo is mounted at ~/ws: the pictures land in its `pictures`
+# folder on the host. See camera.yaml of StepIt Camera for the other
+# parameters, e.g. the settings applied to the camera when it connects.
+camera:
+  ros__parameters:
+    download_directory: &pictures ~/ws/pictures
+    # iso: "400"
+    # shutter_speed: "1/125"
+    # aperture: "8"
+
+web_server:
+  ros__parameters:
+    download_directory: *pictures
+    web_directory: ~/ws/modules/stepit-camera/web/dist
+
+# The Freezer: see freezer.yaml of Freezer Driver for its parameters, e.g. the
+# sequences it fires. use_fake and usb_port are launch arguments, above.
+freezer:
+  ros__parameters:
+    baudrate: 9600

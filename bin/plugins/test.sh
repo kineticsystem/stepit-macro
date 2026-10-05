@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# Test the rig's plugin, src/plugins, inside the stepit-commander container.
+# Test the rig's plugin, src/plugins, inside the stepit-macro container.
 # The tests use the robot's own topic, action and service names, so on the
 # robot's ROS domain they would move it. They always run on a domain of their
 # own, 77, or STEPIT_TEST_DOMAIN_ID: whatever ROS_DOMAIN_ID the shell has is the
