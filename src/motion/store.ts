@@ -11,7 +11,7 @@
 
 import { create } from 'zustand';
 import { useCommander } from '../commander/store';
-import { onConnected, ros, status } from '../ros/connection';
+import { onConnected, onDisconnected, ros, status } from '../ros/connection';
 import { JoyPublisher } from './joy';
 
 /**
@@ -95,17 +95,24 @@ async function refresh() {
 /**
  * Follows the controllers while the page is open, and stops the sliders when
  * the page is hidden, e.g. the tablet goes to sleep with a finger on one.
+ * Disables them while disconnected, when their messages would be dropped:
+ * they come back with the controllers, read again on the next connection.
  * Returns a function that stops it.
  */
 export function followMotion(): () => void {
   void refresh();
   const timer = setInterval(() => void refresh(), POLL_PERIOD);
   const unsubscribe = onConnected(() => void refresh());
+  const unsubscribeLost = onDisconnected(() => {
+    useMotion.setState({ enabled: false });
+    useMotion.getState().release();
+  });
   const hidden = () => document.hidden && useMotion.getState().release();
   document.addEventListener('visibilitychange', hidden);
   return () => {
     clearInterval(timer);
     unsubscribe();
+    unsubscribeLost();
     document.removeEventListener('visibilitychange', hidden);
     useMotion.getState().release();
   };

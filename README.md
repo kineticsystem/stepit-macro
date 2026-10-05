@@ -126,7 +126,7 @@ The sliders never send velocities. The page sends them as a gamepad, a `sensor_m
 - Each slider follows the thumb that grabbed it, so two thumbs drive both at once. The page stops both when it is hidden, e.g. when the tablet goes to sleep.
 - A small zone around the centre is 0: a finger never rests exactly there.
 
-The sliders work while the velocity controller runs, which the page reads from the controller manager every 2 seconds: any objective may change it, e.g. a move, which takes the trajectory controller instead.
+The sliders work while the velocity controller runs, which the page reads from the controller manager every 2 seconds: any objective may change it, e.g. a move, which takes the trajectory controller instead. They are disabled while the page is disconnected from the rig, and come back when it reconnects, if the velocity controller still runs.
 
 ### The Pictures
 
