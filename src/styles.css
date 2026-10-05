@@ -1,0 +1,273 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f1f3f6;
+  --border: #dde1e7;
+  --text: #1d2330;
+  --muted: #6b7384;
+  --accent: #2f6fed;
+  --accent-soft: #e4edff;
+  --hover: #eef1f5;
+  --selected: #dce8ff;
+  --guide: #e3e6eb;
+  --error: #d93843;
+  --error-soft: #fde8ea;
+  --warning: #b86e00;
+  --warning-soft: #fff3dc;
+  --ok: #1d8a4f;
+  --ref: #7a3fd1;
+
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+/* Set by settings.ts: the chosen theme, or the system's in Auto mode. */
+:root[data-theme="dark"] {
+  --bg: #14171c;
+  --panel: #1b1f26;
+  --panel-2: #20252d;
+  --border: #2d333d;
+  --text: #e2e6ee;
+  --muted: #8b93a3;
+  --accent: #5b92ff;
+  --accent-soft: #1f2d4a;
+  --hover: #242a33;
+  --selected: #243759;
+  --guide: #2b313a;
+  --error: #ff6b74;
+  --error-soft: #3a1f24;
+  --warning: #f0a93b;
+  --warning-soft: #3a2e1a;
+  --ok: #4fc585;
+  --ref: #b88cff;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  /* Sized for a finger on a tablet, and read from arm's length. */
+  font: 15px/1.4 var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+button:hover:not(:disabled) { background: var(--hover); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+input, select, textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+select { width: auto; }
+.mono, code { font-family: var(--mono); font-size: 13px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row-spacer { flex: 1; }
+
+.icon { flex: none; display: block; width: 18px; height: 18px; }
+.icon-button {
+  min-height: 44px; min-width: 44px;
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+.icon-button:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+.icon-button.active { color: var(--accent); background: var(--accent-soft); }
+
+.settings { position: relative; }
+.settings-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 15;
+  width: 320px; max-width: calc(100vw - 24px); padding: 14px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+}
+.settings-popover h2 { margin: 0 0 10px; font-size: 15px; }
+.settings-popover p { margin: 0 0 4px; }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-group { margin-top: 16px !important; }
+.setting-field { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+.setting-label { color: var(--muted); }
+
+/* Layout */
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.topbar {
+  flex: none;
+  display: flex; align-items: center; gap: 14px;
+  min-height: 56px; padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.brand { font-weight: 700; font-size: 16px; letter-spacing: 0.02em; }
+
+.task { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.task-state { color: var(--muted); white-space: nowrap; }
+.task-state.active { color: var(--accent); font-weight: 600; }
+.task-failure {
+  color: var(--error); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw;
+}
+/* Stop is always within reach, whatever runs. */
+button.stop { background: var(--error); border-color: var(--error); color: #fff; font-weight: 600; }
+button.stop:hover:not(:disabled) { background: var(--error); filter: brightness(1.08); }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+.badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.badge-connected .dot { background: var(--ok); }
+.badge-connecting .dot { background: var(--warning); }
+.badge-disconnected { color: var(--error); }
+.badge-disconnected .dot { background: var(--error); }
+
+.page {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+.main-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--border); }
+
+.panel-header {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 52px; padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-header h1 { font-size: 14px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.panel-actions { margin-left: auto; display: flex; gap: 6px; }
+
+/* The live view */
+
+.live-view { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+.viewport {
+  position: relative; flex: 1; min-height: 160px;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d0f12;
+}
+.viewport img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; transition: filter 0.2s; }
+/* During a shot: the last frame, greyed out, until the live view comes back. */
+.viewport.paused img { filter: grayscale(1) brightness(0.55); }
+.viewport-message {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px; text-align: center; color: #c9ced8;
+}
+.viewport-message p { max-width: 420px; margin: 0; }
+
+/* The cards */
+
+.side { overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.card { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.card h2 { margin: 0 0 10px; font-size: 15px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.card-header h2 { margin: 0; }
+
+.fields { display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label { color: var(--muted); }
+.field select { width: 100%; }
+
+.message { margin: 8px 0 0; }
+.message.error { color: var(--error); }
+
+/* The shot */
+
+.shutter { width: 100%; min-height: 56px; font-size: 16px; }
+.shot { margin: 12px 0 0; }
+.shot img { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+.shot-placeholder {
+  display: flex; align-items: center; justify-content: center; height: 120px;
+  border: 1px dashed var(--border); border-radius: 8px; color: var(--muted);
+}
+.shot figcaption { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.shot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pictures { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--border); }
+.pictures .shot { margin: 0; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.pictures .shot figcaption { margin: 0; }
+
+/* Manual drive, once on. */
+button.engaged { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+.state-chip {
+  padding: 1px 8px; border-radius: 10px; background: var(--ok); color: #fff; font-size: 12px; font-weight: 700;
+}
+
+/* The lights */
+
+.switch { width: 100%; justify-content: flex-start; min-height: 56px; }
+.switch-label { flex: 1; text-align: left; font-weight: 600; }
+.switch-track {
+  position: relative; width: 52px; height: 30px; border-radius: 15px;
+  background: var(--guide); transition: background 0.15s;
+}
+.switch-thumb {
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.3); transition: left 0.15s;
+}
+.switch.on { border-color: var(--warning); }
+.switch.on .icon { color: var(--warning); }
+.switch.on .switch-track { background: var(--warning); }
+.switch.on .switch-thumb { left: 25px; }
+
+/* The sliders */
+
+.motion { margin: 12px; }
+.slider { margin-top: 12px; }
+.slider-label { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.slider-track {
+  position: relative; height: 64px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
+  border: 1px solid var(--border); border-radius: 32px; background: var(--panel-2);
+  color: var(--muted); font-size: 20px;
+  /* The page must not scroll or zoom while a finger drives the slider. */
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.slider-centre { position: absolute; left: 50%; top: 10px; bottom: 10px; width: 2px; background: var(--border); }
+.slider-knob {
+  position: absolute; top: 3px; width: 56px; height: 56px; margin-left: -28px;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  /* Back to the centre smoothly when let go; under the finger at once. */
+  transition: left 0.15s ease-out;
+}
+.slider.moving .slider-knob { transition: none; }
+.slider.disabled .slider-track { opacity: 0.45; }
+.slider.disabled .slider-knob { background: var(--muted); }
+
+/* Too narrow for two columns, e.g. a tablet held upright: one below the
+   other, and the page scrolls. */
+@media (max-width: 900px) {
+  .app { height: auto; min-height: 100%; }
+  .page { grid-template-columns: 1fr; }
+  .main-column { border-right: 0; border-bottom: 1px solid var(--border); }
+  .viewport { aspect-ratio: 3 / 2; flex: none; }
+}
