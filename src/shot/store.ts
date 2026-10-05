@@ -6,7 +6,8 @@
 //
 // A shot stops the live view first: the two do not go together. A Canon EOS
 // breaks its live view during a shot anyway, and the picture then takes the
-// place of the live view.
+// place of the live view. The page keeps the latest pictures only: see
+// pictures.ts.
 
 import { create } from 'zustand';
 import { camera, useCamera } from '../camera/store';
@@ -15,85 +16,82 @@ import { loadPicture } from '../camera/picture';
 import { useCommander } from '../commander/store';
 import { errorMessage } from '../ros/rosbridge';
 import { picturesUrl, useSettings } from '../settings';
+import { release, withLoaded, withPicture, type Kept, type ShotPicture } from './pictures';
+
+export type { ShotPicture };
 
 /** How long a picture may take to reach the driver, after the shot ended. */
 const PICTURE_TIMEOUT = 30000;
 /** How long to wait for the other file of the same shot, e.g. the JPEG of RAW+JPEG. */
 const SECOND_FILE_WAIT = 2000;
 
-export interface ShotPicture {
-  name: string;
-  path: string;
-  /** The file on the camera's web server. */
-  file: string;
-  /** The size of the file, once loaded. */
-  size?: number;
-  /** What the browser can show, if it can: the JPEG itself, or an object URL of the preview inside a RAW. */
-  url?: string;
-  /** The URL shows the preview inside a RAW, not the picture itself. */
-  preview?: boolean;
-  /** Why the picture cannot be loaded. */
-  error?: string;
-}
-
 interface ShotState {
   state: 'idle' | 'shooting' | 'waiting' | 'done' | 'failed';
   message: string;
-  /** The pictures of this session, the latest first. */
+  /** The latest pictures, the latest first: KEPT_PICTURES of them. */
   pictures: ShotPicture[];
   takeShot(): Promise<void>;
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const useShot = create<ShotState>((set) => ({
-  state: 'idle',
-  message: '',
-  pictures: [],
+export const useShot = create<ShotState>((set, get) => {
+  /** Stores the pictures to keep, and releases the ones dropped. */
+  const keep = (change: (pictures: ShotPicture[]) => Kept) => {
+    const { pictures, dropped } = change(get().pictures);
+    set({ pictures });
+    dropped.forEach(release);
+  };
 
-  async takeShot() {
-    set({ state: 'shooting', message: 'Shooting…' });
-    if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
-    let arrived = 0;
-    let first: () => void = () => {};
-    const came = new Promise<void>((resolve) => (first = resolve));
-    // Listen before the shot, so that the picture cannot come first.
-    const stop = camera().onPicture((picture) => {
-      arrived++;
-      first();
-      const added: ShotPicture = {
-        name: picture.name, path: picture.path,
-        file: Camera.pictureUrl(picture.path, picturesUrl(useSettings.getState())),
-      };
-      set((s) => ({ pictures: [added, ...s.pictures] }));
-      void load(added).then((loaded) => set((s) => ({ pictures: s.pictures.map((p) => (p === added ? loaded : p)) })));
-    });
-    try {
-      const result = await useCommander.getState().run('TakeShot');
-      if (!result.ok) {
-        set({ state: 'failed', message: `The shot failed: ${result.message}` });
-        return;
-      }
-      if (arrived === 0) {
-        set({ state: 'waiting', message: 'Downloading the picture…' });
-        const got = await Promise.race([came.then(() => true), delay(PICTURE_TIMEOUT).then(() => false)]);
-        if (!got) {
-          set({
-            state: 'failed',
-            message: 'The Freezer fired the shot, but no picture came. Is the camera on, connected over USB, and plugged into OUT8?',
-          });
+  return {
+    state: 'idle',
+    message: '',
+    pictures: [],
+
+    async takeShot() {
+      set({ state: 'shooting', message: 'Shooting…' });
+      if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
+      let arrived = 0;
+      let first: () => void = () => {};
+      const came = new Promise<void>((resolve) => (first = resolve));
+      // Listen before the shot, so that the picture cannot come first.
+      const stop = camera().onPicture((picture) => {
+        arrived++;
+        first();
+        const added: ShotPicture = {
+          name: picture.name, path: picture.path,
+          file: Camera.pictureUrl(picture.path, picturesUrl(useSettings.getState())),
+        };
+        keep((pictures) => withPicture(pictures, added));
+        void load(added).then((loaded) => keep((pictures) => withLoaded(pictures, added, loaded)));
+      });
+      try {
+        const result = await useCommander.getState().run('TakeShot');
+        if (!result.ok) {
+          set({ state: 'failed', message: `The shot failed: ${result.message}` });
           return;
         }
+        if (arrived === 0) {
+          set({ state: 'waiting', message: 'Downloading the picture…' });
+          const got = await Promise.race([came.then(() => true), delay(PICTURE_TIMEOUT).then(() => false)]);
+          if (!got) {
+            set({
+              state: 'failed',
+              message: 'The Freezer fired the shot, but no picture came. Is the camera on, connected over USB, and plugged into OUT8?',
+            });
+            return;
+          }
+        }
+        await delay(SECOND_FILE_WAIT);
+        set({ state: 'done', message: '' });
+      } catch (e) {
+        set({ state: 'failed', message: errorMessage(e) });
+      } finally {
+        stop();
       }
-      await delay(SECOND_FILE_WAIT);
-      set({ state: 'done', message: '' });
-    } catch (e) {
-      set({ state: 'failed', message: errorMessage(e) });
-    } finally {
-      stop();
-    }
-  },
-}));
+    },
+  };
+});
 
 async function load(picture: ShotPicture): Promise<ShotPicture> {
   try {
