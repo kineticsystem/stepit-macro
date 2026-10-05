@@ -18,3 +18,7 @@
 	path = modules/stepit-ui
 	url = git@github.com:kineticsystem/stepit-ui.git
 	branch = main
+[submodule "modules/freezer-driver"]
+	path = modules/freezer-driver
+	url = git@github.com:kineticsystem/freezer-driver.git
+	branch = main

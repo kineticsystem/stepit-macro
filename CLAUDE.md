@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 StepIt Macro runs the whole focus stacking rig: `docker/docker-compose.yml` starts one container
-per module, the git submodules under `modules/` (driver, commander, editor, camera, UI), and
+per module, the git submodules under `modules/` (driver, commander, editor, camera, Freezer, UI), and
 wires them together. It also holds the rig's **own ROS packages** in `src/`, as two workspaces,
 one per container: `src/plugins`, the behaviors and objectives the commander loads, and
 `src/stepit-macro`, the rig's own programs, e.g. the gamepad. StepIt Commander is a generic server
