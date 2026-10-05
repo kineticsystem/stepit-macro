@@ -8,6 +8,9 @@
 # - src/stepit-macro, with the commander's interfaces, which it builds from the
 #   same submodule.
 #
+# StepIt UI, ui/, the rig's page, is type checked, tested and built by a job of
+# its own, as it needs Node.js and no ROS.
+#
 # The modules are not built here: each has its own CI.
 #
 # industrial_ci, which the modules use, builds one workspace from the sources
@@ -97,6 +100,28 @@ jobs:
         run: bin/${{ matrix.workspace }}/build.sh
       - name: Test
         run: bin/${{ matrix.workspace }}/test.sh
+
+  # StepIt UI, with the scripts of bin/ui and the pnpm version its package.json
+  # pins.
+  ui:
+    name: ui
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ui/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - name: Install the dependencies
+        run: bin/ui/update.sh
+      - name: Test
+        run: bin/ui/test.sh
+      - name: Build
+        run: bin/ui/build.sh
 
   # The rig's objectives, checked by the StepIt Editor's validator: the
   # editor's own checks, then BehaviorTree.CPP loading every file, with the

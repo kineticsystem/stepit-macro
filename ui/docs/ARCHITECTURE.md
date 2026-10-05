@@ -492,7 +492,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 
 ## Tests
 
-`pnpm run test` runs vitest on [`tests`](../tests), in Node.js, with a fake WebSocket that answers as rosbridge ([`fakeSocket.ts`](../tests/fakeSocket.ts)). CI runs the type check, the tests and the build on every push.
+`pnpm run test` runs vitest on [`tests`](../tests), in Node.js, with a fake WebSocket that answers as rosbridge ([`fakeSocket.ts`](../tests/fakeSocket.ts)). The `ui` job of StepIt Macro's CI runs the type check, the tests and the build on every push, with the scripts of `bin/ui`.
 
 | Test | Covers |
 |---|---|

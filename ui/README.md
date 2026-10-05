@@ -1,7 +1,5 @@
 # StepIt UI
 
-[![CI](https://github.com/kineticsystem/stepit-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/kineticsystem/stepit-ui/actions/workflows/ci.yml)
-
 ## Table of Contents <!-- omit in toc -->
 
 - [Introduction](#introduction)
@@ -18,7 +16,7 @@
 
 ## Introduction
 
-StepIt UI is the application of [StepIt Macro](https://github.com/kineticsystem/stepit-macro), an automated macro photography rig for 3D focus stacking: a camera on a motorized rail, on a rotary stage, with lights. It puts the whole rig on one web page, made for a tablet with a touch screen on the rig's network, and usable from a desktop too.
+StepIt UI is the application of [StepIt Macro](../README.md), an automated macro photography rig for 3D focus stacking: a camera on a motorized rail, on a rotary stage, with lights. It puts the whole rig on one web page, made for a tablet with a touch screen on the rig's network, and usable from a desktop too.
 
 - See what the camera sees, live, and set the ISO, the shutter speed, the aperture, the white balance and the exposure compensation.
 - Take a shot, fired by the Freezer board with the lights, and see and download its pictures.
@@ -47,7 +45,7 @@ The page is made for a tablet held in both hands, sideways or upright: the slide
 
 ## Running the Application
 
-StepIt UI runs in the container of StepIt Macro, which builds it into `dist` and serves it on port 8070: see its README. From a tablet on the same network, open port 8070 of the rig's computer, e.g. `http://192.168.100.26:8070`.
+StepIt UI is part of StepIt Macro, in its folder `ui`: the rig's container builds it into `ui/dist` and serves it on port 8070, see the rig's [README](../README.md). From a tablet on the same network, open port 8070 of the rig's computer, e.g. `http://192.168.100.26:8070`.
 
 The page reaches the rig on the computer that served it:
 
@@ -59,10 +57,10 @@ The page reaches the rig on the computer that served it:
 
 ## Working on the Page
 
-In the container of StepIt Macro, opened with `./docker/dock.sh shell`, the page is in `~/ws/modules/stepit-ui`. Install its packages once:
+In the container of StepIt Macro, opened with `./docker/dock.sh shell`, the page is in `~/ws/ui`. The rig's `update`, `build` and `test` install, build and test it with the others, through the scripts of `bin/ui`; to work on it alone, install its packages once:
 
 ```
-cd ~/ws/modules/stepit-ui
+cd ~/ws/ui
 pnpm install
 ```
 
@@ -72,7 +70,7 @@ Run the development server, with hot reload, on port 5176, next to the running r
 pnpm dev
 ```
 
-Type check, test and build it, as CI does:
+Type check, test and build it, as the `ui` job of the rig's CI does:
 
 ```
 pnpm run typecheck

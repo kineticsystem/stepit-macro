@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Build the whole rig, inside the stepit-macro container: the modules, then the
-# rig's plugin on top of them, then the rig's own programs.
+# rig's plugin on top of them, then the rig's own programs, and StepIt UI.
 
 bin="$(dirname "$(readlink -f "$0")")"
 cd "$bin/.."
@@ -26,3 +26,4 @@ done
 "$bin/modules/build.sh"
 "$bin/plugins/build.sh"
 "$bin/stepit-macro/build.sh"
+"$bin/ui/build.sh"

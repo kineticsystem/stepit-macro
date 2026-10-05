@@ -54,7 +54,7 @@ is consistent and synchronized with each capture.
 
 ## The Modules
 
-StepIt Macro runs the whole rig with one command, in one Docker container, `stepit-macro`. It brings together six projects, checked out as git submodules under [`modules`](modules), five of which it runs:
+StepIt Macro runs the whole rig with one command, in one Docker container, `stepit-macro`. It brings together five projects, checked out as git submodules under [`modules`](modules), and its own application, StepIt UI, in [`ui`](ui):
 
 | Module | What it does |
 |---|---|
@@ -63,13 +63,13 @@ StepIt Macro runs the whole rig with one command, in one Docker container, `step
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves the pictures on port 8090, and the live view through web_video_server on port 8081. |
 | [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras, the flashes and the lights with a hardware timer, with a fake controller by default. |
-| [StepIt UI](https://github.com/kineticsystem/stepit-ui) | The application of the whole rig, on <http://localhost:8070>, for a tablet or a desktop: the live view, the camera's settings, the shot and its pictures, the lights, and two sliders that drive the rotary stage and the rail. |
+| [StepIt UI](ui) | The application of the whole rig, on <http://localhost:8070>, for a tablet or a desktop: the live view, the camera's settings, the shot and its pictures, the lights, and two sliders that drive the rotary stage and the rail. |
 
-Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone; in the rig, StepIt UI replaces the test pages of the camera and of the Freezer, which `rig.yaml` turns off. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
+Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt UI is not: it is the rig's own page, which works only against the rig, and lives in this repo. In the rig, it replaces the test pages of the camera and of the Freezer, which `rig.yaml` turns off. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
 
 ## StepIt UI
 
-[StepIt UI](https://github.com/kineticsystem/stepit-ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
+[StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
 
 - **The live view** of the camera, started and stopped from the page.
 - **The camera's settings**, at the top of the settings menu: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
@@ -82,7 +82,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 
 **The sliders are a second gamepad.** The page sends them as a `sensor_msgs/Joy` on `/ui/joy`, 20 times a second while one is held, and a second `gamepad_teleop`, `ui_teleop`, turns them into velocities. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints.
 
-The page talks to the rig through the commander's rosbridge on port 9090, which knows every message of the rig, and loads the live view from port 8081 and the pictures from port 8090. See the [README](https://github.com/kineticsystem/stepit-ui#readme) of StepIt UI for how it is built.
+The page talks to the rig through the commander's rosbridge on port 9090, which knows every message of the rig, and loads the live view from port 8081 and the pictures from port 8090. See its [README](ui/README.md) for how to work on it, and [ARCHITECTURE.md](ui/docs/ARCHITECTURE.md) for how it is built.
 
 ## Prerequisites
 
@@ -413,11 +413,13 @@ The container builds three ROS workspaces, one on top of the other, each into fo
 
 | Workspace | What it holds | Scripts | Output |
 |---|---|---|---|
-| `modules` | The ROS packages of the modules, the editor and StepIt UI, and the editor's validator. | [`bin/modules`](bin/modules) | `build/modules`, `install/modules` |
+| `modules` | The ROS packages of the modules, the editor, and the editor's validator. | [`bin/modules`](bin/modules) | `build/modules`, `install/modules` |
 | [`src/plugins`](src/plugins) | The rig's behaviors and objectives, on top of `modules`: the commander loads them into its process, so they are built against its libraries. | [`bin/plugins`](bin/plugins) | `build/plugins`, `install/plugins` |
 | [`src/stepit-macro`](src/stepit-macro) | The rig's own programs, and the launch file of the rig. | [`bin/stepit-macro`](bin/stepit-macro) | `build/stepit-macro`, `install/stepit-macro` |
 
-[`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins` and `src/stepit-macro`: the modules run theirs in their own CI.
+StepIt UI, in [`ui`](ui), is not a ROS workspace but a pnpm project, with scripts of its own in [`bin/ui`](bin/ui), which come last: it is built into `ui/dist`.
+
+[`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins`, `src/stepit-macro` and StepIt UI: the modules run theirs in their own CI.
 
 The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. StepIt Motors and StepIt Freezer both carry the libraries `serial` and `framed-serial` as submodules; colcon refuses two packages of the same name, so the rig builds the driver's copy, and `bin/modules/build.sh` stops if the two modules pin different commits of them.
 
@@ -446,7 +448,7 @@ In the rig's container, rebuild everything with `build`, or one module's package
 
 Then restart the rig. Outside the container, `./docker/dock.sh build` rebuilds everything too, and the image if the `Dockerfile` changed. The objectives need no build: the commander reads them again before each goal.
 
-The editor's validator checks the rig's objectives from the shell, with `validate`. The web pages run with hot reload as in their own containers, e.g. `cd ~/ws/modules/stepit-freezer/web && pnpm dev`.
+The editor's validator checks the rig's objectives from the shell, with `validate`. The web pages run with hot reload as in their own containers, e.g. `cd ~/ws/modules/stepit-freezer/web && pnpm dev`, and StepIt UI with `cd ~/ws/ui && pnpm dev`, on port 5176.
 
 If the rig stops right after starting, look at its output with `./docker/dock.sh logs`. `./docker/dock.sh shell` still opens a terminal when the rig is stopped, in a new container of the same image.
 
@@ -476,7 +478,7 @@ The container mounts this repo at `~/ws` and the whole of `/dev`, for the serial
 - reads [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), and writes its node parameters to a parameter file of their own;
 - includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py` and `stepit_teleop/teleop.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
 - starts `ui_teleop`, the second `gamepad_teleop`, which reads the sliders of StepIt UI on `/ui/joy`;
-- starts the editor's server on the rig's objectives, and serves StepIt UI, as built in `modules/stepit-ui/dist`.
+- starts the editor's server on the rig's objectives, and serves StepIt UI, as built in `ui/dist`.
 
 The container uses the host network, so the web pages reach the servers from the browser, on the address of the computer: the editor and StepIt UI through the commander's rosbridge on port 9090, which knows every message of the rig, since every module is installed in the container; StepIt UI also loads the live view from web_video_server on port 8081 and the pictures from the camera's web server on port 8090. The rosbridges of the camera and of the Freezer, which their own containers need, are turned off.
 
@@ -491,7 +493,7 @@ modules:
 
 | Workflow | What it checks |
 |---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule, and builds on it alone, with `UNDERLAY`. A third job, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
+| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule, and builds on it alone, with `UNDERLAY`. A third job, `ui`, type checks, tests and builds StepIt UI with Node.js, and a fourth, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
 | [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files. |
 | [`ci-ros-lint.yml`](.github/workflows/ci-ros-lint.yml) | The ament linters of every package: copyright, lint_cmake and cpplint. |
 
