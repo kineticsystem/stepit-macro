@@ -86,21 +86,21 @@ function LightsButton() {
 }
 
 /**
- * Hands the robot to the sliders, through the objective ActivateTeleop. The
- * button stays, green while manual drive is on; pressing it again changes
- * nothing.
+ * Manual drive, on and off: hands the robot to the sliders, through the
+ * objective ActivateTeleop, and back to the trajectory controller, through
+ * ActivateController. Green while it is on.
  */
 function ManualDriveButton() {
-  const { enabled, enable } = useMotion();
+  const { enabled, enable, disable } = useMotion();
   const running = useCommander((s) => s.running);
   const connected = useStatus() === 'connected';
   return (
     <button
       className={enabled ? 'engaged' : ''}
       aria-pressed={enabled}
-      title={enabled ? 'The sliders drive the joints. Any task, e.g. a move, takes the robot back.' : 'Hand the robot to the sliders'}
-      disabled={!connected || running === 'ActivateTeleop'}
-      onClick={() => void enable()}
+      title={enabled ? 'The sliders drive the joints: press to end manual drive' : 'Hand the robot to the sliders'}
+      disabled={!connected || running === 'ActivateTeleop' || running === 'ActivateController'}
+      onClick={() => void (enabled ? disable() : enable())}
     >
       <HandIcon />
       Manual drive
