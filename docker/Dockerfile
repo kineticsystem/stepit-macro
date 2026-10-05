@@ -2,18 +2,18 @@
 # the rig's own programs. Ubuntu 24.04 (ROS2 Jazzy) with user "developer".
 #
 # It holds what the image of each module holds, so that every module builds and
-# runs here as in its own container: the base of the driver's, which has RViz,
-# and the packages that the other modules' Dockerfiles install. The rest of the
-# dependencies are rosdep's, installed by update.sh into the image that
-# `dock.sh build` commits.
-FROM osrf/ros:jazzy-desktop-full
+# runs here as in its own container: the packages that the modules' Dockerfiles
+# install. The rest of the dependencies are rosdep's, installed by update.sh
+# into the image that `dock.sh build` commits, RViz included, which StepIt
+# Motors declares.
+#
+# ros:jazzy-ros-base, not the desktop image of the motors' own container: it is
+# published for arm64 too, for the Raspberry Pi 5 that runs the rig, and leaves
+# out Gazebo and the desktop tools, gigabytes the rig never uses.
+FROM ros:jazzy-ros-base
 
 LABEL name="develop:stepit-macro"
 
-# Fix the expired ROS GPG key issue by bypassing signature verification, as
-# the driver's image does.
-RUN echo 'APT::Get::AllowUnauthenticated "true";' > /etc/apt/apt.conf.d/99allow-unauth-ros
-RUN echo 'Acquire::AllowInsecureRepositories "true";' >> /etc/apt/apt.conf.d/99allow-unauth-ros
 RUN apt-get update
 RUN apt-get -y install sudo
 

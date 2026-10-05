@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: TakeShot
+
+  Fires a shot on the StepIt Freezer board: the cameras, the flashes and the
+  lights of a sequence, timed by the board. The sequences are named in the
+  parameters of the Freezer node, in rig.yaml; without a sequence, the shot
+  fires the node's default_sequence. The cameras download their pictures by
+  themselves: StepIt Camera publishes each one on /camera/picture.
+
+  It is invoked through the commander action server:
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: TakeShot, payload: '{sequence: test_shot}'}"
+
+  The tree is one node, the behavior Shoot: BehaviorTree.CPP does not let a
+  tree have the name of a node.
+
+  A shot that has started always runs to its end, even when another objective
+  replaces this one: the Freezer refuses to stop it, so that the shutters close.
+-->
+<root BTCPP_format="4" main_tree_to_execute="TakeShot">
+
+  <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
+    <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
+           sequence="{@sequence}"/>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: what each entry is, with an example. -->
+  <TreeNodesModel>
+    <SubTree ID="TakeShot">
+      <input_port name="sequence">the sequence to fire, as named in the Freezer's parameters; its default_sequence when left out, e.g. test_shot</input_port>
+    </SubTree>
+  </TreeNodesModel>
+
+</root>

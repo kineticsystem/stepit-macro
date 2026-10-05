@@ -22,8 +22,7 @@
 
 #include <string>
 
-#include <control_msgs/action/follow_joint_trajectory.hpp>
-#include <trajectory_msgs/msg/joint_trajectory.hpp>
+#include <freezer_msgs/action/shoot.hpp>
 
 #include "stepit_behaviors/ros_action_node.hpp"
 
@@ -31,17 +30,21 @@ namespace stepit_behaviors
 {
 
 /**
- * @brief Sends a trajectory to a joint trajectory controller, and waits until the
- * joints have followed it.
+ * @brief Fires a shot on the StepIt Freezer board, and waits until it has ended.
  *
- * This is a thin behavior tree wrapper around the FollowJointTrajectory action
- * exposed by the joint_trajectory_controller of the StepIt robot. The trajectory
- * comes from another node, e.g. CubicTrajectory: this one only sends it.
+ * A thin wrapper around the Shoot action of the Freezer node: the board fires
+ * the cameras, the flashes and the lights of a sequence, by the hardware timer
+ * of its microcontroller. The sequence is named in the parameters of the
+ * Freezer node, e.g. in rig.yaml; an empty name fires its default_sequence.
+ *
+ * A shot that has started cannot be stopped: the Freezer refuses to cancel it,
+ * so that a camera's shutter always closes. Halting this node stops waiting for
+ * it, and the shot runs to its end.
  */
-class FollowJointTrajectory : public RosActionNode<control_msgs::action::FollowJointTrajectory>
+class Shoot : public RosActionNode<freezer_msgs::action::Shoot>
 {
 public:
-  FollowJointTrajectory(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+  Shoot(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
 
   static BT::PortsList providedPorts();
 

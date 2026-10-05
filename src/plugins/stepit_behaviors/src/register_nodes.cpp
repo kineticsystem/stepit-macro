@@ -25,6 +25,7 @@
 #include "stepit_behaviors/get_active_controllers.hpp"
 #include "stepit_behaviors/get_joint_positions.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
+#include "stepit_behaviors/shoot.hpp"
 #include "stepit_behaviors/cubic_trajectory.hpp"
 #include "stepit_behaviors/steps.hpp"
 #include "stepit_behaviors/switch_controller.hpp"
@@ -44,6 +45,11 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<CommandJointPositions>("CommandJointPositions", params);
   factory.registerNodeType<GetActiveControllers>("GetActiveControllers", params);
   factory.registerNodeType<SwitchController>("SwitchController", params);
+
+  // The Freezer node's action, unless the tree names another in action_name.
+  BT::RosNodeParams shoot_params = params;
+  shoot_params.default_port_value = "/freezer/shoot";
+  factory.registerNodeType<Shoot>("Shoot", shoot_params);
 }
 
 }  // namespace stepit_behaviors

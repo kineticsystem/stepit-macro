@@ -121,9 +121,8 @@ case "$command" in
         # removes the containers of the modules that earlier versions of this
         # file started, one per module, which would hold the same ports.
         docker compose up --detach --remove-orphans
-        echo -e "\nThe editor is on http://localhost:8080"
-        echo "The camera's test page is on http://localhost:8090"
-        echo "The Freezer's board page is on http://localhost:8092"
+        echo -e "\nStepIt UI is on http://$(hostname -I | awk '{print $1}'):8070"
+        echo "The editor is on http://localhost:8080"
         echo "(the ports of src/stepit-macro/stepit_bringup/config/rig.yaml)"
         echo "Follow the output with ./docker/dock.sh logs"
         ;;

@@ -23,7 +23,7 @@ is consistent and synchronized with each capture.
 
 - [Features](#features)
 - [The Modules](#the-modules)
-- [The Camera's Test Page](#the-cameras-test-page)
+- [StepIt UI](#stepit-ui)
 - [Prerequisites](#prerequisites)
 - [Install StepIt Macro](#install-stepit-macro)
   - [Check out the Git Repository](#check-out-the-git-repository)
@@ -61,37 +61,28 @@ StepIt Macro runs the whole rig with one command, in one Docker container, `step
 | [StepIt Motors](https://github.com/kineticsystem/stepit-motors) | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz on demand. |
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
-| [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
-| [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras and the flashes with a hardware timer, with a fake controller by default. It serves its board page on <http://localhost:8092> and its own rosbridge on port 9092. |
-| [StepIt UI](https://github.com/kineticsystem/stepit-ui) | The application of the whole rig, not started yet. |
+| [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves the pictures on port 8090, and the live view through web_video_server on port 8081. |
+| [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras, the flashes and the lights with a hardware timer, with a fake controller by default. |
+| [StepIt UI](https://github.com/kineticsystem/stepit-ui) | The application of the whole rig, on <http://localhost:8070>, for a tablet or a desktop: the live view, the camera's settings, the shot and its pictures, the lights, and two sliders that drive the rotary stage and the rail. |
 
-Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
+Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone; in the rig, StepIt UI replaces the test pages of the camera and of the Freezer, which `rig.yaml` turns off. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
 
-## The Camera's Test Page
+## StepIt UI
 
-StepIt Camera comes with a test page, to try the camera from a browser:
+[StepIt UI](https://github.com/kineticsystem/stepit-ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
 
-- it shows what the camera sees, live;
-- it sets the ISO, the shutter speed, the aperture and the white balance;
-- it takes a test shot, and shows it.
+- **The live view** of the camera, started and stopped from the page.
+- **The camera's settings**, the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
+- **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. Each picture is shown as it arrives, and can be downloaded.
+- **The lights**, switched on and off by hand.
+- **Two sliders**, for the rotary stage (`joint1`) and the rail (`joint2`), which work as the gamepad's sticks once the robot is handed to the user with **Drive by hand**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to the motors' limit, 3 turns/s, at the ends; letting it go stops.
+- **Stop**, always in the top bar: it stops every objective, whoever started it, and the sliders.
 
-It is not the application of the rig: that will be
-[StepIt UI](https://github.com/kineticsystem/stepit-ui), with the rail, the
-rotary stage and the lights too.
+**Only the robot's tasks go through the commander**: a shot, and handing the robot to the user. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
 
-The page talks to the camera straight from the browser, so it needs no ROS
-itself:
+**The sliders are a second gamepad.** The page sends them as a `sensor_msgs/Joy` on `/ui/joy`, 20 times a second while one is held, and a second `gamepad_teleop`, `ui_teleop`, turns them into velocities. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints.
 
-- through the camera's web server, which serves the page and the pictures;
-- through [rosbridge](https://github.com/RobotWebTools/rosbridge_suite), a
-  WebSocket that speaks JSON, to call the services, set the parameters and
-  hear of the pictures;
-- through [web_video_server](https://github.com/RobotWebTools/web_video_server),
-  which streams the live view as MJPEG into a plain `<img>`.
-
-All three run next to the camera driver, whose launch file starts them. See
-[The Test Page](https://github.com/kineticsystem/stepit-camera#the-test-page)
-in the README of StepIt Camera for how to use it.
+The page talks to the rig through the commander's rosbridge on port 9090, which knows every message of the rig, and loads the live view from port 8081 and the pictures from port 8090. See the [README](https://github.com/kineticsystem/stepit-ui#readme) of StepIt UI for how it is built.
 
 ## Prerequisites
 
@@ -148,7 +139,7 @@ be called from anywhere. Run it without arguments to list its commands.
 > [!IMPORTANT]
 > The container provides a default user `developer` with password `developer`.
 
-Build the image, then install the dependencies and compile the code of every module and of the rig inside the container. The first build takes a while: the image is based on ROS2 Jazzy desktop, which RViz needs.
+Build the image, then install the dependencies and compile the code of every module and of the rig inside the container. The first build takes a while. The image is based on `ros:jazzy-ros-base`, which is published for arm64 too, for the Raspberry Pi 5 that runs the rig.
 
 ```
 ./docker/dock.sh build
@@ -174,7 +165,7 @@ Start the whole rig in the background:
 
 The rig runs on fake hardware by default: the fake motors and the fake Freezer controller; the camera driver waits for a camera. To drive the real robot and the real Freezer board, set them in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig).
 
-The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. The camera's test page is on <http://localhost:8090>, with the live view of the camera. The pictures the camera takes are saved in `pictures`, at the root of this repo. The Freezer's board page is on <http://localhost:8092>, to fire a shot and see its timing.
+StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. The pictures the camera takes are saved in `pictures`, at the root of this repo.
 
 Follow the output of the rig. Stop following with `Ctrl+C`: the rig keeps running.
 
@@ -239,7 +230,7 @@ The section `launch` holds the launch arguments of each module, given to the mod
 | `camera` | `fake` | `false` | A fake camera instead of the one on USB. libgphoto2 opens the first camera it finds: there is no port to set. |
 | `teleop` | `dev` | `/dev/input/js0` | The gamepad. |
 
-The other arguments are the ports of the servers: `rosbridge_port` of the commander, the camera and the Freezer, `web_port` and `web_video_port` of the camera, `web_port` of the Freezer, and `port` of the editor. Any other argument of a module's launch file can be added to its section. An argument the launch file does not declare stops the rig, with its name in the log, so that a typo is not silently ignored.
+The other arguments are the servers: `rosbridge_port` of the commander, `web_port` (the pictures) and `web_video_port` (the live view) of the camera, `port` of the editor and of StepIt UI (`ui`), and the test pages of the camera and of the Freezer, which the rig turns off with `rosbridge: false` and `web: false`: StepIt UI replaces them. Any other argument of a module's launch file can be added to its section. An argument the launch file does not declare stops the rig, with its name in the log, so that a typo is not silently ignored.
 
 For example, to drive the real robot and the real Freezer board:
 
@@ -264,8 +255,9 @@ Every other section is the parameters of a node, as in any ROS2 parameter file. 
 |---|---|
 | `stepit_server` | `plugins` and `behavior_trees`: the rig's behaviors and objectives, which the commander loads. |
 | `camera` | `download_directory`: the folder of the pictures, `~/ws/pictures`. The settings of the camera, e.g. `iso`, can be added here. |
-| `web_server` | The camera's web server: the same `download_directory`, and its page, `web_directory`. |
-| `freezer` | `baudrate`. The sequences it fires can be added here. |
+| `web_server` | The camera's web server: the same `download_directory`, from which StepIt UI loads the pictures. |
+| `freezer` | `baudrate`, and the sequences of the rig, by the jacks of the board: `test_shot`, the default one, fires the camera on OUT8 with the lights on OUT1, see [`TakeShot`](docs/TakeShot.md). |
+| `ui_teleop` | The sliders of StepIt UI: which axis drives which joint, and how fast at the ends, the motors' limit, 18.85 rad/s. |
 
 See the README of each module for the parameters it takes.
 
@@ -296,6 +288,7 @@ the objective, i.e. after the `target_tree` of the command:
 | [`ActivateController`](docs/ActivateController.md) | Stops the controller driving the robot and activates another one. |
 | [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. The gamepad's stop button runs it. |
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
+| [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
 
 Run one from a terminal in the container, opened with `./docker/dock.sh shell`, e.g. to turn `joint1` and `joint3` by one turn clockwise:
@@ -308,7 +301,7 @@ ros2 action send_goal /commander/execute_objective \
 ```
 
 The behaviors show every shape a behavior can take: a ROS action client
-(`FollowJointTrajectory`), service clients (`GetActiveControllers`,
+(`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
 on a subscription (`CommandJointPositions`) and pure logic (`OffsetVector`,
 `TrapezoidalTrajectory`). `Steps` is a decorator that loops over values.
@@ -418,7 +411,7 @@ The container builds three ROS workspaces, one on top of the other, each into fo
 
 | Workspace | What it holds | Scripts | Output |
 |---|---|---|---|
-| `modules` | The ROS packages of the modules, their web pages, and the editor's validator. | [`bin/modules`](bin/modules) | `build/modules`, `install/modules` |
+| `modules` | The ROS packages of the modules, the editor and StepIt UI, and the editor's validator. | [`bin/modules`](bin/modules) | `build/modules`, `install/modules` |
 | [`src/plugins`](src/plugins) | The rig's behaviors and objectives, on top of `modules`: the commander loads them into its process, so they are built against its libraries. | [`bin/plugins`](bin/plugins) | `build/plugins`, `install/plugins` |
 | [`src/stepit-macro`](src/stepit-macro) | The rig's own programs, and the launch file of the rig. | [`bin/stepit-macro`](bin/stepit-macro) | `build/stepit-macro`, `install/stepit-macro` |
 
@@ -432,7 +425,7 @@ The packages of `src/stepit-macro`:
 
 | Package | Role |
 |---|---|
-| `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad and the editor, with the configuration of `config/rig.yaml`. |
+| `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad, the sliders of StepIt UI, the editor and StepIt UI, with the configuration of `config/rig.yaml`. |
 | `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ActivateTeleop`. |
 | `stepit_macro_tests` | Tests of the packages above, e.g. the gamepad against a fake commander, and `rig.yaml`. |
 
@@ -474,15 +467,18 @@ git commit -m "Update the modules"
 
 ## How It Works
 
-[`docker/docker-compose.yml`](docker/docker-compose.yml) defines one service, `stepit-macro`, on the image of [`docker/Dockerfile`](docker/Dockerfile), and the package cache. The image holds what the image of each module holds: the base of the driver's, `osrf/ros:jazzy-desktop-full`, which has RViz, the packages that the other modules' Dockerfiles install, e.g. libgphoto2 for the camera and BehaviorTree.CPP for the commander, and Node.js for the web pages. The editor's validator is built against the ROS package of BehaviorTree.CPP, the library the commander runs the objectives with.
+[`docker/docker-compose.yml`](docker/docker-compose.yml) defines one service, `stepit-macro`, on the image of [`docker/Dockerfile`](docker/Dockerfile), and the package cache. The image holds what the image of each module holds: `ros:jazzy-ros-base`, published for amd64 and arm64, the packages that the modules' Dockerfiles install, e.g. libgphoto2 for the camera and BehaviorTree.CPP for the commander, and Node.js for the web pages; rosdep adds the rest, RViz included. Unlike the desktop image of StepIt Motors' own container, it leaves out Gazebo and the desktop tools, gigabytes the rig never uses. The editor's validator is built against the ROS package of BehaviorTree.CPP, the library the commander runs the objectives with.
 
 The container mounts this repo at `~/ws` and the whole of `/dev`, for the serial ports, the camera and the gamepad, which can then be unplugged and plugged in again while the rig runs. Its command runs one launch file, [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), which:
 
 - reads [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), and writes its node parameters to a parameter file of their own;
 - includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py` and `stepit_teleop/teleop.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
-- starts the editor's server, `serve.sh`, on the rig's objectives.
+- starts `ui_teleop`, the second `gamepad_teleop`, which reads the sliders of StepIt UI on `/ui/joy`;
+- starts the editor's server on the rig's objectives, and serves StepIt UI, as built in `modules/stepit-ui/dist`.
 
-The container uses the host network, so the web pages reach the servers from the browser: the editor through the commander's rosbridge on `ws://localhost:9090`, the camera's test page through the camera's web server on `http://localhost:8090`, its rosbridge on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`, the Freezer's board page through its web server on `http://localhost:8092` and its rosbridge on `ws://localhost:9092`. Each page keeps its own rosbridge, as in its module's own container, so the pages run unchanged.
+The container uses the host network, so the web pages reach the servers from the browser, on the address of the computer: the editor and StepIt UI through the commander's rosbridge on port 9090, which knows every message of the rig, since every module is installed in the container; StepIt UI also loads the live view from web_video_server on port 8081 and the pictures from the camera's web server on port 8090. The rosbridges of the camera and of the Freezer, which their own containers need, are turned off.
+
+rosbridge has no authentication: anyone on the network who reaches port 9090 can drive the rig. That suits a workshop's own network, not a shared one.
 
 The containers of the modules' own `dock.sh` are named after their modules; the rig's is `stepit-macro`. Remove a module's container before starting the rig, e.g. with `./modules/stepit-motors/docker/dock.sh stepit-motors clean`, and stop the rig before starting a module's own: they use the same ports. `./docker/dock.sh start` also removes the containers that earlier versions of StepIt Macro started, one per module.
 

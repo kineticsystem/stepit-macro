@@ -38,9 +38,11 @@ launch:
   camera:
     fake: false
     stream: false
-    web_port: 8090        # the test page and the pictures
+    web_port: 8090        # the pictures, which StepIt UI loads from here
     web_video_port: 8081  # the live view
-    rosbridge_port: 9091
+    # StepIt UI reaches the camera through the commander's rosbridge, which
+    # knows every message of the rig: the camera's own is not needed.
+    rosbridge: false
 
   # StepIt Freezer, the board that fires the cameras and the flashes:
   # freezer_node/freezer.launch.py.
@@ -48,12 +50,17 @@ launch:
     # A fake controller, or the Arduino Nano on usb_port.
     use_fake: true
     usb_port: /dev/ttyUSB0
-    web_port: 8092        # the board page
-    rosbridge_port: 9092
+    # The board page, and its rosbridge: StepIt UI replaces it.
+    web: false
 
   # The gamepad: stepit_teleop/teleop.launch.py.
   teleop:
     dev: /dev/input/js0
+
+  # StepIt UI, the application of the rig, for a tablet or a desktop: static
+  # files, which talk to the rig through the commander's rosbridge.
+  ui:
+    port: 8070
 
   # StepIt Editor, the web editor of the objectives, which opens the rig's own.
   # Not a launch file: these are the only arguments it takes.
@@ -80,13 +87,51 @@ camera:
     # shutter_speed: "1/125"
     # aperture: "8"
 
+# The camera's web server, which serves the pictures to StepIt UI, from the
+# same folder. Its test page is not built in the rig.
 web_server:
   ros__parameters:
     download_directory: *pictures
-    web_directory: ~/ws/modules/stepit-camera/web/dist
 
-# The Freezer: see freezer.yaml of StepIt Freezer for its parameters, e.g. the
-# sequences it fires. use_fake and usb_port are launch arguments, above.
+# The Freezer: see freezer.yaml of StepIt Freezer for its parameters. use_fake
+# and usb_port are launch arguments, above.
 freezer:
   ros__parameters:
     baudrate: 9600
+    # The sequences of the rig, by the jacks of its board: the camera is on
+    # OUT8, the lights on OUT1; the other jacks are free. A sequence the rig
+    # does not list here is unknown to the node.
+    default_sequence: test_shot
+    sequence_names: [test_shot]
+    sequences:
+      # Focus the camera, open its shutter, switch the lights on and off, then
+      # release the camera. The exposure must last until the lights are off,
+      # about 0.9 s after the shutter line closes: a shorter one is over before
+      # the lights come on. The durations are in milliseconds.
+      test_shot:
+        recipe: timed_light
+        cameras: [8]
+        lights: [1]
+        focus_ms: 100.0
+        shutter_to_light_ms: 500.0
+        light_ms: 200.0
+        light_to_close_ms: 200.0
+        cooldown_ms: 200.0
+
+# The sliders of StepIt UI, which drive the joints as the gamepad's sticks do:
+# the page sends each slider as an axis of a sensor_msgs/Joy on /ui/joy, from -1
+# to 1, and this second gamepad_teleop turns them into velocities. The ends of a
+# slider are the motors' limit, 3 turns/s. When the page stops sending for
+# joy_timeout seconds during a move, e.g. when the tablet loses the network,
+# the joints stop.
+ui_teleop:
+  ros__parameters:
+    stop_button: -1  # none: the page runs ActivateTeleop through the commander
+    controller: velocity_controller
+    joints: [joint1, joint2, joint3, joint4, joint5]
+    joint1: { axis: 0, scale: 18.8496 }  # the rotary stage, in rad/s
+    joint2: { axis: 1, scale: 18.8496 }  # the rail, in rad/s of its motor
+    joint3: { axis: -1, scale: 0.0 }
+    joint4: { axis: -1, scale: 0.0 }
+    joint5: { axis: -1, scale: 0.0 }
+    joy_timeout: 0.5

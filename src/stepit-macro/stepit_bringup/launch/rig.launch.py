@@ -32,10 +32,12 @@ from launch.actions import (
     ExecuteProcess,
     GroupAction,
     IncludeLaunchDescription,
+    LogInfo,
     OpaqueFunction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 # The repo, found from the source of this file, which build.sh installs as a
@@ -52,15 +54,16 @@ MODULES = {
     "teleop": ("stepit_teleop", "teleop.launch.py", False),
 }
 
-# The arguments of the editor, which is not a ROS launch file.
-EDITOR_ARGUMENTS = {"port"}
+# The programs that are not ROS launch files, by their name in the section
+# `launch` of rig.yaml, and the arguments each takes.
+PROGRAMS = {"editor": {"port"}, "ui": {"port"}}
 
 
 def split_config(config):
     """Split rig.yaml into the launch arguments of each module, and the node parameters."""
     config = dict(config or {})
     arguments = config.pop("launch", None) or {}
-    unknown = set(arguments) - set(MODULES) - {"editor"}
+    unknown = set(arguments) - set(MODULES) - set(PROGRAMS)
     if unknown:
         raise RuntimeError(
             f"rig.yaml: unknown modules in `launch`: {', '.join(sorted(unknown))}"
@@ -108,13 +111,18 @@ def include(context, module, arguments, params_file):
     )
 
 
-def editor(arguments):
-    """Serve the editor, on the rig's objectives, with the validator that build.sh built."""
-    unknown = set(arguments) - EDITOR_ARGUMENTS
+def check_program(program, arguments):
+    """Refuse an argument that a program does not take."""
+    unknown = set(arguments) - PROGRAMS[program]
     if unknown:
         raise RuntimeError(
-            f"rig.yaml: the editor has no argument {', '.join(sorted(unknown))}"
+            f"rig.yaml: the {program} has no argument {', '.join(sorted(unknown))}"
         )
+
+
+def editor(arguments):
+    """Serve the editor, on the rig's objectives, with the validator that build.sh built."""
+    check_program("editor", arguments)
     port = to_argument(arguments.get("port", 8080))
     directory = RIG_DIR / "modules/stepit-editor"
     # The command of the editor's `pnpm run start`, which serve.sh runs, without
@@ -135,6 +143,40 @@ def editor(arguments):
     )
 
 
+def ui(arguments):
+    """Serve StepIt UI, as built by build.sh into modules/stepit-ui/dist."""
+    check_program("ui", arguments)
+    port = to_argument(arguments.get("port", 8070))
+    directory = RIG_DIR / "modules/stepit-ui/dist"
+    if not (directory / "index.html").is_file():
+        return LogInfo(msg=f"No StepIt UI in {directory}: build it with build.sh.")
+    # Static files only: the page talks to the rig through rosbridge and the
+    # servers of the camera.
+    return ExecuteProcess(
+        cmd=["python3", "-m", "http.server", port, "--directory", str(directory)],
+        name="stepit_ui",
+        output="log",
+    )
+
+
+def ui_teleop(params_file):
+    """Drive the joints from the sliders of StepIt UI, as the gamepad does.
+
+    A second gamepad_teleop, which reads the sliders on /ui/joy instead of the
+    gamepad on /joy, with its parameters in the section `ui_teleop` of rig.yaml.
+    Its watchdog stops the joints when the page stops sending, e.g. when the
+    tablet loses the network in the middle of a move.
+    """
+    return Node(
+        package="stepit_teleop",
+        executable="gamepad_teleop",
+        name="ui_teleop",
+        output="screen",
+        parameters=[params_file],
+        remappings=[("/joy", "/ui/joy")],
+    )
+
+
 def launch_setup(context):
     with open(LaunchConfiguration("config").perform(context)) as file:
         arguments, parameters = split_config(yaml.safe_load(file))
@@ -151,7 +193,9 @@ def launch_setup(context):
         include(context, module, arguments.get(module) or {}, params_file)
         for module in MODULES
     ]
+    actions.append(ui_teleop(params_file))
     actions.append(editor(arguments.get("editor") or {}))
+    actions.append(ui(arguments.get("ui") or {}))
     return actions
 
 

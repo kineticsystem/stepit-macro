@@ -22,36 +22,39 @@
 
 #include <string>
 
-#include <control_msgs/action/follow_joint_trajectory.hpp>
-#include <trajectory_msgs/msg/joint_trajectory.hpp>
-
-#include "stepit_behaviors/ros_action_node.hpp"
+#include <behaviortree_ros2/bt_action_node.hpp>
+#include <rclcpp_action/exceptions.hpp>
 
 namespace stepit_behaviors
 {
 
 /**
- * @brief Sends a trajectory to a joint trajectory controller, and waits until the
- * joints have followed it.
+ * @brief BT::RosActionNode, halted safely when its goal ends at the same time.
  *
- * This is a thin behavior tree wrapper around the FollowJointTrajectory action
- * exposed by the joint_trajectory_controller of the StepIt robot. The trajectory
- * comes from another node, e.g. CubicTrajectory: this one only sends it.
+ * Halting the node cancels its goal. When the goal has just ended, the action
+ * client has already forgotten it, and BehaviorTree.ROS2's cancelGoal() throws
+ * rclcpp_action::exceptions::UnknownGoalHandleError, which ends the process:
+ * the commander, when another objective replaces the running one at that
+ * moment. There is nothing left to cancel then, so the exception is dropped.
  */
-class FollowJointTrajectory : public RosActionNode<control_msgs::action::FollowJointTrajectory>
+template <class ActionT>
+class RosActionNode : public BT::RosActionNode<ActionT>
 {
 public:
-  FollowJointTrajectory(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+  using BT::RosActionNode<ActionT>::RosActionNode;
 
-  static BT::PortsList providedPorts();
-
-  bool setGoal(Goal& goal) override;
-
-  BT::NodeStatus onResultReceived(const WrappedResult& result) override;
-
-  BT::NodeStatus onFailure(BT::ActionNodeErrorCode error) override;
-
-  void onHalt() override;
+  void halt() override
+  {
+    try
+    {
+      BT::RosActionNode<ActionT>::halt();
+    }
+    catch (const rclcpp_action::exceptions::UnknownGoalHandleError&)
+    {
+      RCLCPP_INFO(this->logger(), "%s: halted as its goal ended", this->name().c_str());
+      this->onHalt();
+    }
+  }
 };
 
 }  // namespace stepit_behaviors
