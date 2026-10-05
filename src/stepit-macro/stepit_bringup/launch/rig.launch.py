@@ -144,10 +144,10 @@ def editor(arguments):
 
 
 def ui(arguments):
-    """Serve StepIt UI, as built by build.sh into modules/stepit-ui/dist."""
+    """Serve StepIt UI, as built by build.sh into ui/dist."""
     check_program("ui", arguments)
     port = to_argument(arguments.get("port", 8070))
-    directory = RIG_DIR / "modules/stepit-ui/dist"
+    directory = RIG_DIR / "ui/dist"
     if not (directory / "index.html").is_file():
         return LogInfo(msg=f"No StepIt UI in {directory}: build it with build.sh.")
     # Static files only: the page talks to the rig through rosbridge and the

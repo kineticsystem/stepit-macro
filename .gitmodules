@@ -14,10 +14,6 @@
 	path = modules/stepit-camera
 	url = git@github.com:kineticsystem/stepit-camera.git
 	branch = main
-[submodule "modules/stepit-ui"]
-	path = modules/stepit-ui
-	url = git@github.com:kineticsystem/stepit-ui.git
-	branch = main
 [submodule "modules/stepit-freezer"]
 	path = modules/stepit-freezer
 	url = git@github.com:kineticsystem/stepit-freezer.git

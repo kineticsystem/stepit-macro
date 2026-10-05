@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Review the architecture of a StepIt module (modules/<module>) or of the rig's own packages (src/plugins, src/stepit-macro), and write or update its docs/ARCHITECTURE.md with a Review section - layers, SOLID, coupling, duplication, verified implementation issues and recommendations. Use when asked to document, review or audit how a module is built, or to refresh an existing ARCHITECTURE.md after changes.
+description: Review the architecture of a StepIt module (modules/<module>) or of the rig's own code (src/plugins, src/stepit-macro, ui), and write or update its docs/ARCHITECTURE.md with a Review section - layers, SOLID, coupling, duplication, verified implementation issues and recommendations. Use when asked to document, review or audit how a module is built, or to refresh an existing ARCHITECTURE.md after changes.
 ---
 
 # Architect
@@ -10,7 +10,7 @@ You review how one part of StepIt Macro is built and write it down in its
 The document is for a developer who has read the README and used the module
 once, and wants to know where to start a change and what is fragile.
 
-The argument names the target, e.g. `stepit-ui`, `modules/stepit-camera`,
+The argument names the target, e.g. `ui` (StepIt UI), `modules/stepit-camera`,
 `src/plugins`. Without one, ask which module.
 
 ## 1. Read before writing

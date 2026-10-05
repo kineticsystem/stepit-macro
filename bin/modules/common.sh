@@ -31,10 +31,10 @@ COLCON_LOG=(--log-base log/modules)
 COLCON_OUTPUT=(--build-base build/modules --install-base install/modules)
 
 # The web pages, which each module builds with pnpm into its own dist folder:
-# the editor, and StepIt UI, the application of the rig. The test pages of the
-# camera and of the Freezer are only for their modules' own containers: rig.yaml
-# turns them off.
-WEB_PAGES=(modules/stepit-editor modules/stepit-ui)
+# the editor. The test pages of the camera and of the Freezer are only for their
+# modules' own containers: rig.yaml turns them off. StepIt UI, the rig's own
+# page, is in ui/, with scripts of its own in bin/ui.
+WEB_PAGES=(modules/stepit-editor)
 
 # Fail if the driver and the Freezer pin different commits of a library they
 # share: the Freezer would run against the driver's copy without telling.

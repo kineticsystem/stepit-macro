@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 StepIt Macro runs the whole focus stacking rig **in one container**, `stepit-macro`: it builds the
-git submodules under `modules/` (motors, commander, editor, camera, Freezer, UI)
-and starts them all with one launch file, `stepit_bringup/rig.launch.py`, configured by one file,
-`src/stepit-macro/stepit_bringup/config/rig.yaml`. Each module keeps its own container, tests and
+git submodules under `modules/` (motors, commander, editor, camera, Freezer) and StepIt UI, the
+rig's own page in `ui/`, and starts them all with one launch file, `stepit_bringup/rig.launch.py`,
+configured by one file, `src/stepit-macro/stepit_bringup/config/rig.yaml`. Each module keeps its own container, tests and
 CI, to work on it alone. The repo also holds the rig's **own ROS packages** in `src/`, as two
 workspaces: `src/plugins`, the behaviors and objectives the commander loads, and
 `src/stepit-macro`, the rig's own programs, e.g. the gamepad, and the launch file of the rig.
@@ -47,9 +47,12 @@ submodules anyway. `bin/update.sh`, `bin/build.sh` and `bin/test.sh` (on the `PA
 
 | Workspace | Holds |
 |---|---|
-| `modules` | The modules' ROS packages, their web pages (pnpm) and the editor's validator, into the rig's own build folders, never the modules' (their own containers mount them at `~/ws`: the CMake caches differ). Not tested here: the modules have their own CI. The driver and the Freezer both carry `serial` and `framed-serial`: the driver's are built, and `bin/modules/build.sh` fails if the two pin different commits. `bin/modules/build.sh --packages-up-to <pkg>` builds part of it. |
+| `modules` | The modules' ROS packages, the editor's web page (pnpm) and its validator, into the rig's own build folders, never the modules' (their own containers mount them at `~/ws`: the CMake caches differ). Not tested here: the modules have their own CI. The driver and the Freezer both carry `serial` and `framed-serial`: the driver's are built, and `bin/modules/build.sh` fails if the two pin different commits. `bin/modules/build.sh --packages-up-to <pkg>` builds part of it. |
 | `plugins` | `src/plugins`, **on top of `modules`**, which holds the commander: the commander loads the plugin into its process, so it must be built against the commander's BehaviorTree libraries. `UNDERLAY` (an install folder) overrides the underlay: CI sets it to the commander's own workspace. |
 | `stepit-macro` | `src/stepit-macro`, on ROS alone, so that CI builds it without the modules. |
+
+`ui/` is not a workspace but a pnpm project, StepIt UI, with `bin/ui/` scripts of its own that the
+three top scripts run last; it builds into `ui/dist`, which the rig serves.
 
 ```bash
 ~/ws/bin/plugins/test.sh    # on ROS domain 77 (or STEPIT_TEST_DOMAIN_ID): never a plain colcon test
@@ -68,8 +71,9 @@ a typo cannot be ignored silently. Each include is a `GroupAction(scoped=True, f
 arguments with the same name, e.g. `usb_port` or `web_port`, must never leak from one module to
 the next. A change to `rig.yaml` needs a restart, no build.
 
-**StepIt UI** (`modules/stepit-ui`, port 8070) is the application of the rig, for a tablet or a
-desktop; the test pages of the camera and of the Freezer are turned off in `rig.yaml`. Only the
+**StepIt UI** (`ui/`, port 8070) is the application of the rig, part of this repo, not a module:
+it works only against the rig. Its architecture, and a review of it, is in
+`ui/docs/ARCHITECTURE.md`. It is for a tablet or a desktop; the test pages of the camera and of the Freezer are turned off in `rig.yaml`. Only the
 robot's **tasks** go through the commander, as objectives (`TakeShot`, `ActivateTeleop`, moves):
 **configuration** (the camera's settings, the live view, the lights) goes straight to the drivers,
 so that it never preempts a running objective. A driver function becomes a behavior when an
@@ -173,7 +177,8 @@ they reach the real robot: both `test.sh` scripts therefore set `ROS_DOMAIN_ID` 
 `ros:jazzy-ros-base`, except `modules` (the modules have their own CI; the `plugins` job builds
 `modules/stepit-commander` first, checked out over HTTPS: `.gitmodules` lists SSH URLs, and passes
 it as `UNDERLAY`); `ci-format.yml` runs pre-commit without the ament hooks;
-`ci-ros-lint.yml` runs those, per package. The `objectives` job of `ci.yml` builds the editor's native
+`ci-ros-lint.yml` runs those, per package. The `ui` job of `ci.yml` runs `bin/ui/` with Node.js, no
+ROS. The `objectives` job of `ci.yml` builds the editor's native
 validator (submodule `stepit-editor`) against the ROS package of BehaviorTree.CPP and runs
 `validate` on `src/plugins/stepit_objectives/objectives`: a broken objective fails CI. A new package must be added to the package list
 of `ci-ros-lint.yml` and to the paths of the ament hooks in `.pre-commit-config.yaml`.
