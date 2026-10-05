@@ -3,7 +3,9 @@
 //
 // The sliders drive the velocity controller, which runs only once the robot is
 // handed to the user by the objective ActivateTeleop, as the gamepad's stop
-// button does. The page sees whether it runs from the controller manager,
+// button does. Manual drive ends by handing the robot back to the trajectory
+// controller, the one the rig starts with, through the objective
+// ActivateController. The page sees whether it runs from the controller manager,
 // which any objective may change, e.g. a move, which takes the trajectory
 // controller instead.
 
@@ -25,6 +27,8 @@ export const SLIDERS = [
 ] as const;
 
 const CONTROLLER = 'velocity_controller';
+/** The controller that drives the robot when manual drive is off: the one the rig starts with. */
+const DEFAULT_CONTROLLER = 'joint_trajectory_controller';
 /** How often the page asks the controller manager which controllers run. */
 const POLL_PERIOD = 2000;
 
@@ -38,6 +42,8 @@ interface MotionState {
   /** The axis of each slider, from -1 to 1. */
   axes: number[];
   enable(): Promise<void>;
+  /** Releases the sliders, and hands the robot back to the trajectory controller. */
+  disable(): Promise<void>;
   setAxis(axis: number, value: number): void;
   release(): void;
 }
@@ -52,6 +58,12 @@ export const useMotion = create<MotionState>((set, get) => ({
   async enable() {
     const result = await useCommander.getState().run('ActivateTeleop');
     if (result.ok) set({ enabled: true });
+  },
+
+  async disable() {
+    get().release();
+    const result = await useCommander.getState().run('ActivateController', `{controllers: ${DEFAULT_CONTROLLER}}`);
+    if (result.ok) set({ enabled: false });
   },
 
   setAxis(axis, value) {

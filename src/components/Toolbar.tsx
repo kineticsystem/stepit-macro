@@ -13,8 +13,8 @@ import { Popover } from './Popover';
 /**
  * The commands of the rig, above the live view: a shot first, then the live
  * view, the lights and manual drive, then the panel of the camera's settings.
- * The last photo shows in place of the live view. Live view and Lights are
- * buttons that light up while they are on.
+ * The last photo shows in place of the live view. Live view, Lights and
+ * Manual drive are buttons that turn green while they are on.
  */
 export function Toolbar() {
   return (
@@ -29,7 +29,7 @@ export function Toolbar() {
   );
 }
 
-/** The live view: a button, lit while the stream runs. */
+/** The live view: a button, green while the stream runs. */
 function LiveViewButton() {
   const { streaming, setStreaming } = useCamera();
   return (
@@ -60,8 +60,8 @@ function ShotButton() {
 }
 
 /**
- * The lights, on a jack of StepIt Freezer: a button, lit while the lights are
- * on. It shows what the board does: a shot ends with every output off, lights
+ * The lights, on a jack of StepIt Freezer: a button, green while the lights
+ * are on. It shows what the board does: a shot ends with every output off, lights
  * included.
  */
 function LightsButton() {
@@ -86,25 +86,24 @@ function LightsButton() {
 }
 
 /**
- * Hands the robot to the sliders, through the objective ActivateTeleop. The
- * button stays, and shows when manual drive is on; pressing it again changes
- * nothing.
+ * Manual drive, on and off: hands the robot to the sliders, through the
+ * objective ActivateTeleop, and back to the trajectory controller, through
+ * ActivateController. Green while it is on.
  */
 function ManualDriveButton() {
-  const { enabled, enable } = useMotion();
+  const { enabled, enable, disable } = useMotion();
   const running = useCommander((s) => s.running);
   const connected = useStatus() === 'connected';
   return (
     <button
       className={enabled ? 'engaged' : ''}
       aria-pressed={enabled}
-      title={enabled ? 'The sliders drive the joints. Any task, e.g. a move, takes the robot back.' : 'Hand the robot to the sliders'}
-      disabled={!connected || running === 'ActivateTeleop'}
-      onClick={() => void enable()}
+      title={enabled ? 'The sliders drive the joints: press to end manual drive' : 'Hand the robot to the sliders'}
+      disabled={!connected || running === 'ActivateTeleop' || running === 'ActivateController'}
+      onClick={() => void (enabled ? disable() : enable())}
     >
       <HandIcon />
       Manual drive
-      {enabled && <span className="state-chip">On</span>}
     </button>
   );
 }

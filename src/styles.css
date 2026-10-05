@@ -171,22 +171,14 @@ button.stop:hover:not(:disabled) { background: var(--error); filter: brightness(
 }
 .toolbar button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 
-/* Manual drive, once on. */
-button.engaged { border-color: var(--ok); color: var(--ok); font-weight: 600; }
-.state-chip {
-  padding: 1px 8px; border-radius: 10px; background: var(--ok); color: #fff; font-size: 12px; font-weight: 700;
+/* Live view, Lights and Manual drive: a green background while they are on. */
+button.live.on, button.lights.on, button.engaged {
+  background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600;
+}
+button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
+  background: var(--ok); filter: brightness(1.08);
 }
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
-
-/* The live view: lit while the stream runs. */
-
-button.live.on { background: #1fb5c9; border-color: #1497a8; color: #0d1b1e; font-weight: 600; }
-button.live.on:hover:not(:disabled) { background: #1fb5c9; filter: brightness(1.05); }
-
-/* The lights: lit, as a lamp, while they are on. */
-
-button.lights.on { background: #ffc83d; border-color: #e0a800; color: #1d2330; font-weight: 600; }
-button.lights.on:hover:not(:disabled) { background: #ffc83d; filter: brightness(1.05); }
 
 /* The panels of the toolbar */
 
