@@ -13,8 +13,7 @@
 //                                                ← fragment, parts of a large message
 //
 // rosbridge splits a message larger than its fragment size, 10 MB by default,
-// e.g. a picture, into fragments of its JSON text, which come in order. It
-// encodes a uint8[] field as a base64 string: see decodeBytes().
+// into fragments of its JSON text, which come in order.
 
 export type Status = 'connecting' | 'connected' | 'disconnected';
 
@@ -315,15 +314,6 @@ export class Rosbridge {
     this.status = status;
     for (const listener of this.statusListeners) listener(status);
   }
-}
-
-/** The bytes of a uint8[] field, which rosbridge sends as base64. */
-export function decodeBytes(data: string | number[]): Uint8Array {
-  if (Array.isArray(data)) return Uint8Array.from(data);
-  const binary = atob(data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
 }
 
 /** The message of an error of any kind. */
