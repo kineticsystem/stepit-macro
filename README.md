@@ -37,7 +37,7 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | Shot | **Take a shot** runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. Each picture is shown as it arrives, the latest large, with **Download**. | the commander, then the camera's driver |
 | Lights | A switch, which shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | Camera | The settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
-| Motion | **Drive by hand** runs the objective `ActivateTeleop`; the sliders then drive the rotary stage (`joint1`) and the rail (`joint2`). | the commander, then `ui_teleop` |
+| Motion | **Manual drive** runs the objective `ActivateTeleop`; the sliders then drive the rotary stage (`joint1`) and the rail (`joint2`). | the commander, then `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.
 

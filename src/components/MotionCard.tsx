@@ -21,7 +21,7 @@ export function MotionCard() {
         {!enabled && (
           <button className="primary" disabled={!connected || running === 'ActivateTeleop'} onClick={() => void enable()}>
             <HandIcon />
-            Drive by hand
+            Manual drive
           </button>
         )}
       </div>
