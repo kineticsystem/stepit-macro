@@ -13,8 +13,9 @@ import { Popover } from './Popover';
 /**
  * The commands of the rig, above the live view: a shot first, then the live
  * view, the lights and manual drive, then the panel of the camera's settings.
- * The last photo shows in place of the live view. Live view and Lights are
- * buttons that light up while they are on.
+ * The last photo shows in place of the live view. Live view, Lights and
+ * Manual drive are buttons that light up while they are on: teal for the live
+ * view, green for the other two.
  */
 export function Toolbar() {
   return (
@@ -60,8 +61,8 @@ function ShotButton() {
 }
 
 /**
- * The lights, on a jack of StepIt Freezer: a button, lit while the lights are
- * on. It shows what the board does: a shot ends with every output off, lights
+ * The lights, on a jack of StepIt Freezer: a button, green while the lights
+ * are on. It shows what the board does: a shot ends with every output off, lights
  * included.
  */
 function LightsButton() {
@@ -87,7 +88,7 @@ function LightsButton() {
 
 /**
  * Hands the robot to the sliders, through the objective ActivateTeleop. The
- * button stays, and shows when manual drive is on; pressing it again changes
+ * button stays, green while manual drive is on; pressing it again changes
  * nothing.
  */
 function ManualDriveButton() {
@@ -104,7 +105,6 @@ function ManualDriveButton() {
     >
       <HandIcon />
       Manual drive
-      {enabled && <span className="state-chip">On</span>}
     </button>
   );
 }
