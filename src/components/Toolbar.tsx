@@ -14,8 +14,7 @@ import { Popover } from './Popover';
  * The commands of the rig, above the live view: a shot first, then the live
  * view, the lights and manual drive, then the panel of the camera's settings.
  * The last photo shows in place of the live view. Live view, Lights and
- * Manual drive are buttons that light up while they are on: teal for the live
- * view, green for the other two.
+ * Manual drive are buttons that turn green while they are on.
  */
 export function Toolbar() {
   return (
@@ -30,7 +29,7 @@ export function Toolbar() {
   );
 }
 
-/** The live view: a button, lit while the stream runs. */
+/** The live view: a button, green while the stream runs. */
 function LiveViewButton() {
   const { streaming, setStreaming } = useCamera();
   return (

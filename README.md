@@ -33,7 +33,7 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | Part | What it does | Through |
 |---|---|---|
 | Top bar | Whether the page reaches the rig, which task runs, and **Stop**, which stops every task, whoever started it, and the sliders. | the commander |
-| **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, lit teal while the stream runs. When it is off, the middle shows the last photo, with its name and **Download**. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
+| **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last photo, with its name and **Download**. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
 | **Take a shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. The picture takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | Runs the objective `ActivateTeleop`; the sliders then drive the joints. The button stays, green while they do. | the commander |
