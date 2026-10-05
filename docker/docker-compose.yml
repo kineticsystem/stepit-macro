@@ -57,6 +57,11 @@ services:
     init: true
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
+    # No core dumps: a node that aborts while the rig stops, e.g. the commander
+    # or joy_linux_node, would write one of about 140 MB into the working
+    # folder, the mounted repo, at every stop.
+    ulimits:
+      core: 0
     # The devices: the serial ports of the robot and of the Freezer, the camera
     # through /dev/bus/usb, and the gamepad through /dev/input. Mounting the
     # whole of /dev, rather than each device, lets them be unplugged and plugged
@@ -67,9 +72,11 @@ services:
     # its uid, in dialout for the serial ports (see Dockerfile), and joins the
     # host's input, for the gamepad, and plugdev, for the cameras: groups whose
     # numbers differ between systems, which dock.sh reads from the host.
+    # Without dock.sh, e.g. `docker compose exec`, they fall back to groups the
+    # user is in anyway, two different ones: compose refuses the same twice.
     group_add:
       - "${INPUT_GID:-20}"
-      - "${PLUGDEV_GID:-20}"
+      - "${PLUGDEV_GID:-1000}"
     # The web pages reach the servers on the host's ports, and ROS2 nodes
     # outside the container, e.g. on the host, discover the rig over DDS.
     network_mode: host

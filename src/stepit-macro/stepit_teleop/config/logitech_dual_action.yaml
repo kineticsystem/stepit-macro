@@ -43,13 +43,16 @@ gamepad_teleop:
 
     # The axis that drives each joint, and its velocity at full deflection, in
     # rad/s: 12.566 is 2 turns/s, the motors allow 18.85. A negative scale
-    # reverses the direction.
-    joint1: { axis: 0, scale: 12.566 }
-    joint2: { axis: 1, scale: 12.566 }
-    joint3: { axis: 2, scale: 12.566 }
-    joint4: { axis: 3, scale: 12.566 }
-    # The D-pad is all or nothing, hence a slower speed: half a turn per second.
-    joint5: { axis: 4, scale: 3.1416 }
+    # reverses the direction. A stick pushed up is positive.
+    #
+    # As the sliders of StepIt UI, under the thumbs: the rotary stage on the
+    # left stick, the rail on the right stick, each up and down. The rig has
+    # no other motor: the other joints get no axis, and are held at 0.
+    joint1: { axis: 1, scale: 12.566 }  # the rotary stage: left stick up/down
+    joint2: { axis: 3, scale: 12.566 }  # the rail: right stick up/down
+    joint3: { axis: -1, scale: 0.0 }
+    joint4: { axis: -1, scale: 0.0 }
+    joint5: { axis: -1, scale: 0.0 }
 
     # With no /joy message for this long, in seconds, the joints are stopped.
     # joy_linux_node repeats its message 20 times a second, see the launch file.
