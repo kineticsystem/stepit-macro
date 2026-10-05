@@ -6,14 +6,17 @@
 bin="$(dirname "$(readlink -f "$0")")"
 cd "$bin/.."
 
-# A workspace built at another path, e.g. src/plugins by the commander's
-# container of older versions, which mounted this repo at ~/rig, has CMake
-# caches that CMake refuses here, and links into that path: build it again from
+# A workspace built from sources that are no longer where its CMake caches say,
+# e.g. src/plugins built by the commander's container of older versions, which
+# mounted this repo at ~/rig, or a module whose folder was renamed, has caches
+# that CMake refuses, and links into the old folders: build it again from
 # scratch. Its folders hold nothing but what the build makes.
 for workspace in modules plugins stepit-macro; do
     for cache in build/$workspace/*/CMakeCache.txt; do
-        if [ -f "$cache" ] && ! grep -q "^CMAKE_HOME_DIRECTORY:INTERNAL=$PWD/" "$cache"; then
-            echo "build/$workspace was built at another path: removing it and install/$workspace."
+        [ -f "$cache" ] || continue
+        sources=$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "$cache")
+        if [[ "$sources" != "$PWD/"* ]] || [ ! -d "$sources" ]; then
+            echo "build/$workspace was built from $sources: removing it and install/$workspace."
             rm -rf build/$workspace install/$workspace
             break
         fi

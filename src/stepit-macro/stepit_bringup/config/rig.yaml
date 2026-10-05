@@ -19,7 +19,7 @@
 # `ls -l /dev/serial/by-id`.
 
 launch:
-  # StepIt Driver, the robot: robot_bringup/launch.py.
+  # StepIt Motors, the robot: robot_bringup/launch.py.
   robot:
     # Fake motors, or the microcontroller on usb_port.
     use_dummy: true
@@ -42,7 +42,7 @@ launch:
     web_video_port: 8081  # the live view
     rosbridge_port: 9091
 
-  # Freezer Driver, the board that fires the cameras and the flashes:
+  # StepIt Freezer, the board that fires the cameras and the flashes:
   # freezer_node/freezer.launch.py.
   freezer:
     # A fake controller, or the Arduino Nano on usb_port.
@@ -85,7 +85,7 @@ web_server:
     download_directory: *pictures
     web_directory: ~/ws/modules/stepit-camera/web/dist
 
-# The Freezer: see freezer.yaml of Freezer Driver for its parameters, e.g. the
+# The Freezer: see freezer.yaml of StepIt Freezer for its parameters, e.g. the
 # sequences it fires. use_fake and usb_port are launch arguments, above.
 freezer:
   ros__parameters:

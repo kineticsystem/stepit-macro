@@ -58,11 +58,11 @@ StepIt Macro runs the whole rig with one command, in one Docker container, `step
 
 | Module | What it does |
 |---|---|
-| [StepIt Driver](https://github.com/kineticsystem/stepit-driver) | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz on demand. |
+| [StepIt Motors](https://github.com/kineticsystem/stepit-motors) | The robot: ROS2 control of the stepper motors, with fake motors by default, and RViz on demand. |
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
-| [Freezer Driver](https://github.com/kineticsystem/freezer-driver) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras and the flashes with a hardware timer, with a fake controller by default. It serves its board page on <http://localhost:8092> and its own rosbridge on port 9092. |
+| [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras and the flashes with a hardware timer, with a fake controller by default. It serves its board page on <http://localhost:8092> and its own rosbridge on port 9092. |
 | [StepIt UI](https://github.com/kineticsystem/stepit-ui) | The application of the whole rig, not started yet. |
 
 Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
@@ -115,7 +115,7 @@ Canon EOS 5D Mark II, connected over USB, with its AC adapter. See
 in the README of StepIt Camera, e.g. the mode dial on M. Without a camera, the
 rest of the rig runs anyway, and the camera driver waits for one.
 
-The Freezer board is not needed either: its driver runs with a fake controller by default. For the board, we need an Arduino Nano flashed with the firmware of the same commit of Freezer Driver, see [Install Freezer Driver on the Microcontroller](https://github.com/kineticsystem/freezer-driver#install-freezer-driver-on-the-microcontroller) in its README. The robot likewise runs on fake motors by default; its microcontroller is flashed as [StepIt Driver](https://github.com/kineticsystem/stepit-driver) tells. The container's user is in the group `dialout`, which owns the serial ports, so the host needs no grant.
+The Freezer board is not needed either: its driver runs with a fake controller by default. For the board, we need an Arduino Nano flashed with the firmware of the same commit of StepIt Freezer, see [Install StepIt Freezer on the Microcontroller](https://github.com/kineticsystem/stepit-freezer#install-stepit-freezer-on-the-microcontroller) in its README. The robot likewise runs on fake motors by default; its microcontroller is flashed as [StepIt Motors](https://github.com/kineticsystem/stepit-motors) tells. The container's user is in the group `dialout`, which owns the serial ports, so the host needs no grant.
 
 > [!IMPORTANT]
 > **Set _Auto power off_ to _Off_ in the camera's menu.** Otherwise the camera
@@ -230,7 +230,7 @@ The section `launch` holds the launch arguments of each module, given to the mod
 
 | Module | Argument | Default | Description |
 |---|---|---|---|
-| `robot` | `use_dummy` | `true` | Fake motors instead of the microcontroller of StepIt Driver. |
+| `robot` | `use_dummy` | `true` | Fake motors instead of the microcontroller of StepIt Motors. |
 | `robot` | `usb_port` | `/dev/ttyACM0` | The serial port of the microcontroller. |
 | `robot` | `baud_rate` | `9600` | The speed of its serial port, the one of the firmware. |
 | `robot` | `launch_rviz` | `false` | Open RViz, on the host's display. |
@@ -410,7 +410,7 @@ The behaviors and objectives run inside the commander, as a plugin. The rig's pr
 
 A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velocity of the joints, through the robot's velocity controller, and its button 1 stops whatever moves the robot and hands it to the gamepad. It runs from the package [`stepit_teleop`](src/stepit-macro/stepit_teleop).
 
-It belongs to StepIt Macro, not to StepIt Driver, because it needs the commander: the stop button runs the objective [`ActivateTeleop`](docs/ActivateTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
+It belongs to StepIt Macro, not to StepIt Motors, because it needs the commander: the stop button runs the objective [`ActivateTeleop`](docs/ActivateTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
 
 ### The Workspaces
 
@@ -424,7 +424,7 @@ The container builds three ROS workspaces, one on top of the other, each into fo
 
 [`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins` and `src/stepit-macro`: the modules run theirs in their own CI.
 
-The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. StepIt Driver and Freezer Driver both carry the libraries `serial` and `framed-serial` as submodules; colcon refuses two packages of the same name, so the rig builds the driver's copy, and `bin/modules/build.sh` stops if the two modules pin different commits of them.
+The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. StepIt Motors and StepIt Freezer both carry the libraries `serial` and `framed-serial` as submodules; colcon refuses two packages of the same name, so the rig builds the driver's copy, and `bin/modules/build.sh` stops if the two modules pin different commits of them.
 
 `src/plugins` and `src/stepit-macro` stay separate workspaces because CI builds them alone, without the modules: the first on the commander's workspace only, the second on ROS alone, as `src/stepit-macro` builds `btcpp_ros2_interfaces`, the type of the commander's action, from the commander's own copy in `modules/stepit-commander`.
 
@@ -451,7 +451,7 @@ In the rig's container, rebuild everything with `build`, or one module's package
 
 Then restart the rig. Outside the container, `./docker/dock.sh build` rebuilds everything too, and the image if the `Dockerfile` changed. The objectives need no build: the commander reads them again before each goal.
 
-The editor's validator checks the rig's objectives from the shell, with `validate`. The web pages run with hot reload as in their own containers, e.g. `cd ~/ws/modules/freezer-driver/web && pnpm dev`.
+The editor's validator checks the rig's objectives from the shell, with `validate`. The web pages run with hot reload as in their own containers, e.g. `cd ~/ws/modules/stepit-freezer/web && pnpm dev`.
 
 If the rig stops right after starting, look at its output with `./docker/dock.sh logs`. `./docker/dock.sh shell` still opens a terminal when the rig is stopped, in a new container of the same image.
 
@@ -484,7 +484,7 @@ The container mounts this repo at `~/ws` and the whole of `/dev`, for the serial
 
 The container uses the host network, so the web pages reach the servers from the browser: the editor through the commander's rosbridge on `ws://localhost:9090`, the camera's test page through the camera's web server on `http://localhost:8090`, its rosbridge on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`, the Freezer's board page through its web server on `http://localhost:8092` and its rosbridge on `ws://localhost:9092`. Each page keeps its own rosbridge, as in its module's own container, so the pages run unchanged.
 
-The containers of the modules' own `dock.sh` are named after their modules; the rig's is `stepit-macro`. Remove a module's container before starting the rig, e.g. with `./modules/stepit-driver/docker/dock.sh stepit-driver clean`, and stop the rig before starting a module's own: they use the same ports. `./docker/dock.sh start` also removes the containers that earlier versions of StepIt Macro started, one per module.
+The containers of the modules' own `dock.sh` are named after their modules; the rig's is `stepit-macro`. Remove a module's container before starting the rig, e.g. with `./modules/stepit-motors/docker/dock.sh stepit-motors clean`, and stop the rig before starting a module's own: they use the same ports. `./docker/dock.sh start` also removes the containers that earlier versions of StepIt Macro started, one per module.
 
 ## Continuous Integration
 

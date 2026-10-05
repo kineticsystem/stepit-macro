@@ -18,9 +18,9 @@ cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."
 # of their own: colcon refuses two packages of the same name, so the driver's
 # are built, and check_shared_libraries makes sure the Freezer's are the same.
 BASE_PATHS=(
-    modules/stepit-driver/src
-    modules/stepit-driver/modules
-    modules/freezer-driver/src
+    modules/stepit-motors/src
+    modules/stepit-motors/modules
+    modules/stepit-freezer/src
     modules/stepit-camera/src
     modules/stepit-commander/src
     modules/stepit-commander/modules/BehaviorTree.ROS2
@@ -31,17 +31,17 @@ COLCON_LOG=(--log-base log/modules)
 COLCON_OUTPUT=(--build-base build/modules --install-base install/modules)
 
 # The web pages, which each module builds with pnpm into its own dist folder.
-WEB_PAGES=(modules/stepit-camera/web modules/freezer-driver/web modules/stepit-editor)
+WEB_PAGES=(modules/stepit-camera/web modules/stepit-freezer/web modules/stepit-editor)
 
 # Fail if the driver and the Freezer pin different commits of a library they
 # share: the Freezer would run against the driver's copy without telling.
 function check_shared_libraries() {
     local library driver freezer
     for library in serial framed-serial; do
-        driver=$(git -C modules/stepit-driver/modules/$library rev-parse HEAD)
-        freezer=$(git -C modules/freezer-driver/modules/$library rev-parse HEAD)
+        driver=$(git -C modules/stepit-motors/modules/$library rev-parse HEAD)
+        freezer=$(git -C modules/stepit-freezer/modules/$library rev-parse HEAD)
         if [ "$driver" != "$freezer" ]; then
-            echo "stepit-driver and freezer-driver pin different commits of $library:" >&2
+            echo "stepit-motors and stepit-freezer pin different commits of $library:" >&2
             echo "  $driver and $freezer. Move both modules to the same one." >&2
             exit 1
         fi
