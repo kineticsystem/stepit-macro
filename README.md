@@ -75,7 +75,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **The camera's settings**, the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
 - **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place, with **Download**.
 - **The lights**, switched on and off by hand.
-- **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks, the left one and the right one, up and down, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 1.5 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
+- **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks, the left one and the right one, up and down, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
 - **Stop**, always in the top bar: it stops every objective, whoever started it, and the sliders.
 
 **Only the robot's tasks go through the commander**: a shot, and handing the robot to the user. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
@@ -259,7 +259,7 @@ Every other section is the parameters of a node, as in any ROS2 parameter file. 
 | `camera` | `download_directory`: the folder of the pictures, `~/ws/pictures`. The settings of the camera, e.g. `iso`, can be added here. |
 | `web_server` | The camera's web server: the same `download_directory`, from which StepIt UI loads the pictures. |
 | `freezer` | `baudrate`, and the sequences of the rig, by the jacks of the board: `test_shot`, the default one, fires the camera on OUT8 with the lights on OUT1, see [`TakeShot`](docs/TakeShot.md). |
-| `ui_teleop` | The sliders of StepIt UI: which axis drives which joint, and how fast at the ends: 9.42 rad/s, 1.5 turns/s, for the rotary stage, and 18.85 rad/s, the motors' limit, for the rail. |
+| `ui_teleop` | The sliders of StepIt UI: which axis drives which joint, and how fast at the ends: 4.71 rad/s, 0.75 turns/s, for the rotary stage, and 18.85 rad/s, the motors' limit, for the rail. |
 
 See the README of each module for the parameters it takes.
 
