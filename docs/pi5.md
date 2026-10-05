@@ -8,7 +8,6 @@
   - [Check the System](#check-the-system)
   - [Install Docker and Git](#install-docker-and-git)
   - [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer)
-  - [Add Swap](#add-swap)
   - [Check out the Git Repository](#check-out-the-git-repository)
   - [Configure the Hardware](#configure-the-hardware)
   - [Build the Rig](#build-the-rig)
@@ -31,7 +30,7 @@ ssh <user>@stepit.local
 
 ## Prerequisites
 
-- A Raspberry Pi 5 with **Raspberry Pi OS Lite (64-bit)**, reachable on the network as `stepit.local`. Lite has no desktop, which is what we want: a desktop grabs the camera as soon as it is plugged in, and the camera driver then cannot open it.
+- A Raspberry Pi 5 with **8 GB** of memory, which the build needs, and **Raspberry Pi OS Lite (64-bit)**, reachable on the network as `stepit.local`. Lite has no desktop, which is what we want: a desktop grabs the camera as soon as it is plugged in, and the camera driver then cannot open it.
 - The official 27 W power supply, and an active cooler: a long build throttles a Pi 5 without one.
 - About 15 GB free on the SD card or, better, on an NVMe SSD: the image is about 3 GB, and the build writes a lot.
 - StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano), connected to the Pi's USB ports.
@@ -43,7 +42,7 @@ ssh <user>@stepit.local
 
 ### Check the System
 
-Check that the Pi runs the 64-bit system, and how much memory and disk it has:
+Check that the Pi runs the 64-bit system, has 8 GB of memory, and enough room on its disk:
 
 ```
 uname -m
@@ -52,7 +51,7 @@ free -h
 df -h /
 ```
 
-`uname -m` must print `aarch64`. If it prints `armv7l`, the system is the 32-bit one, on which ROS 2 does not run: install Raspberry Pi OS Lite (64-bit) again. `getconf PAGESIZE` prints `16384` on a Pi 5: see [Troubleshooting](#troubleshooting) if a program crashes on the Pi and not on a PC.
+`uname -m` must print `aarch64`, and `free -h` about 7.9 Gi of memory. If it prints `armv7l`, the system is the 32-bit one, on which ROS 2 does not run: install Raspberry Pi OS Lite (64-bit) again. `getconf PAGESIZE` prints `16384` on a Pi 5: see [Troubleshooting](#troubleshooting) if a program crashes on the Pi and not on a PC.
 
 ### Install Docker and Git
 
@@ -96,25 +95,6 @@ ModemManager, when it is installed, probes every new `ttyACM` port, and can dist
 ```
 systemctl is-active ModemManager && sudo systemctl disable --now ModemManager
 ```
-
-### Add Swap
-
-**A Pi 5 with 8 GB does not need this step.** With 4 GB or less, the build can run out of memory. Check how the system handles swap:
-
-```
-swapon --show
-ls /etc/dphys-swapfile
-```
-
-If `/etc/dphys-swapfile` exists, the system uses dphys-swapfile: raise the swap to 2 GB.
-
-```
-sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
-sudo systemctl restart dphys-swapfile
-free -h
-```
-
-If it does not exist, the system has no dphys-swapfile: newer releases of Raspberry Pi OS, based on Debian 13, manage swap themselves, in compressed memory (zram), as `swapon --show` lists. Leave it as it is, and only if the build runs out of memory, see [Troubleshooting](#troubleshooting).
 
 ### Check out the Git Repository
 
@@ -224,7 +204,7 @@ sudo reboot
 
 `getconf PAGESIZE` then prints `4096`.
 
-**The build stops with `Killed`, or the Pi stops answering during the build.** It ran out of memory, which can happen with 4 GB or less. Add swap, see [Add Swap](#add-swap), and build again: the build continues where it stopped.
+**The build stops with `Killed`, or the Pi stops answering during the build.** It ran out of memory, which happens on a Pi with less than 8 GB: the rig needs a Pi 5 with 8 GB.
 
 **`ls -l /dev/serial/by-id/` does not list a board.** The Pi does not see it. Check the cable, which must carry data and not only power, and the board's LED. `journalctl -kf`, left running while the board is plugged in, prints what the kernel sees: a working Teensy ends with `ttyACM0: USB ACM device`, a working Nano with `now attached to ttyUSB0`.
 
