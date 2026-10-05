@@ -20,7 +20,7 @@ The package [`stepit_teleop`](../src/stepit-macro/stepit_teleop) drives the robo
 - the D-pad moves a fifth joint, left and right, at half a turn per second;
 - a stop button stops whatever moves the robot, an objective or the sticks, and hands the robot to the gamepad.
 
-The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ActivateTeleop`](ActivateTeleop.md). That is why the gamepad belongs to StepIt Macro, and not to StepIt Driver, which only provides the controllers.
+The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ActivateTeleop`](ActivateTeleop.md). That is why the gamepad belongs to StepIt Macro, and not to StepIt Motors, which only provides the controllers.
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ A change to the configuration needs the same, because the launch file reads the 
 
 ## The Stop Button
 
-The stop button makes the velocity controller the only controller driving the robot. Doing so stops the robot whatever it is doing: when a controller is deactivated, StepIt Driver sends velocity 0 to the joints it released, and the velocity controller sends nothing until a stick moves.
+The stop button makes the velocity controller the only controller driving the robot. Doing so stops the robot whatever it is doing: when a controller is deactivated, StepIt Motors sends velocity 0 to the joints it released, and the velocity controller sends nothing until a stick moves.
 
 **The motors brake, they do not stop dead.** A velocity lower than the current one makes the firmware decelerate at the motor's acceleration, 2 turns/s² (`acceleration` in the driver's `stepit.ros2_control.xacro`), down to 0; the fake motor does the same. A joint turning at the gamepad's 2 turns/s therefore takes 1 s and one turn to stop, one at the motors' 3 turns/s 1.5 s and 2.25 turns. Every stop below works this way, whether it comes from a controller being released or from the gamepad sending velocity 0.
 

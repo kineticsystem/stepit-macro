@@ -404,11 +404,11 @@ still be added later, on the same interfaces. What it needs:
    whatever `ttyUSB` or `ttyACM` number it gets. This works today, with no
    code: set `usb_port` to that path.
 
-**In Freezer** (`modules/freezer-driver`) it is small: the node offers the
+**In Freezer** (`modules/stepit-freezer`) it is small: the node offers the
 services and the topic itself, and its `connect()`, called once from the
 constructor, becomes the connect service.
 
-**In StepIt** (`modules/stepit-driver`) it is open. The port is a hardware
+**In StepIt** (`modules/stepit-motors`) it is open. The port is a hardware
 parameter of the URDF, read once, and the hardware interface has no services
 of its own. The controller manager can already restart it, through
 `set_hardware_component_state`, and `on_configure()` already connects, but

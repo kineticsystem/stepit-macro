@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 StepIt Macro runs the whole focus stacking rig **in one container**, `stepit-macro`: it builds the
-git submodules under `modules/` (driver, commander, editor, camera, Freezer; UI is not started yet)
+git submodules under `modules/` (motors, commander, editor, camera, Freezer; UI is not started yet)
 and starts them all with one launch file, `stepit_bringup/rig.launch.py`, configured by one file,
 `src/stepit-macro/stepit_bringup/config/rig.yaml`. Each module keeps its own container, tests and
 CI, to work on it alone. The repo also holds the rig's **own ROS packages** in `src/`, as two

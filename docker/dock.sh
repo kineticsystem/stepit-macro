@@ -12,7 +12,7 @@
 SERVICE=stepit-macro
 
 # The modules, in ../modules, that the container builds and runs.
-MODULES=(stepit-driver stepit-commander stepit-editor stepit-camera freezer-driver)
+MODULES=(stepit-motors stepit-commander stepit-editor stepit-camera stepit-freezer)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command>\n

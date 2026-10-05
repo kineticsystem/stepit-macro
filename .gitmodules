@@ -1,6 +1,6 @@
-[submodule "modules/stepit-driver"]
-	path = modules/stepit-driver
-	url = git@github.com:kineticsystem/stepit-driver.git
+[submodule "modules/stepit-motors"]
+	path = modules/stepit-motors
+	url = git@github.com:kineticsystem/stepit-motors.git
 	branch = main
 [submodule "modules/stepit-commander"]
 	path = modules/stepit-commander
@@ -18,7 +18,7 @@
 	path = modules/stepit-ui
 	url = git@github.com:kineticsystem/stepit-ui.git
 	branch = main
-[submodule "modules/freezer-driver"]
-	path = modules/freezer-driver
-	url = git@github.com:kineticsystem/freezer-driver.git
+[submodule "modules/stepit-freezer"]
+	path = modules/stepit-freezer
+	url = git@github.com:kineticsystem/stepit-freezer.git
 	branch = main
