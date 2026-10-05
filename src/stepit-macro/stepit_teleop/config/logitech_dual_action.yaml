@@ -48,7 +48,9 @@ gamepad_teleop:
     # As the sliders of StepIt UI, under the thumbs: the rotary stage on the
     # left stick, the rail on the right stick, each up and down. The rig has
     # no other motor: the other joints get no axis, and are held at 0.
-    joint1: { axis: 1, scale: 12.566 }  # the rotary stage: left stick up/down
+    # The rotary stage, which the subject turns on, at half the speed of the
+    # rail, as on the sliders of StepIt UI: 1 turn/s.
+    joint1: { axis: 1, scale: 6.2832 }  # the rotary stage: left stick up/down
     joint2: { axis: 3, scale: 12.566 }  # the rail: right stick up/down
     joint3: { axis: -1, scale: 0.0 }
     joint4: { axis: -1, scale: 0.0 }

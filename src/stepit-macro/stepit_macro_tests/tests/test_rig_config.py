@@ -116,11 +116,11 @@ def test_the_ui_refuses_an_unknown_argument():
         rig.ui({"prot": 8070})
 
 
-def test_the_ui_sliders_drive_the_stage_and_the_rail_at_the_motors_limit():
+def test_the_ui_sliders_drive_the_stage_at_half_the_rail_speed():
     _, parameters = rig.split_config(load_config())
     teleop = parameters["ui_teleop"]["ros__parameters"]
     assert teleop["stop_button"] == -1
-    assert teleop["joint1"] == {"axis": 0, "scale": pytest.approx(18.8496, abs=1e-3)}
+    assert teleop["joint1"] == {"axis": 0, "scale": pytest.approx(9.4248, abs=1e-3)}
     assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(18.8496, abs=1e-3)}
     for joint in ("joint3", "joint4", "joint5"):
         assert teleop[joint]["axis"] == -1

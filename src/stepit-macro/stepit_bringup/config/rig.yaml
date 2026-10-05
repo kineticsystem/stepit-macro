@@ -121,7 +121,10 @@ freezer:
 # The sliders of StepIt UI, which drive the joints as the gamepad's sticks do:
 # the page sends each slider as an axis of a sensor_msgs/Joy on /ui/joy, from -1
 # to 1, and this second gamepad_teleop turns them into velocities. The ends of a
-# slider are the motors' limit, 3 turns/s. When the page stops sending for
+# slider are the rail's top speed, the motors' limit, 3 turns/s, and half of it,
+# 1.5 turns/s, for the rotary stage, which the subject turns on. StepIt UI
+# shows these speeds under its sliders (SLIDERS in its motion/store.ts): keep
+# them in step. When the page stops sending for
 # joy_timeout seconds during a move, e.g. when the tablet loses the network,
 # the joints stop.
 ui_teleop:
@@ -129,8 +132,8 @@ ui_teleop:
     stop_button: -1  # none: the page runs ActivateTeleop through the commander
     controller: velocity_controller
     joints: [joint1, joint2, joint3, joint4, joint5]
-    joint1: { axis: 0, scale: 18.8496 }  # the rotary stage, in rad/s
-    joint2: { axis: 1, scale: 18.8496 }  # the rail, in rad/s of its motor
+    joint1: { axis: 0, scale: 9.4248 }   # the rotary stage, in rad/s: 1.5 turns/s
+    joint2: { axis: 1, scale: 18.8496 }  # the rail, in rad/s of its motor: 3 turns/s
     joint3: { axis: -1, scale: 0.0 }
     joint4: { axis: -1, scale: 0.0 }
     joint5: { axis: -1, scale: 0.0 }

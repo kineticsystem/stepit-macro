@@ -16,7 +16,7 @@
 
 The package [`stepit_teleop`](../src/stepit-macro/stepit_teleop) drives the robot with a Logitech Dual Action gamepad:
 
-- the left stick, up and down, moves the rotary stage (`joint1`), and the right stick, up and down, the rail (`joint2`), at a velocity proportional to how far it is pushed, up to 2 turns/s: as the two sliders of StepIt UI, under the thumbs, up for positive;
+- the left stick, up and down, moves the rotary stage (`joint1`), and the right stick, up and down, the rail (`joint2`), at a velocity proportional to how far it is pushed, up to 1 turn/s for the stage and 2 turns/s for the rail: as the two sliders of StepIt UI, under the thumbs, up for positive, the stage at half the speed of the rail;
 - a stop button stops whatever moves the robot, an objective or the sticks, and hands the robot to the gamepad.
 
 The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ActivateTeleop`](ActivateTeleop.md). That is why the gamepad belongs to StepIt Macro, and not to StepIt Motors, which only provides the controllers.
@@ -179,7 +179,7 @@ The configuration maps the joints as follows; the motors allow up to 18.85 rad/s
 
 | Joint | Axis | Velocity at full deflection |
 |---|---|---|
-| `joint1`, the rotary stage | `1`, left stick up/down | `12.566` rad/s, 2 turns/s |
+| `joint1`, the rotary stage | `1`, left stick up/down | `6.2832` rad/s, 1 turn/s: half the rail's, the subject turns on it |
 | `joint2`, the rail | `3`, right stick up/down | `12.566` rad/s, 2 turns/s |
 | `joint3`, `joint4`, `joint5` | none: the rig has no other motor | held at 0 |
 
