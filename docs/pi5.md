@@ -9,6 +9,7 @@
   - [Install Docker and Git](#install-docker-and-git)
   - [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer)
   - [Check out the Git Repository](#check-out-the-git-repository)
+  - [Give the Rig the Camera and the Gamepad](#give-the-rig-the-camera-and-the-gamepad)
   - [Configure the Hardware](#configure-the-hardware)
   - [Build the Rig](#build-the-rig)
 - [Running the Rig](#running-the-rig)
@@ -110,6 +111,30 @@ git pull && git submodule update --init --recursive
 ./docker/dock.sh build
 ```
 
+### Give the Rig the Camera and the Gamepad
+
+The container is privileged, which gives it every device, but its user still opens a device only if the Pi lets it. A PC with a desktop grants the gamepad and the cameras to the user who is logged in; Raspberry Pi OS Lite has no desktop, and leaves them to groups:
+
+| Device | Owner on the Pi | How the rig gets it |
+|---|---|---|
+| The gamepad, `/dev/input/js0` | `root:input`, mode `660` | `dock.sh` reads the number of the Pi's group `input`, 996, and the container's user joins it. |
+| The camera, `/dev/bus/usb/...` | `root:root`, mode `664`: only root writes, which libgphoto2 needs to control a camera | A udev rule gives every camera that speaks PTP, as the Canon EOS does, to the group `plugdev`, which the container's user joins the same way. |
+
+Install the rule of the cameras, [`docker/udev/60-stepit-camera.rules`](../docker/udev/60-stepit-camera.rules), and apply it:
+
+```
+sudo cp docker/udev/60-stepit-camera.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+A camera plugged in later belongs to `plugdev`. Check it with the camera on and connected:
+
+```
+ls -l /dev/bus/usb/*/* | grep plugdev
+```
+
+The gamepad needs no rule: the group `input` already owns it.
+
 ### Configure the Hardware
 
 The rig starts on fake hardware by default. Point it at the two boards, in [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml):
@@ -207,5 +232,9 @@ sudo reboot
 **`ls -l /dev/serial/by-id/` does not list a board.** The Pi does not see it. Check the cable, which must carry data and not only power, and the board's LED. `journalctl -kf`, left running while the board is plugged in, prints what the kernel sees: a working Teensy ends with `ttyACM0: USB ACM device`, a working Nano with `now attached to ttyUSB0`.
 
 **The log says the connection to a board failed.** Another program holds its port, e.g. a rig still running on a PC that shares the board, or ModemManager: see [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer). The Nano resets when its port opens: one failed attempt followed by `Connection established` is normal.
+
+**The gamepad does nothing, and the log says `Couldn't open joystick /dev/input/js0`.** The container's user is not in the Pi's group `input`: start the rig with `./docker/dock.sh start`, which adds it, not with a plain `docker compose up`. Check it with `docker exec stepit-macro id`, which lists the number of `input`, 996. If `/dev/input/js0` does not exist, the gamepad is not plugged in, or is not in D mode: the switch at its back must be on **D**, and `lsusb` shows `046d:c216 ... [DirectInput Mode]`. Once the log no longer complains, press the stop button, button 1: the sticks drive the joints after `ActivateTeleop succeeded`.
+
+**The camera driver keeps waiting for a camera that is on and connected.** Its USB device is not writable by the container's user: install the rule of [Give the Rig the Camera and the Gamepad](#give-the-rig-the-camera-and-the-gamepad), then unplug the camera and plug it in again.
 
 **The tablet cannot open `http://stepit.local:8070`.** Use the Pi's address, printed by `hostname -I`, see [Open the Pages](#open-the-pages).

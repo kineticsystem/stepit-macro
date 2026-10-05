@@ -32,6 +32,13 @@ download through it. It compiles the rig in a container that it then commits as 
 image holds the rosdep packages and the `~/.dependencies` marker and the rig does not run
 `update.sh` again on start.
 
+The container is privileged and mounts `/dev`, but its user (the host's uid) opens a device only
+if the host lets it: it is in `dialout` (20, the serial ports) in the image, and joins the
+host's `input` (the gamepad) and `plugdev` (the cameras, given by
+`docker/udev/60-stepit-camera.rules` on a host without a desktop, e.g. the Pi) through
+`group_add`, with the numbers `dock.sh` reads from the host: they differ between systems.
+Start the rig with `dock.sh`, never a plain `docker compose up`, which lacks them.
+
 The repo is mounted at `~/ws`. Three workspaces, each with its scripts in `bin/<workspace>/`,
 building into `build/<workspace>`, `install/<workspace>` and `log/<workspace>` and naming its
 folders explicitly: colcon never crawls the repo, and `modules/COLCON_IGNORE` keeps it out of the

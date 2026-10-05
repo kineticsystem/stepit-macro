@@ -2,7 +2,8 @@
 # camera, the Freezer board, the editor and the gamepad, all started by one
 # launch file, stepit_bringup/rig.launch.py, and configured by one file,
 # src/stepit-macro/stepit_bringup/config/rig.yaml.
-# Driven by ./dock.sh, which supplies USER_UID/USER_GID.
+# Driven by ./dock.sh, which supplies USER_UID/USER_GID, and the numbers of the
+# host's groups input and plugdev, INPUT_GID/PLUGDEV_GID.
 #
 # Each module keeps its own container, for testing it alone: this one runs them
 # all, built from the submodules under ../modules into the rig's own build
@@ -61,6 +62,14 @@ services:
     # whole of /dev, rather than each device, lets them be unplugged and plugged
     # in again while the container runs: they come back under new numbers.
     privileged: true
+    # Privileged gives the container the devices, not their permissions: the
+    # user opens a device only if the host lets it. It is the host's user, by
+    # its uid, in dialout for the serial ports (see Dockerfile), and joins the
+    # host's input, for the gamepad, and plugdev, for the cameras: groups whose
+    # numbers differ between systems, which dock.sh reads from the host.
+    group_add:
+      - "${INPUT_GID:-20}"
+      - "${PLUGDEV_GID:-20}"
     # The web pages reach the servers on the host's ports, and ROS2 nodes
     # outside the container, e.g. on the host, discover the rig over DDS.
     network_mode: host
