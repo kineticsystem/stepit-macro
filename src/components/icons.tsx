@@ -72,3 +72,12 @@ export function HandIcon() {
     </svg>
   );
 }
+
+export function VideoIcon() {
+  return (
+    <svg {...common}>
+      <rect x="1.5" y="4" width="9" height="8" rx="1.5" />
+      <path d="M10.5 7 14.5 4.5v7L10.5 9" />
+    </svg>
+  );
+}
