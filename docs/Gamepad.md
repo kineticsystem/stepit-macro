@@ -41,12 +41,12 @@ It lists the gamepad, as `/dev/input/js0` if it is the only one, and shows every
 
 ## Running the Gamepad
 
-The gamepad runs in the `stepit-macro` container, the container of the rig's own programs, which `./docker/dock.sh start` starts with the rest of the rig. It runs the packages of [`src/stepit-macro`](../src/stepit-macro), on the image defined in [`docker/Dockerfile`](../docker/Dockerfile). The gamepad can be plugged in before or after: the container mounts `/dev/input` from the host, and `joy_linux_node` opens the gamepad as soon as it appears.
+The gamepad runs in the `stepit-macro` container with the rest of the rig, which `./docker/dock.sh start` starts: `rig.launch.py` includes `stepit_teleop/teleop.launch.py`, with the device set by `dev` in the section `launch.teleop` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml), `/dev/input/js0` by default. The gamepad can be plugged in before or after: the container mounts `/dev` from the host, and `joy_linux_node` opens the gamepad as soon as it appears.
 
 Follow what it does:
 
 ```
-./docker/dock.sh logs stepit-macro
+./docker/dock.sh logs
 ```
 
 When the robot starts, the trajectory controller drives it and the sticks do nothing. Press the stop button, button 1 by default, and the log says:
@@ -57,12 +57,12 @@ ActivateTeleop succeeded: the gamepad drives the robot
 
 From then on the sticks move the joints. Any objective sent afterwards, from the editor or the command line, switches back to the controller it needs by itself, as every objective does.
 
-After a change to the code of `stepit_teleop`, build the macro workspace and restart the container:
+After a change to the code of `stepit_teleop`, build the rig and restart it:
 
 ```
-./docker/dock.sh build stepit-macro
-./docker/dock.sh stop stepit-macro
-./docker/dock.sh start stepit-macro
+./docker/dock.sh build
+./docker/dock.sh stop
+./docker/dock.sh start
 ```
 
 A change to the configuration needs the same, because the launch file reads the copy installed by the build. A change to [`activate_teleop.xml`](../src/plugins/stepit_objectives/objectives/activate_teleop.xml) needs nothing: the commander reads it again before the next press.
@@ -211,12 +211,12 @@ The numbers are those of the Linux joystick interface, which `jstest-gtk` and `j
 
 **The sticks move nothing.** The velocity controller is not active: the robot starts with the trajectory controller, and every objective switches back to the controller it needs. Press the stop button.
 
-**The log says `The commander is not running`.** The button found no commander to run `ActivateTeleop`. Start it with `./docker/dock.sh start stepit-commander`, and look at `./docker/dock.sh logs stepit-commander` if it stops right away.
+**The log says `The commander is not running`.** The button found no commander to run `ActivateTeleop`. The commander runs in the rig: look at `./docker/dock.sh logs` for why it stopped.
 
 **The log says `Couldn't open joystick /dev/input/js0`.** The gamepad is not plugged in, or it is not the first joystick. `ls /dev/input/js*` on the host lists the joysticks; pass another one with the launch argument `dev`.
 
-**The log says `ActivateTeleop failed`.** The objective could not switch the controllers, e.g. because the driver is not running; `./docker/dock.sh logs stepit-commander` says why.
+**The log says `ActivateTeleop failed`.** The objective could not switch the controllers, e.g. because the driver is not running; `./docker/dock.sh logs` says why.
 
-**A joint turns the wrong way.** Change the sign of its `scale` in the configuration, then build and restart the container.
+**A joint turns the wrong way.** Change the sign of its `scale` in the configuration, then build and restart the rig.
 
 **The log warns `Couldn't open joystick force feedback`.** It is harmless: the Logitech Dual Action has no force feedback, and the gamepad works anyway.

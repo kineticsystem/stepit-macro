@@ -1,33 +1,27 @@
-# The whole StepIt Macro rig: the robot, the commander, the editor, the
-# camera and the Freezer board, each in the container defined by its own
-# project, and the rig's own programs, e.g. the gamepad, in the stepit-macro
-# container defined here.
+# The whole StepIt Macro rig, in one container: the robot, the commander, the
+# camera, the Freezer board, the editor and the gamepad, all started by one
+# launch file, stepit_bringup/rig.launch.py, and configured by one file,
+# src/stepit-macro/stepit_bringup/config/rig.yaml.
 # Driven by ./dock.sh, which supplies USER_UID/USER_GID.
 #
-# Every service extends the `dev` service of the project it runs, so the
-# Dockerfiles, mounts and network settings stay defined in one place: the
-# modules. Relative paths in an extended file resolve against that file, so
-# each container still mounts its own module at ~/ws. Only what differs when
-# they run together is set here: the dependencies between them, the folder
-# the editor opens, and the command, which runs the application instead of
-# `sleep infinity`. The containers and images are named after their modules, as
-# each module's own dock.sh names them.
+# Each module keeps its own container, for testing it alone: this one runs them
+# all, built from the submodules under ../modules into the rig's own build
+# folders (see ../bin/modules).
 #
-# The ROS2 services install the system packages their code needs (rosdep, i.e.
-# `update.sh`) the first time their container starts, unless their image has
-# them already: `dock.sh build` installs them while compiling, and saves that
+# The service installs the system packages its code needs (rosdep, i.e.
+# `update.sh`) the first time its container starts, unless its image has them
+# already: `dock.sh build` installs them while compiling, and saves that
 # container as the service's image, marker file included. Both refresh the
 # package lists first: the image's own come from a cached layer, and name
-# versions that Ubuntu may since have replaced, which apt can no longer fetch. The marker file lives
-# in the container, so a recreated container of an image without it installs
-# them again.
+# versions that Ubuntu may since have replaced, which apt can no longer fetch.
+# The marker file lives in the container, so a recreated container of an image
+# without it installs them again.
 #
-# Every package apt downloads, while building the images or from rosdep, goes
+# Every package apt downloads, while building the image or from rosdep, goes
 # through apt-cache, a proxy that keeps it on this machine, so that it is
-# downloaded only once. The ROS2 services mount its apt configuration, which
-# falls back to the internet when the proxy is not running; `dock.sh build`
-# starts it and passes it to the image builds, which run on the host network to
-# reach it.
+# downloaded only once. The service mounts its apt configuration, which falls
+# back to the internet when the proxy is not running; `dock.sh build` starts it
+# and passes it to the image build, which runs on the host network to reach it.
 
 name: stepit-macro
 
@@ -46,68 +40,9 @@ services:
     volumes:
       - apt-cache:/var/cache/apt-cacher-ng
 
-  # The robot: ros2_control with fake motors by default, and RViz when
-  # LAUNCH_RVIZ=true.
-  stepit-driver:
-    extends:
-      file: ../modules/stepit-driver/docker/docker-compose.yml
-      service: dev
-    build:
-      network: host
-    image: stepit-driver:latest
-    container_name: stepit-driver
-    hostname: stepit-driver
-    init: true
-    # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
-    stop_signal: SIGINT
-    volumes:
-      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
-      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
-    command:
-      - bash
-      - -c
-      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
-        && source /opt/ros/jazzy/setup.bash
-        && source install/setup.bash
-        && exec ros2 launch robot_bringup launch.py launch_rviz:=${LAUNCH_RVIZ:-false}'
-
-  # The action server running objectives on the robot, and rosbridge on port
-  # 9090 for the editor.
-  stepit-commander:
-    extends:
-      file: ../modules/stepit-commander/docker/docker-compose.yml
-      service: dev
-    build:
-      network: host
-    image: stepit-commander:latest
-    container_name: stepit-commander
-    hostname: stepit-commander
-    init: true
-    stop_signal: SIGINT
-    depends_on:
-      - stepit-driver
-    volumes:
-      # The rig's plugin: its behaviors and objectives, in src/plugins, built
-      # as a workspace of their own on top of the commander's (see
-      # ../bin/plugins).
-      - ..:/home/developer/rig
-      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
-      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
-    command:
-      - bash
-      - -c
-      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && ~/rig/bin/plugins/update.sh && touch ~/.dependencies; }; }
-        && source /opt/ros/jazzy/setup.bash
-        && source install/setup.bash
-        && source ~/rig/install/plugins/setup.bash
-        && exec ros2 launch stepit_server commander.launch.py
-             params_file:=$$(ros2 pkg prefix stepit_objectives)/share/stepit_objectives/config/commander.yaml'
-
-  # The rig's own programs, from src/stepit-macro (see ../bin/stepit-macro), on an image
-  # of their own: today the gamepad, whose sticks drive the joints through the
-  # velocity controller and whose stop button hands the robot to it through
-  # the commander. The gamepad can be plugged in at any time: /dev/input is
-  # mounted, not copied when the container starts.
+  # The whole rig. The web pages are on the ports of rig.yaml: the editor on
+  # http://localhost:8080, the camera's test page on http://localhost:8090 and
+  # the Freezer's board page on http://localhost:8092.
   stepit-macro:
     build:
       context: .
@@ -119,103 +54,35 @@ services:
     container_name: stepit-macro
     hostname: stepit-macro
     init: true
+    # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
-    # Reads the gamepad, a device which may appear after the container started.
+    # The devices: the serial ports of the robot and of the Freezer, the camera
+    # through /dev/bus/usb, and the gamepad through /dev/input. Mounting the
+    # whole of /dev, rather than each device, lets them be unplugged and plugged
+    # in again while the container runs: they come back under new numbers.
     privileged: true
-    # Required for DDS discovery between this container and the others.
+    # The web pages reach the servers on the host's ports, and ROS2 nodes
+    # outside the container, e.g. on the host, discover the rig over DDS.
     network_mode: host
-    depends_on:
-      - stepit-commander
     volumes:
       - ..:/home/developer/ws
-      - /dev/input:/dev/input
+      - /dev:/dev
+      # RViz, on the host's display.
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
       - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
       - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
-    command:
-      - bash
-      - -c
-      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
-        && source /opt/ros/jazzy/setup.bash
-        && source install/stepit-macro/setup.bash
-        && exec ros2 launch stepit_teleop teleop.launch.py'
-
-  # The web editor, on http://localhost:${EDITOR_PORT:-8080}.
-  stepit-editor:
-    extends:
-      file: ../modules/stepit-editor/docker/docker-compose.yml
-      service: dev
-    build:
-      network: host
-    image: stepit-editor:latest
-    container_name: stepit-editor
-    hostname: stepit-editor
-    init: true
-    depends_on:
-      - stepit-commander
-    # Edit the rig's objectives: the commander reads them again before each
-    # goal, so what the editor saves is what the Run button executes. The whole
-    # repo is mounted, not the folder alone: git deletes and recreates a folder
-    # when a branch it switches to lacks it, and a mount of the folder would
-    # then show the deleted one, empty, until the container is recreated.
-    volumes:
-      - ..:/home/developer/rig
     environment:
-      BEHAVIORS_DIR: /home/developer/rig/src/plugins/stepit_objectives/objectives
-    command: serve.sh
-
-  # The camera driver, with its test page and the pictures on
-  # http://localhost:8090, web_video_server on port 8081 and its own rosbridge
-  # on port 9091. It needs the camera on USB: the container is privileged and
-  # mounts /dev, see its compose file.
-  stepit-camera:
-    extends:
-      file: ../modules/stepit-camera/docker/docker-compose.yml
-      service: dev
-    build:
-      network: host
-    image: stepit-camera:latest
-    container_name: stepit-camera
-    hostname: stepit-camera
-    init: true
-    stop_signal: SIGINT
-    volumes:
-      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
-      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: 1
     command:
       - bash
       - -c
       - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
         && source /opt/ros/jazzy/setup.bash
-        && source install/setup.bash
-        && exec ros2 launch stepit_camera camera.launch.py'
-
-  # The Freezer board, which fires the cameras and the flashes, with a fake
-  # controller by default: FREEZER_USE_FAKE=false drives the board on
-  # FREEZER_USB_PORT. Its board page is on http://localhost:8092 and its own
-  # rosbridge on port 9092. The container is privileged and mounts /dev, for the
-  # serial port of the Nano, see its compose file.
-  freezer-driver:
-    extends:
-      file: ../modules/freezer-driver/docker/docker-compose.yml
-      service: dev
-    build:
-      network: host
-    image: freezer-driver:latest
-    container_name: freezer-driver
-    hostname: freezer-driver
-    init: true
-    stop_signal: SIGINT
-    volumes:
-      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
-      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
-    command:
-      - bash
-      - -c
-      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
-        && source /opt/ros/jazzy/setup.bash
-        && source install/setup.bash
-        && exec ros2 launch freezer_node freezer.launch.py
-             use_fake:=${FREEZER_USE_FAKE:-true} usb_port:=${FREEZER_USB_PORT:-/dev/ttyUSB0}'
+        && source install/modules/setup.bash
+        && source install/plugins/setup.bash
+        && source install/stepit-macro/setup.bash
+        && exec ros2 launch stepit_bringup rig.launch.py'
 
 volumes:
   apt-cache:

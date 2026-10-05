@@ -1,5 +1,5 @@
-# ROS: the rig's packages in src are built as a workspace of their own, on top
-# of the commander's, inside the commander's container.
+# ROS: the modules and the rig's two workspaces, built into folders of their
+# own under each of these, inside the stepit-macro container.
 build
 install
 log
@@ -14,3 +14,10 @@ compile_commands.json
 # Python
 __pycache__
 *.egg-info
+
+# The pictures the camera downloads, see rig.yaml.
+pictures
+
+# pnpm's store of the packages of the web pages, which pnpm keeps at the root
+# of the file system the pages are on: in the container, the mounted repo.
+.pnpm-store

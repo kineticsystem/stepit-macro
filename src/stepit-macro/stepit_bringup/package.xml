@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>stepit_bringup</name>
+  <version>0.1.0</version>
+  <description>
+    Starts the whole StepIt macro rig in one container: the robot, the
+    commander, the camera, the Freezer, the editor and the gamepad, configured
+    by one file, config/rig.yaml.
+  </description>
+  <maintainer email="lentigrams@gmail.com">developer</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>stepit_teleop</exec_depend>
+  <!-- The modules' packages, robot_bringup, stepit_server, stepit_camera and
+       freezer_node, are not listed: they are built in the modules' workspace,
+       which rosdep, run on this workspace alone, would not find. -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

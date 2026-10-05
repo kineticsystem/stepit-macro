@@ -33,5 +33,6 @@ jobs:
             src/plugins/stepit_behaviors \
             src/plugins/stepit_objectives \
             src/plugins/stepit_tests \
+            src/stepit-macro/stepit_bringup \
             src/stepit-macro/stepit_teleop \
             src/stepit-macro/stepit_macro_tests

@@ -1,0 +1,111 @@
+# Copyright 2026 Giovanni Remigi
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+
+"""The configuration of the rig, rig.yaml, as rig.launch.py reads it, without starting anything."""
+
+import importlib.util
+from pathlib import Path
+
+import pytest
+import yaml
+
+# The sources of stepit_bringup, next to this package's.
+BRINGUP = Path(__file__).resolve().parents[2] / "stepit_bringup"
+
+
+def load_launch_file():
+    path = BRINGUP / "launch" / "rig.launch.py"
+    spec = importlib.util.spec_from_file_location("rig_launch", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+rig = load_launch_file()
+
+
+def load_config():
+    with open(BRINGUP / "config" / "rig.yaml") as file:
+        return yaml.safe_load(file)
+
+
+def test_rig_yaml_names_known_modules_only():
+    arguments, _ = rig.split_config(load_config())
+    assert set(arguments) <= set(rig.MODULES) | {"editor"}
+
+
+def test_rig_yaml_sets_the_serial_ports():
+    arguments, _ = rig.split_config(load_config())
+    assert "usb_port" in arguments["robot"]
+    assert "usb_port" in arguments["freezer"]
+
+
+def test_rig_yaml_parameters_are_a_ros_parameter_file():
+    _, parameters = rig.split_config(load_config())
+    assert "launch" not in parameters
+    for node, section in parameters.items():
+        assert set(section) == {"ros__parameters"}, node
+
+
+def test_the_commander_loads_the_rig_behaviors_and_objectives():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["plugins"] == ["stepit_behaviors/bt_plugins"]
+    assert commander["behavior_trees"] == ["stepit_objectives/objectives"]
+
+
+def test_the_camera_and_its_web_server_share_the_pictures_folder():
+    _, parameters = rig.split_config(load_config())
+    camera = parameters["camera"]["ros__parameters"]
+    web_server = parameters["web_server"]["ros__parameters"]
+    assert camera["download_directory"] == web_server["download_directory"]
+
+
+def test_an_unknown_module_is_refused():
+    with pytest.raises(RuntimeError, match="unknown modules in `launch`: robto"):
+        rig.split_config({"launch": {"robto": {"use_dummy": False}}})
+
+
+def test_a_section_without_parameters_is_refused():
+    with pytest.raises(RuntimeError, match="`freezer` is neither"):
+        rig.split_config({"freezer": {"usb_port": "/dev/ttyUSB0"}})
+
+
+def test_an_empty_file_starts_every_module_with_its_defaults():
+    assert rig.split_config(None) == ({}, {})
+
+
+@pytest.mark.parametrize(
+    "value, argument",
+    [
+        (True, "true"),
+        (False, "false"),
+        (9600, "9600"),
+        ("/dev/ttyACM0", "/dev/ttyACM0"),
+    ],
+)
+def test_values_become_launch_arguments(value, argument):
+    assert rig.to_argument(value) == argument
+
+
+def test_the_editor_refuses_an_unknown_argument():
+    with pytest.raises(RuntimeError, match="the editor has no argument prot"):
+        rig.editor({"prot": 8080})

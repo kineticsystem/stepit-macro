@@ -31,6 +31,10 @@ if(BUILD_TESTING)
     ${btcpp_ros2_interfaces_TARGETS}
     ${sensor_msgs_TARGETS}
     ${std_msgs_TARGETS})
+
+  # The configuration of the rig, rig.yaml, as rig.launch.py reads it.
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_rig_config tests/test_rig_config.py)
 endif()
 
 ament_package()

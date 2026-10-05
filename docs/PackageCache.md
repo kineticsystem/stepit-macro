@@ -1,6 +1,6 @@
 # The Package Cache
 
-Building the rig installs many Debian packages: those of each image's
+Building the rig installs many Debian packages: those of the image's
 `Dockerfile`, and those that rosdep installs for the code of each module
 (`update.sh`). Without a cache, every one of them comes from the internet, again
 and again. Two caches keep them instead, one on your machine and one on GitHub,
@@ -8,7 +8,7 @@ for CI:
 
 | Where | What keeps the packages | Speeds up |
 |---|---|---|
-| Your machine | `stepit-apt-cache`, an apt-cacher-ng proxy | `./docker/dock.sh build`, and the containers' rosdep |
+| Your machine | `stepit-apt-cache`, an apt-cacher-ng proxy | `./docker/dock.sh build`, and the container's rosdep |
 | GitHub Actions | The Actions cache | The `plugins`, `stepit-macro` and `objectives` jobs of `ci.yml` |
 
 They are independent: CI never sees your machine's cache, and the other way
@@ -36,18 +36,16 @@ going to the internet. The "ng" stands for "next generation": it replaced an
 older tool, apt-cacher.
 
 It is the usual way to share downloads between many machines of a network; here
-the "machines" are the containers of the rig and the image builds. It suits
-them better than sharing `/var/cache/apt/archives` directly: apt locks that
-folder while it works, so containers starting together would fail on each
-other's lock, while the proxy serves many of them at once.
+the "machines" are the rig's container and the image build. It suits them
+better than sharing `/var/cache/apt/archives` directly: apt locks that folder
+while it works, so two of them at once would fail on each other's lock, while
+the proxy serves many at once.
 
 ```
- image builds ─────┐
- stepit-driver ────┤
- stepit-commander ─┤  127.0.0.1:3142   ┌──────────────────┐  only on a miss  ┌────────────────────┐
- stepit-macro ─────┼─────────────────▶ │ stepit-apt-cache │ ───────────────▶ │ archive.ubuntu.com │
- stepit-camera ────┤                   │  (apt-cacher-ng) │                  │ packages.ros.org   │
- freezer-driver ───┘                   └────────┬─────────┘                  └────────────────────┘
+ image build ──────┐  127.0.0.1:3142   ┌──────────────────┐  only on a miss  ┌────────────────────┐
+ stepit-macro ─────┴─────────────────▶ │ stepit-apt-cache │ ───────────────▶ │ archive.ubuntu.com │
+                                       │  (apt-cacher-ng) │                  │ packages.ros.org   │
+                                       └────────┬─────────┘                  └────────────────────┘
                                                 │
                                    volume stepit-macro_apt-cache
 ```
@@ -59,11 +57,11 @@ How it is wired:
   [`docker/apt-cache/Dockerfile`](../docker/apt-cache/Dockerfile). It runs on the
   host network and listens on `127.0.0.1:3142`. Its packages live in the Docker
   volume `stepit-macro_apt-cache`, so they outlive the container.
-- **The image builds**: `./docker/dock.sh build` starts the proxy first, then
-  builds the images with `http_proxy=http://127.0.0.1:3142`, on the host network
+- **The image build**: `./docker/dock.sh build` starts the proxy first, then
+  builds the image with `http_proxy=http://127.0.0.1:3142`, on the host network
   so that they reach it. Docker does not count the proxy setting when deciding
   whether an image layer can be reused, so it does not cause rebuilds.
-- **The containers**: the ROS containers mount
+- **The container**: `stepit-macro` mounts
   [`apt-proxy.conf`](../docker/apt-cache/apt-proxy.conf) into
   `/etc/apt/apt.conf.d`. It tells apt to ask
   [`apt-proxy-detect`](../docker/apt-cache/apt-proxy-detect) which proxy to use:
@@ -78,9 +76,9 @@ directly to the internet and are not cached.
 
 The proxy saves the download, but apt still has to unpack every package in each
 new container. `dock.sh build` therefore installs rosdep's packages once, in the
-container it compiles each module in, and then saves that container as the
-service's image (`docker commit`). The image then holds the packages and the
-marker file `~/.dependencies`, so the service's own container, on its first
+container it compiles the rig in, and then saves that container as the
+rig's image (`docker commit`). The image then holds the packages and the
+marker file `~/.dependencies`, so the rig's container, on its first
 start, finds the marker and skips `update.sh`.
 
 A container started from an image that `dock.sh build` did not compile, e.g.

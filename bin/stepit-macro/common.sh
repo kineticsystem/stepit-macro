@@ -12,8 +12,8 @@ cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."
 # Debian package, so they are built from the commander's own copy, which
 # guarantees they match the commander's. Naming the folder overrides
 # modules/COLCON_IGNORE, which only applies to a folder that colcon finds by
-# crawling. Built into folders of their own: the stepit-commander container
-# builds src/plugins next to them.
+# crawling. Built into folders of their own, next to the modules' workspace
+# and src/plugins.
 BASE_PATHS=(src/stepit-macro modules/stepit-commander/modules/BehaviorTree.ROS2/btcpp_ros2_interfaces)
 COLCON_LOG=(--log-base log/stepit-macro)
 COLCON_OUTPUT=(--build-base build/stepit-macro --install-base install/stepit-macro)

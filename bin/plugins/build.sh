@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-# Build the rig's plugin, src/plugins, inside the stepit-commander container,
-# after the commander's own build.sh.
+# Build the rig's plugin, src/plugins, on top of the modules'
+# workspace (../modules/build.sh).
 
 source "$(dirname "$(readlink -f "$0")")/common.sh"
 
