@@ -81,13 +81,15 @@ pnpm run build
 
 ## How It Works
 
+How the page is built, layer by layer, and a review of its structure, are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ### The Layers
 
 ```
 src/ros/         rosbridge.ts, the client of rosbridge; connection.ts, the one connection of the page
 src/commander/   the objectives: run one, stop them all, and whether one runs
 src/camera/      the camera driver's interface, its settings and live view, and the pictures
-src/shot/        the shot, and the pictures of the session
+src/shot/        the shot, and the latest pictures
 src/freezer/     the lights, as outputs of the Freezer board
 src/motion/      the sliders: an axis per slider, sent as a gamepad
 src/components/  React, one component per part of the page
@@ -142,6 +144,7 @@ The camera is fired by StepIt Freezer, through its jack, not over USB: the camer
 | `commander.test.ts` | Running an objective, how it ended, stopping them all, and whether one runs. |
 | `camera.test.ts` | The camera's settings, live view and pictures, and how the settings are shown. |
 | `picture.test.ts`, `raw.test.ts` | Loading a picture, and the preview inside a RAW. |
+| `shot.test.ts` | The pictures kept, the latest two, and the previews of the others released. |
 | `joy.test.ts` | The sliders as a gamepad: what is sent, and how often. |
 | `axis.test.ts` | A slider as an axis, and the speed it asks for. |
 | `lights.test.ts` | The lights as outputs of the Freezer board. |
