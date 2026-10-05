@@ -67,9 +67,11 @@ services:
     # its uid, in dialout for the serial ports (see Dockerfile), and joins the
     # host's input, for the gamepad, and plugdev, for the cameras: groups whose
     # numbers differ between systems, which dock.sh reads from the host.
+    # Without dock.sh, e.g. `docker compose exec`, they fall back to groups the
+    # user is in anyway, two different ones: compose refuses the same twice.
     group_add:
       - "${INPUT_GID:-20}"
-      - "${PLUGDEV_GID:-20}"
+      - "${PLUGDEV_GID:-1000}"
     # The web pages reach the servers on the host's ports, and ROS2 nodes
     # outside the container, e.g. on the host, discover the rig over DDS.
     network_mode: host
