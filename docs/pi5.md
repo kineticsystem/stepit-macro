@@ -35,9 +35,6 @@ ssh <user>@stepit.local
 - About 15 GB free on the SD card or, better, on an NVMe SSD: the image is about 3 GB, and the build writes a lot.
 - StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano), connected to the Pi's USB ports.
 
-> [!IMPORTANT]
-> Until the pull requests of StepIt UI are merged, the rig is on the branch `stepit-ui` of StepIt Macro, not on `main`. The commands below check out that branch.
-
 ## Install the Rig
 
 ### Check the System
@@ -102,14 +99,15 @@ The repositories are public, so the Pi needs no GitHub key. `.gitmodules` lists 
 
 ```
 git config --global url.https://github.com/.insteadOf git@github.com:
-git clone --recurse-submodules -b stepit-ui https://github.com/kineticsystem/stepit-macro.git
+git clone --recurse-submodules https://github.com/kineticsystem/stepit-macro.git
 cd stepit-macro
 ```
 
-Once the pull requests are merged, move to `main`:
+Later, to update the rig to the latest commit of `main`, with its modules, then build it again:
 
 ```
-git checkout main && git pull && git submodule update --init --recursive
+git pull && git submodule update --init --recursive
+./docker/dock.sh build
 ```
 
 ### Configure the Hardware
