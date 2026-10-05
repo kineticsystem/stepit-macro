@@ -1,0 +1,277 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f1f3f6;
+  --border: #dde1e7;
+  --text: #1d2330;
+  --muted: #6b7384;
+  --accent: #2f6fed;
+  --accent-soft: #e4edff;
+  --hover: #eef1f5;
+  --selected: #dce8ff;
+  --guide: #e3e6eb;
+  --error: #d93843;
+  --error-soft: #fde8ea;
+  --warning: #b86e00;
+  --warning-soft: #fff3dc;
+  --ok: #1d8a4f;
+  --ref: #7a3fd1;
+
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+/* Set by settings.ts: the chosen theme, or the system's in Auto mode. */
+:root[data-theme="dark"] {
+  --bg: #14171c;
+  --panel: #1b1f26;
+  --panel-2: #20252d;
+  --border: #2d333d;
+  --text: #e2e6ee;
+  --muted: #8b93a3;
+  --accent: #5b92ff;
+  --accent-soft: #1f2d4a;
+  --hover: #242a33;
+  --selected: #243759;
+  --guide: #2b313a;
+  --error: #ff6b74;
+  --error-soft: #3a1f24;
+  --warning: #f0a93b;
+  --warning-soft: #3a2e1a;
+  --ok: #4fc585;
+  --ref: #b88cff;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  /* Sized for a finger on a tablet, and read from arm's length. */
+  font: 15px/1.4 var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+button:hover:not(:disabled) { background: var(--hover); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -1px;
+}
+
+input, select, textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+select { width: auto; }
+.mono, code { font-family: var(--mono); font-size: 13px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row-spacer { flex: 1; }
+
+.icon { flex: none; display: block; width: 18px; height: 18px; }
+.icon-button {
+  min-height: 44px; min-width: 44px;
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+.icon-button:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+.icon-button.active { color: var(--accent); background: var(--accent-soft); }
+
+.settings { position: relative; }
+.settings-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 15;
+  width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 80px); overflow: auto; padding: 14px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+}
+.settings-popover h2 { margin: 0 0 10px; font-size: 15px; }
+.settings-popover p { margin: 0 0 4px; }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-group { margin-top: 16px !important; }
+.setting-field { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+.setting-label { color: var(--muted); }
+
+/* Layout */
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.topbar {
+  flex: none;
+  display: flex; align-items: center; gap: 14px;
+  min-height: 56px; padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.brand { font-weight: 700; font-size: 16px; letter-spacing: 0.02em; }
+
+.task { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.task-state { color: var(--muted); white-space: nowrap; }
+.task-state.active { color: var(--accent); font-weight: 600; }
+.task-failure {
+  color: var(--error); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw;
+}
+/* Stop, at the end of the toolbar: red while a task runs, an ordinary greyed
+   button otherwise, always in the same place. */
+button.stop { background: var(--error); border-color: var(--error); color: #fff; font-weight: 600; }
+button.stop:hover:not(:disabled) { background: var(--error); filter: brightness(1.08); }
+button.stop:disabled { background: var(--panel); border-color: var(--border); color: var(--muted); font-weight: normal; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+.badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.badge-connected .dot { background: var(--ok); }
+.badge-connecting .dot { background: var(--warning); }
+.badge-disconnected { color: var(--error); }
+.badge-disconnected .dot { background: var(--error); }
+
+.page {
+  flex: 1; min-height: 0;
+  display: grid;
+  /* A slider under each thumb, the live view between them. */
+  grid-template-columns: 112px minmax(0, 1fr) 112px;
+}
+.centre { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* The commands, above the live view */
+
+.toolbar {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.toolbar button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+/* Live view, Lights and Manual drive: a green background while they are on. */
+button.live.on, button.lights.on, button.engaged {
+  background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 600;
+}
+button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
+  background: var(--ok); filter: brightness(1.08);
+}
+.dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
+
+/* The panels of the toolbar */
+
+.popover { position: relative; }
+.popover-panel {
+  position: absolute; top: calc(100% + 8px); z-index: 20;
+  width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 140px); overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+}
+.popover-panel.left { left: 0; }
+.popover-panel.right { right: 0; }
+.popover-panel h2 { margin: 0 0 10px; font-size: 15px; }
+
+.fields { display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label { color: var(--muted); }
+.field select { width: 100%; }
+
+.message { margin: 8px 0 0; }
+.message.error { color: var(--error); }
+
+/* The live view */
+
+.viewport {
+  position: relative; flex: 1; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d0f12;
+}
+.viewport img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; transition: filter 0.2s; }
+.viewport-message {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px; text-align: center; color: #c9ced8;
+}
+.viewport-message p { max-width: 420px; margin: 0; }
+/* The name of the last photo and Download, over its top. */
+.photo-bar {
+  position: absolute; top: 12px; left: 12px; right: 12px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 8px;
+  background: rgb(13 15 18 / 0.75); color: #e2e6ee;
+}
+.photo-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-bar .error { color: #ff8a92; }
+.photo-bar button { color: var(--text); }
+/* The messages of the shot and of the lights, over the bottom of the picture. */
+.viewport-status {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  padding: 8px 12px; border-radius: 8px;
+  background: rgb(13 15 18 / 0.8); color: #e2e6ee;
+}
+.viewport-status p { margin: 0; }
+.viewport-status .error { color: #ff8a92; }
+
+/* The sliders, one at each edge */
+
+.side-slider {
+  display: flex; flex-direction: column; min-height: 0;
+  padding: 10px 8px;
+  background: var(--panel);
+}
+.side-slider:first-child { border-right: 1px solid var(--border); }
+.side-slider:last-child { border-left: 1px solid var(--border); }
+.slider { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.slider-label { font-weight: 600; text-align: center; line-height: 1.2; }
+.slider-speed { font-size: 13px; text-align: center; min-height: 2.6em; }
+.slider-track {
+  position: relative; flex: 1; min-height: 200px; width: 72px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 14px 0;
+  border: 1px solid var(--border); border-radius: 36px; background: var(--panel-2);
+  color: var(--muted); font-size: 22px;
+  /* The page must not scroll or zoom while a thumb drives the slider. */
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.slider-centre { position: absolute; top: 50%; left: 14px; right: 14px; height: 2px; background: var(--border); }
+.slider-knob {
+  position: absolute; left: 3px; width: 64px; height: 64px; margin-top: -32px;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  /* Back to the centre smoothly when let go; under the thumb at once. */
+  transition: top 0.15s ease-out;
+}
+.slider.moving .slider-knob { transition: none; }
+.slider.disabled .slider-track { opacity: 0.45; }
+.slider.disabled .slider-knob { background: var(--muted); }
+
+/* A narrow screen, e.g. a tablet held upright: narrower sliders, and the
+   commands on several rows. */
+@media (max-width: 700px) {
+  .page { grid-template-columns: 88px minmax(0, 1fr) 88px; }
+  .slider-track { width: 64px; }
+  .slider-knob { left: 1px; width: 60px; height: 60px; margin-top: -30px; }
+}
