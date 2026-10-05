@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 import { LIGHTS_JACK, useLights } from '../freezer/lights';
@@ -6,13 +5,12 @@ import { lightsOn } from '../freezer/outputs';
 import { useMotion } from '../motion/store';
 import { useStatus } from '../ros/connection';
 import { useShot } from '../shot/store';
-import { CameraSettings } from './CameraSettings';
-import { CameraIcon, HandIcon, LightIcon, ShutterIcon, VideoIcon } from './icons';
-import { Popover } from './Popover';
+import { HandIcon, LightIcon, ShutterIcon, StopIcon, VideoIcon } from './icons';
 
 /**
  * The commands of the rig, above the live view: a shot first, then the live
- * view, the lights and manual drive, then the panel of the camera's settings.
+ * view, the lights and manual drive, and Stop at the other end. The camera's
+ * settings are in the settings menu, under the gear.
  * The last photo shows in place of the live view. Live view, Lights and
  * Manual drive are buttons that turn green while they are on.
  */
@@ -24,7 +22,7 @@ export function Toolbar() {
       <LightsButton />
       <ManualDriveButton />
       <span className="row-spacer" />
-      <CameraPanel />
+      <StopButton />
     </div>
   );
 }
@@ -108,18 +106,28 @@ function ManualDriveButton() {
   );
 }
 
-function CameraPanel() {
-  const [open, setOpen] = useState(false);
-  const error = useCamera((s) => s.error);
+/**
+ * Stops every task, whoever started it, and lets the sliders go. On, red,
+ * while a task runs, and while the page does not know yet whether one does,
+ * e.g. right after it connected; off otherwise. Always in the same place.
+ */
+function StopButton() {
+  const { busy, known, running, stop } = useCommander();
+  const release = useMotion((s) => s.release);
+  const connected = useStatus() === 'connected';
+  const on = connected && (busy || running !== undefined || !known);
   return (
-    <Popover
-      title="The camera's settings"
-      open={open}
-      onOpenChange={setOpen}
-      align="right"
-      button={<><CameraIcon />Camera{error && <span className="dot-warning" title={error} />}</>}
+    <button
+      className="stop"
+      disabled={!on}
+      title={on ? 'Stop every task' : 'No task runs'}
+      onClick={() => {
+        release();
+        void stop();
+      }}
     >
-      <CameraSettings />
-    </Popover>
+      <StopIcon />
+      Stop
+    </button>
   );
 }

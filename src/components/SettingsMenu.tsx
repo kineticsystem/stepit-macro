@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { picturesUrl, rosbridgeUrl, useSettings, videoUrl, type Theme } from '../settings';
+import { CameraSettings } from './CameraSettings';
 import { GearIcon } from './icons';
 
-/** The preferences of this browser: the theme, and where the rig's servers are. */
+/**
+ * The settings, under the gear, by how often they change: the camera's,
+ * before a shoot; the theme of this browser; and, rarely, where the rig's
+ * servers are.
+ */
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -29,7 +34,8 @@ export function SettingsMenu() {
       </button>
       {open && (
         <div className="settings-popover">
-          <h2>Settings</h2>
+          <CameraSettings />
+          <h2 className="settings-group">Appearance</h2>
           <label className="setting">
             <span className="setting-label">Theme</span>
             <select value={settings.theme} onChange={(e) => settings.update({ theme: e.target.value as Theme })}>
@@ -38,7 +44,7 @@ export function SettingsMenu() {
               <option value="dark">Dark</option>
             </select>
           </label>
-          <h2 className="settings-group">The rig</h2>
+          <h2 className="settings-group">Connection</h2>
           <p className="muted small">Empty for the computer that serves this page.</p>
           <UrlField
             label="rosbridge"

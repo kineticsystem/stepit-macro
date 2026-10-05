@@ -3,7 +3,8 @@ import { useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 
 /**
- * The settings of the camera, each a list of the values it accepts right now.
+ * The settings of the camera, each a list of the values it accepts right now,
+ * at the top of the settings menu.
  * The choices depend on the mode dial and on the lens: a setting the camera
  * does not let us change has a single choice, and is disabled. They are locked
  * while a task runs, so that a shoot is not changed halfway through.
