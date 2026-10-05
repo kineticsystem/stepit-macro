@@ -1,21 +1,19 @@
 import { useEffect } from 'react';
 import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
-import { CameraSettings } from './components/CameraSettings';
 import { ConnectionBadge } from './components/ConnectionBadge';
-import { LightsCard } from './components/LightsCard';
 import { LiveView } from './components/LiveView';
-import { MotionCard } from './components/MotionCard';
 import { SettingsMenu } from './components/SettingsMenu';
-import { ShotCard } from './components/ShotCard';
+import { Slider } from './components/Slider';
 import { TaskStatus } from './components/TaskStatus';
+import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
-import { followMotion } from './motion/store';
+import { followMotion, SLIDERS, useMotion } from './motion/store';
 
 /**
- * The whole rig on one page, for a tablet or a desktop: what the camera sees
- * and the sliders on the left, the shot, the lights and the camera's settings
- * on the right. On a narrow screen, one below the other.
+ * The whole rig on one page, for a tablet held in both hands: a slider at each
+ * edge, under each thumb, the rotary stage on the left and the rail on the
+ * right; the live view in the middle, with the commands above it.
  */
 export function App() {
   useEffect(() => {
@@ -33,16 +31,29 @@ export function App() {
         <SettingsMenu />
       </header>
       <main className="page">
-        <div className="main-column">
+        <SideSlider index={0} />
+        <div className="centre">
+          <Toolbar />
           <LiveView />
-          <MotionCard />
         </div>
-        <aside className="side">
-          <ShotCard />
-          <LightsCard />
-          <CameraSettings />
-        </aside>
+        <SideSlider index={1} />
       </main>
     </div>
+  );
+}
+
+/** The slider of a joint, at one edge of the page. */
+function SideSlider({ index }: { index: number }) {
+  const { enabled, axes, setAxis } = useMotion();
+  const slider = SLIDERS[index];
+  return (
+    <aside className="side-slider">
+      <Slider
+        label={slider.label}
+        value={axes[slider.axis]}
+        disabled={!enabled}
+        onChange={(value) => setAxis(slider.axis, value)}
+      />
+    </aside>
   );
 }
