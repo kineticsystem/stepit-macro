@@ -1,9 +1,10 @@
 # TODO
 
-Open questions and concerns about the rig's behaviors and objectives, written
-down as they came up. The code builds, the tests pass and the objectives were
-run on the robot: these are decisions we deferred, and measurements we made
-while deferring them. Item 10 is the one to read before running the tests.
+Open questions and concerns about the rig's behaviors, objectives and
+controllers, written down as they came up. The code builds, the tests pass and
+the objectives were run on the robot: these are decisions we deferred, and
+measurements we made while deferring them. Item 10 is the one to read before
+running the tests.
 
 ## Commanding motion
 
@@ -332,3 +333,91 @@ needs the duration of a photo, which does not exist yet.
 
 Start with step 1, its catch included, and `Steps` alone: that already gives
 `Stack` a correct percentage.
+
+## Connecting the controllers
+
+### 13. Choosing the serial port of a controller from the UI
+
+Each driver opens one serial port, fixed at startup: StepIt reads `usb_port`
+from the URDF, `/dev/ttyACM0` by default, and Freezer from its node
+parameters, `/dev/ttyUSB0` by default. Neither notices an unplugged board. The
+serial library throws "device disconnected?" on the next read, but StepIt only
+moves its hardware to `UNCONFIGURED`, where it stays, and Freezer logs a
+warning and keeps the dead port open. While the dead port is open, the kernel
+cannot give its name back: the board, plugged in again, comes back as
+`ttyUSB1`, and a retry on the old name fails.
+
+The two drivers have the same base: the `framed-serial` submodule, at the same
+commit, over the `serial` library, and a `connect()` that sends `Info` up to 5
+times and checks the controller's name and protocol version. Only the name,
+the version and the format of the response differ.
+
+| | StepIt | Freezer |
+|---|---|---|
+| Board | Teensy 4.1, native USB, `ttyACM*`, USB ID `16c0:0483` | Arduino Nano, FTDI FT232R, `ttyUSB*`, USB ID `0403:6001` |
+| Resets when the port opens | no | yes, its bootloader runs for about 0.65 s |
+| Controller name, protocol | `STEPIT`, 1 | `FREEZER`, 2 |
+| Who calls the driver | a ros2_control hardware interface, from the real-time loop of the controller manager | the driver's own ROS2 node |
+
+**Considered: detection and reconnection by the drivers.** With `usb_port:
+auto`, a driver would open each serial port, run the handshake, and keep the
+first that answers; a thread would search again every second after an unplug.
+It was set aside for now:
+
+- **A scan disturbs the other boards.** Opening a port resets an Arduino and
+  sends it a frame, even while another driver uses it: Linux does not lock a
+  serial port. It needs a filter by USB ID and a lock on each port to be safe.
+- **StepIt cannot wait in its loop.** `read()` and `write()` run in the
+  real-time loop of the controller manager, which a search of 100 ms would
+  stall, and ros2_control does not configure a hardware again by itself.
+- **StepIt loses its positions.** A Teensy powered by USB restarts when
+  unplugged, and its step counts with it. A reconnection that nobody asked
+  for would carry on from positions that are wrong until the axes are homed.
+
+**Chosen: a configuration panel in the UI.** We pick the port of each
+controller, probe it, and retry by hand when something misbehaves. Nothing
+scans, so no other board is touched, and a reconnection happens only when a
+person asks for it, who can home the axes first. A reconnection thread can
+still be added later, on the same interfaces. What it needs:
+
+1. **`framed-serial`: the ports and a distinct error.** A function over
+   `serial::list_ports()` that lists each port with its description and its
+   USB ID, which Linux reports as e.g.
+   `USB VID:PID=0403:6001 SNR=A700fkwd`, so that both drivers offer the same
+   list. A `DisconnectedException` for an unplugged board: today a timeout
+   throws `framed_serial::SerialException("timeout")` and an unplug the
+   library's own `serial::SerialException`, which the drivers cannot tell
+   apart without guessing.
+2. **Each driver: close the port on an unplug.** On a `DisconnectedException`,
+   the driver closes the port and reports itself disconnected, so that the
+   panel does not show a dead connection as alive and a retry finds the board
+   under its old name.
+3. **Each driver: commands and a status.** A service listing the ports, one
+   connecting to a given port, one disconnecting, and a latched topic of the
+   state: connected or not, the port, the firmware, the last error. The panel
+   shows the topic; its Probe and Retry buttons call the connect service.
+4. **The UI: stable names.** It offers the names of `/dev/serial/by-id/`, made
+   from the board's USB serial number, which do not change from one plug or
+   boot to the next, e.g.
+   `/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A700fkwd-if00-port0` for the
+   Freezer Nano. A saved choice then always points at the same board,
+   whatever `ttyUSB` or `ttyACM` number it gets. This works today, with no
+   code: set `usb_port` to that path.
+
+**In Freezer** (`modules/freezer-driver`) it is small: the node offers the
+services and the topic itself, and its `connect()`, called once from the
+constructor, becomes the connect service.
+
+**In StepIt** (`modules/stepit-driver`) it is open. The port is a hardware
+parameter of the URDF, read once, and the hardware interface has no services
+of its own. The controller manager can already restart it, through
+`set_hardware_component_state`, and `on_configure()` already connects, but
+nothing gives it a new port: the URDF is fixed once loaded. `on_configure()`
+could read the port from a file the UI writes, or from a parameter of a
+helper node; what ros2_control on Jazzy offers needs checking first. Its
+positions after a reconnection, see above, need a decision too: home the
+axes, or mark the positions unknown until they are.
+
+Start with steps 1 and 2 in `framed-serial` and Freezer, and the
+`/dev/serial/by-id/` names, which already help. Leave the port change of
+StepIt at runtime until the panel is built.

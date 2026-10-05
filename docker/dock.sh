@@ -1,8 +1,8 @@
 #! /bin/bash -e
 
 # Use this script to download, build, start, stop and remove the whole StepIt
-# Macro rig: the robot, the commander, the rig's own programs, the editor and
-# the camera, each in its own container.
+# Macro rig: the robot, the commander, the rig's own programs, the editor, the
+# camera and the Freezer board, each in its own container.
 #
 # The containers are defined in docker-compose.yml, which extends the compose
 # file of each module. This script only adds what compose cannot express: the
@@ -10,11 +10,11 @@
 # of each module inside its container.
 
 # The services of docker-compose.yml, in the order they are built and started.
-SERVICES=(stepit-driver stepit-commander stepit-macro stepit-editor stepit-camera)
+SERVICES=(stepit-driver stepit-commander stepit-macro stepit-editor stepit-camera freezer-driver)
 
 # The services that run a module, from its own folder in ../modules. The others
 # are this repo's own, e.g. stepit-macro.
-MODULES=(stepit-driver stepit-commander stepit-editor stepit-camera)
+MODULES=(stepit-driver stepit-commander stepit-editor stepit-camera freezer-driver)
 
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command> [service]\n
@@ -147,6 +147,7 @@ case "$command" in
         docker compose up --detach $service
         echo -e "\nThe editor is on http://localhost:${EDITOR_PORT:-8080}"
         echo "The camera's test page is on http://localhost:8090"
+        echo "The Freezer's board page is on http://localhost:8092"
         echo "Follow the output with ./docker/dock.sh logs [service]"
         ;;
     logs)

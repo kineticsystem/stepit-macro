@@ -1,6 +1,7 @@
-# The whole StepIt Macro rig: the robot, the commander, the editor and the
-# camera, each in the container defined by its own project, and the rig's own
-# programs, e.g. the gamepad, in the stepit-macro container defined here.
+# The whole StepIt Macro rig: the robot, the commander, the editor, the
+# camera and the Freezer board, each in the container defined by its own
+# project, and the rig's own programs, e.g. the gamepad, in the stepit-macro
+# container defined here.
 # Driven by ./dock.sh, which supplies USER_UID/USER_GID.
 #
 # Every service extends the `dev` service of the project it runs, so the
@@ -187,6 +188,34 @@ services:
         && source /opt/ros/jazzy/setup.bash
         && source install/setup.bash
         && exec ros2 launch stepit_camera camera.launch.py'
+
+  # The Freezer board, which fires the cameras and the flashes, with a fake
+  # controller by default: FREEZER_USE_FAKE=false drives the board on
+  # FREEZER_USB_PORT. Its board page is on http://localhost:8092 and its own
+  # rosbridge on port 9092. The container is privileged and mounts /dev, for the
+  # serial port of the Nano, see its compose file.
+  freezer-driver:
+    extends:
+      file: ../modules/freezer-driver/docker/docker-compose.yml
+      service: dev
+    build:
+      network: host
+    image: freezer-driver:latest
+    container_name: freezer-driver
+    hostname: freezer-driver
+    init: true
+    stop_signal: SIGINT
+    volumes:
+      - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
+      - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
+    command:
+      - bash
+      - -c
+      - '{ [ -f ~/.dependencies ] || { sudo apt-get update && update.sh && touch ~/.dependencies; }; }
+        && source /opt/ros/jazzy/setup.bash
+        && source install/setup.bash
+        && exec ros2 launch freezer_node freezer.launch.py
+             use_fake:=${FREEZER_USE_FAKE:-true} usb_port:=${FREEZER_USB_PORT:-/dev/ttyUSB0}'
 
 volumes:
   apt-cache:

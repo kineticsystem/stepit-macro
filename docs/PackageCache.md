@@ -46,8 +46,8 @@ other's lock, while the proxy serves many of them at once.
  stepit-driver ────┤
  stepit-commander ─┤  127.0.0.1:3142   ┌──────────────────┐  only on a miss  ┌────────────────────┐
  stepit-macro ─────┼─────────────────▶ │ stepit-apt-cache │ ───────────────▶ │ archive.ubuntu.com │
- stepit-camera ────┘                   │  (apt-cacher-ng) │                  │ packages.ros.org   │
-                                       └────────┬─────────┘                  └────────────────────┘
+ stepit-camera ────┤                   │  (apt-cacher-ng) │                  │ packages.ros.org   │
+ freezer-driver ───┘                   └────────┬─────────┘                  └────────────────────┘
                                                 │
                                    volume stepit-macro_apt-cache
 ```

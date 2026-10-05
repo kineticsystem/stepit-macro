@@ -51,8 +51,8 @@ is consistent and synchronized with each capture.
 
 ## The Modules
 
-StepIt Macro runs the whole rig with one command. It brings together five
-projects, checked out as git submodules under [`modules`](modules), four of
+StepIt Macro runs the whole rig with one command. It brings together six
+projects, checked out as git submodules under [`modules`](modules), five of
 which run in a container:
 
 | Module | Container | What it does |
@@ -61,6 +61,7 @@ which run in a container:
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | `stepit-commander` | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | `stepit-editor` | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | `stepit-camera` | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves its test page and the pictures on <http://localhost:8090>, the live view through web_video_server on port 8081, and its own rosbridge on port 9091. |
+| [Freezer Driver](https://github.com/kineticsystem/freezer-driver) | `freezer-driver` | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras and the flashes with a hardware timer, with a fake controller by default. It serves its board page on <http://localhost:8092> and its own rosbridge on port 9092. |
 | [StepIt UI](https://github.com/kineticsystem/stepit-ui) | none | The application of the whole rig, not started yet. |
 
 Each module keeps its own Docker container and scripts; StepIt Macro only
@@ -117,6 +118,12 @@ Canon EOS 5D Mark II, connected over USB, with its AC adapter. See
 in the README of StepIt Camera, e.g. the mode dial on M. Without a camera, the
 rest of the rig runs anyway, and the camera driver waits for one.
 
+The Freezer board is not needed either: its driver runs with a fake controller
+by default. For the board, an Arduino Nano flashed with the firmware of the same
+commit of Freezer Driver, see
+[Install Freezer Driver on the Microcontroller](https://github.com/kineticsystem/freezer-driver#install-freezer-driver-on-the-microcontroller)
+in its README, and a user in the group `dialout`.
+
 > [!IMPORTANT]
 > **Set _Auto power off_ to _Off_ in the camera's menu.** Otherwise the camera
 > goes to sleep, as soon as a minute after the last use, and the driver loses
@@ -169,7 +176,7 @@ This is also how you pick up a change to a `Dockerfile` or to the code: it
 rebuilds only the image layers that changed. To build a single module, name its
 container: `stepit-driver`, `stepit-commander`, `stepit-macro` (the rig's own
 programs, see [The Rig's Own Programs](#the-rigs-own-programs)),
-`stepit-editor`, or `stepit-camera`.
+`stepit-editor`, `stepit-camera`, or `freezer-driver`.
 
 ```
 ./docker/dock.sh build stepit-commander
@@ -193,7 +200,16 @@ The editor is on <http://localhost:8080>: open an
 objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot.
 The camera's test page is on <http://localhost:8090>, with the live view of the
 camera. The pictures the camera takes are saved in
-`modules/stepit-camera/pictures`.
+`modules/stepit-camera/pictures`. The Freezer's board page is on
+<http://localhost:8092>, to fire a shot and see its timing.
+
+The Freezer driver runs with a fake controller by default. To drive the board,
+start it with `FREEZER_USE_FAKE=false`, and `FREEZER_USB_PORT` if the Nano is not
+on `/dev/ttyUSB0` (restart it first if it is running):
+
+```
+FREEZER_USE_FAKE=false ./docker/dock.sh start freezer-driver
+```
 
 RViz does not open by default. To see the robot in RViz, start the driver with
 `LAUNCH_RVIZ=true`, e.g. `LAUNCH_RVIZ=true ./docker/dock.sh start stepit-driver`
@@ -443,7 +459,8 @@ edit, commit and push it as usual. Its README tells how to build and test it.
 Inside a container, opened with `./docker/dock.sh shell <service>`, the module is
 mounted at `~/ws`, and its scripts are on the `PATH` and aliased as in the
 module's own container: `update`, `build`, `test`, for the editor `serve`,
-`dev` and `validate`, and for the camera `dev`, for its test page.
+`dev` and `validate`, and for the camera `dev`, for its test page. The Freezer's
+board page has no alias: `cd ~/ws/web && pnpm dev`.
 
 After changing the code of a module, or of the rig's behaviors in [`src/plugins`](src/plugins),
 which `./docker/dock.sh build stepit-commander` builds too, compile it and
@@ -489,8 +506,8 @@ only overrides:
 - the command, which runs the application instead of keeping an idle
   container: `ros2 launch robot_bringup launch.py`,
   `ros2 launch stepit_server commander.launch.py` with the rig's
-  `params_file`, `ros2 launch stepit_camera camera.launch.py`, and `serve.sh`
-  for the editor;
+  `params_file`, `ros2 launch stepit_camera camera.launch.py`,
+  `ros2 launch freezer_node freezer.launch.py`, and `serve.sh` for the editor;
 - the commander's mounts: this repo, at `~/rig`, whose
   [`src/plugins`](src/plugins) holds the rig's behaviors and objectives, built
   on top of the commander's workspace;
@@ -503,18 +520,19 @@ only overrides:
   `ros2 launch stepit_teleop teleop.launch.py`.
 
 The containers and images have the names each module's own `dock.sh` gives
-them by default: `stepit-driver`, `stepit-commander`, `stepit-editor` and
-`stepit-camera`; the rig's own container and image are `stepit-macro`. Run
+them by default: `stepit-driver`, `stepit-commander`, `stepit-editor`,
+`stepit-camera` and `freezer-driver`; the rig's own container and image are `stepit-macro`. Run
 one system or the other, not both: remove
 the containers made by a module's `dock.sh` before starting StepIt Macro, e.g.
 with `./modules/stepit-driver/docker/dock.sh stepit-driver clean`, and the
 other way round.
 
-The robot, the commander, the rig's own programs and the camera use the host network, so they discover
+The robot, the commander, the rig's own programs, the camera and the Freezer use the host network, so they discover
 each other over DDS. The web pages reach them from the browser: the editor
 through the commander's rosbridge on `ws://localhost:9090`, the camera's test
 page through the camera's web server on `http://localhost:8090`, its rosbridge
-on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`. Each module serves its own
+on `ws://localhost:9091` and its web_video_server on `http://localhost:8081`, the Freezer's board page
+through its web server on `http://localhost:8092` and its rosbridge on `ws://localhost:9092`. Each module serves its own
 rosbridge, because a rosbridge only knows the messages installed next to it.
 
 ## Continuous Integration
