@@ -75,7 +75,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **The camera's settings**, the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
 - **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. Each picture is shown as it arrives, and can be downloaded.
 - **The lights**, switched on and off by hand.
-- **Two sliders**, for the rotary stage (`joint1`) and the rail (`joint2`), which work as the gamepad's sticks once the robot is handed to the user with **Drive by hand**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to the motors' limit, 3 turns/s, at the ends; letting it go stops.
+- **Two sliders**, for the rotary stage (`joint1`) and the rail (`joint2`), which work as the gamepad's sticks once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to the motors' limit, 3 turns/s, at the ends; letting it go stops.
 - **Stop**, always in the top bar: it stops every objective, whoever started it, and the sliders.
 
 **Only the robot's tasks go through the commander**: a shot, and handing the robot to the user. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
