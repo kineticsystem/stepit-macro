@@ -49,7 +49,7 @@ def load_config():
 
 def test_rig_yaml_names_known_modules_only():
     arguments, _ = rig.split_config(load_config())
-    assert set(arguments) <= set(rig.MODULES) | {"editor"}
+    assert set(arguments) <= set(rig.MODULES) | set(rig.PROGRAMS)
 
 
 def test_rig_yaml_sets_the_serial_ports():
@@ -109,3 +109,26 @@ def test_values_become_launch_arguments(value, argument):
 def test_the_editor_refuses_an_unknown_argument():
     with pytest.raises(RuntimeError, match="the editor has no argument prot"):
         rig.editor({"prot": 8080})
+
+
+def test_the_ui_refuses_an_unknown_argument():
+    with pytest.raises(RuntimeError, match="the ui has no argument prot"):
+        rig.ui({"prot": 8070})
+
+
+def test_the_ui_sliders_drive_the_stage_and_the_rail_at_the_motors_limit():
+    _, parameters = rig.split_config(load_config())
+    teleop = parameters["ui_teleop"]["ros__parameters"]
+    assert teleop["stop_button"] == -1
+    assert teleop["joint1"] == {"axis": 0, "scale": pytest.approx(18.8496, abs=1e-3)}
+    assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(18.8496, abs=1e-3)}
+    for joint in ("joint3", "joint4", "joint5"):
+        assert teleop[joint]["axis"] == -1
+
+
+def test_the_freezer_fires_the_camera_on_out8_with_the_lights_on_out1():
+    _, parameters = rig.split_config(load_config())
+    freezer = parameters["freezer"]["ros__parameters"]
+    assert freezer["default_sequence"] == "test_shot"
+    assert freezer["sequences"]["test_shot"]["cameras"] == [8]
+    assert freezer["sequences"]["test_shot"]["lights"] == [1]

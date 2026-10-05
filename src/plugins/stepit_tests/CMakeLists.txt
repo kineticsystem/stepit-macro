@@ -21,6 +21,7 @@ if(BUILD_TESTING)
   find_package(stepit_server REQUIRED)
   find_package(control_msgs REQUIRED)
   find_package(controller_manager_msgs REQUIRED)
+  find_package(freezer_msgs REQUIRED)
   find_package(rclcpp REQUIRED)
   find_package(rclcpp_action REQUIRED)
   find_package(sensor_msgs REQUIRED)
@@ -154,6 +155,18 @@ if(BUILD_TESTING)
     stepit_server::stepit_server
     rclcpp::rclcpp
     ${controller_manager_msgs_TARGETS})
+
+  # The TakeShot objective, against a fake Freezer node.
+  ament_add_gtest(test_take_shot_objective
+    tests/test_take_shot_objective.cpp)
+  target_include_directories(test_take_shot_objective PRIVATE tests)
+  target_link_libraries(test_take_shot_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${freezer_msgs_TARGETS})
 
   ament_add_gtest(test_activate_controller_objective
     tests/test_activate_controller_objective.cpp)

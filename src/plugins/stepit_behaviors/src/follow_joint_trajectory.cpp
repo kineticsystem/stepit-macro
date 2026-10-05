@@ -25,7 +25,7 @@ namespace stepit_behaviors
 
 FollowJointTrajectory::FollowJointTrajectory(const std::string& name, const BT::NodeConfig& config,
                                              const BT::RosNodeParams& params)
-  : BT::RosActionNode<control_msgs::action::FollowJointTrajectory>(name, config, params)
+  : RosActionNode<control_msgs::action::FollowJointTrajectory>(name, config, params)
 {
 }
 

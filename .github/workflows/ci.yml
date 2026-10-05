@@ -2,8 +2,9 @@
 # plain ROS image:
 #
 # - src/plugins, on top of the commander's workspace, which is built first from
-#   the stepit-commander submodule; in the container, it is on top of the
-#   modules' workspace, which holds the commander too;
+#   the stepit-commander submodule, and of the messages of StepIt Freezer, built
+#   from the stepit-freezer submodule; in the container, it is on top of the
+#   modules' workspace, which holds both;
 # - src/stepit-macro, with the commander's interfaces, which it builds from the
 #   same submodule.
 #
@@ -36,8 +37,9 @@ jobs:
       run:
         shell: bash
     env:
-      # The workspace that bin/plugins builds on: the commander's alone.
-      UNDERLAY: ${{ github.workspace }}/modules/stepit-commander/install
+      # The workspace that bin/plugins builds on: the messages of StepIt
+      # Freezer, on top of the commander's.
+      UNDERLAY: ${{ github.workspace }}/install/freezer-msgs
     steps:
       - name: Keep the downloaded packages
         run: rm /etc/apt/apt.conf.d/docker-clean
@@ -57,11 +59,25 @@ jobs:
           git config --global --add safe.directory '*'
           git config --global url.https://github.com/.insteadOf git@github.com:
           git submodule update --init --recursive --depth 1 modules/stepit-commander
+      # The behaviors also send goals to StepIt Freezer: only its messages are
+      # built, so its own submodules are not needed.
+      - name: Check out StepIt Freezer
+        if: matrix.workspace == 'plugins'
+        run: git submodule update --init --depth 1 modules/stepit-freezer
       - name: Build the commander
         if: matrix.workspace == 'plugins'
         run: |
           modules/stepit-commander/bin/update.sh
           modules/stepit-commander/bin/build.sh
+      # On top of the commander's workspace, whose setup.bash this one's then
+      # sources too: UNDERLAY names this one alone.
+      - name: Build the messages of StepIt Freezer
+        if: matrix.workspace == 'plugins'
+        run: |
+          source modules/stepit-commander/install/setup.bash
+          rosdep install --ignore-src --from-paths modules/stepit-freezer/src/freezer_msgs -y -r
+          colcon build --base-paths modules/stepit-freezer/src/freezer_msgs \
+            --build-base build/freezer-msgs --install-base install/freezer-msgs --event-handlers log-
       - name: Install the dependencies
         run: bin/${{ matrix.workspace }}/update.sh
       - name: Name the downloaded packages

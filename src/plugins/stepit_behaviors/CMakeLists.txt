@@ -15,6 +15,7 @@ find_package(behaviortree_cpp REQUIRED)
 find_package(behaviortree_ros2 REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
+find_package(freezer_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -35,6 +36,7 @@ add_library(stepit_behaviors SHARED
   src/offset_vector.cpp
   src/cubic_trajectory.cpp
   src/ports.cpp
+  src/shoot.cpp
   src/register_nodes.cpp
   src/steps.cpp
   src/switch_controller.cpp
@@ -52,6 +54,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   stepit_server::progress
   ${control_msgs_TARGETS}
   ${controller_manager_msgs_TARGETS}
+  ${freezer_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${trajectory_msgs_TARGETS})
@@ -97,6 +100,7 @@ ament_export_dependencies(
   behaviortree_ros2
   control_msgs
   controller_manager_msgs
+  freezer_msgs
   rclcpp
   rclcpp_action
   sensor_msgs

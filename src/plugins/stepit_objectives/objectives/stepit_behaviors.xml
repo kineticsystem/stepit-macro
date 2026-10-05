@@ -47,6 +47,11 @@
             <input_port name="offset" type="BT::AnyTypeAllowed">a number added to every element, or a list with one per element</input_port>
             <input_port name="input" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers to offset</input_port>
         </Action>
+        <Action ID="Shoot">
+            <input_port name="sequence" type="std::string" default="">the sequence to fire, as named in the Freezer's parameters; empty for its default_sequence</input_port>
+            <output_port name="shot_id" type="unsigned int">the id the board gave the shot</output_port>
+            <input_port name="action_name" type="std::string" default="">Action server name</input_port>
+        </Action>
         <Decorator ID="Steps">
             <output_port name="index" type="int">the number of this iteration, from 0</output_port>
             <output_port name="value" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the value of this iteration, always a list</output_port>
