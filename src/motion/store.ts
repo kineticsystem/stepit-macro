@@ -12,10 +12,16 @@ import { useCommander } from '../commander/store';
 import { onConnected, ros, status } from '../ros/connection';
 import { JoyPublisher } from './joy';
 
-/** The slider of each joint, by its axis on /ui/joy. */
+/**
+ * The slider of each joint, by its axis on /ui/joy, and its speed at the ends,
+ * in turns per second. The speed is set in the rig, by the scale of the joint
+ * in the section ui_teleop of rig.yaml: this one only labels the slider. Keep
+ * them in step.
+ */
 export const SLIDERS = [
-  { axis: 0, joint: 'joint1', label: 'Rotary stage' },
-  { axis: 1, joint: 'joint2', label: 'Rail' },
+  // Half the motors' limit: the subject turns on it.
+  { axis: 0, joint: 'joint1', label: 'Rotary stage', maxTurnsPerSecond: 1.5 },
+  { axis: 1, joint: 'joint2', label: 'Rail', maxTurnsPerSecond: 3 },
 ] as const;
 
 const CONTROLLER = 'velocity_controller';

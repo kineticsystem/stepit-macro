@@ -50,6 +50,7 @@ function SideSlider({ index }: { index: number }) {
     <aside className="side-slider">
       <Slider
         label={slider.label}
+        maxTurnsPerSecond={slider.maxTurnsPerSecond}
         value={axes[slider.axis]}
         disabled={!enabled}
         onChange={(value) => setAxis(slider.axis, value)}

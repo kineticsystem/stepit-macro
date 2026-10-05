@@ -7,7 +7,7 @@ const KNOB = 64;
 /**
  * A vertical slider that works like a stick of a gamepad, for a thumb at the
  * edge of a tablet: the knob rests at the centre; pushing it up or down asks
- * for a speed, up to the motors' limit at the ends; letting it go brings it
+ * for a speed, up to the slider's speed at the ends; letting it go brings it
  * back to the centre, and stops.
  *
  * It follows the pointer that grabbed it, so that two thumbs drive the two
@@ -15,6 +15,8 @@ const KNOB = 64;
  */
 export function Slider(props: {
   label: string;
+  /** The speed at the ends, in turns per second. */
+  maxTurnsPerSecond: number;
   value: number;
   disabled: boolean;
   onChange(value: number): void;
@@ -41,7 +43,7 @@ export function Slider(props: {
     props.onChange(0);
   };
 
-  const speed = turnsPerSecond(props.value);
+  const speed = turnsPerSecond(props.value, props.maxTurnsPerSecond);
   return (
     <div className={`slider${props.disabled ? ' disabled' : ''}${props.value !== 0 ? ' moving' : ''}`}>
       <div className="slider-label">{props.label}</div>

@@ -1,31 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 import { LIGHTS_JACK, useLights } from '../freezer/lights';
 import { lightsOn } from '../freezer/outputs';
 import { useMotion } from '../motion/store';
 import { useStatus } from '../ros/connection';
-import { errorMessage } from '../ros/rosbridge';
-import { download, useShot, type ShotPicture } from '../shot/store';
+import { useShot } from '../shot/store';
 import { CameraSettings } from './CameraSettings';
-import { CameraIcon, DownloadIcon, HandIcon, LightIcon, PlayIcon, ShutterIcon, StopIcon } from './icons';
+import { CameraIcon, HandIcon, LightIcon, PlayIcon, ShutterIcon, StopIcon } from './icons';
 import { Popover } from './Popover';
 
 /**
  * The commands of the rig, above the live view: the live view itself, a shot,
- * the lights and manual drive, then the panels of the camera's settings and of
- * the pictures.
+ * the lights and manual drive, then the panel of the camera's settings. The
+ * last photo shows in place of the live view.
  */
 export function Toolbar() {
   return (
     <div className="toolbar">
       <LiveViewButton />
       <ShotButton />
-      <LightsSwitch />
+      <LightsButton />
       <ManualDriveButton />
       <span className="row-spacer" />
       <CameraPanel />
-      <PicturesPanel />
     </div>
   );
 }
@@ -60,10 +58,11 @@ function ShotButton() {
 }
 
 /**
- * The lights, on a jack of StepIt Freezer. The switch shows what the board
- * does: a shot ends with every output off, lights included.
+ * The lights, on a jack of StepIt Freezer: a button, lit while the lights are
+ * on. It shows what the board does: a shot ends with every output off, lights
+ * included.
  */
-function LightsSwitch() {
+function LightsButton() {
   const { outputs, switching, setLights } = useLights();
   const busy = useCommander((s) => s.busy);
   const connected = useStatus() === 'connected';
@@ -71,9 +70,8 @@ function LightsSwitch() {
   const on = known && lightsOn(outputs);
   return (
     <button
-      className={`switch${on ? ' on' : ''}`}
-      role="switch"
-      aria-checked={on}
+      className={`lights${on ? ' on' : ''}`}
+      aria-pressed={on}
       title={known ? `The lights, on OUT${LIGHTS_JACK} of StepIt Freezer` : 'Waiting for StepIt Freezer'}
       // A shot owns every output of the board: the Freezer refuses a change meanwhile.
       disabled={!connected || !known || busy || switching}
@@ -81,7 +79,6 @@ function LightsSwitch() {
     >
       <LightIcon />
       Lights
-      <span className="switch-track"><span className="switch-thumb" /></span>
     </button>
   );
 }
@@ -123,82 +120,5 @@ function CameraPanel() {
     >
       <CameraSettings />
     </Popover>
-  );
-}
-
-/** The pictures of this session, the latest first. The panel opens when a new one arrives. */
-function PicturesPanel() {
-  const pictures = useShot((s) => s.pictures);
-  const [open, setOpen] = useState(false);
-  const count = useRef(pictures.length);
-  useEffect(() => {
-    if (pictures.length > count.current) setOpen(true);
-    count.current = pictures.length;
-  }, [pictures.length]);
-  const [latest, ...earlier] = pictures;
-
-  return (
-    <Popover
-      title="The pictures of this session"
-      open={open}
-      onOpenChange={setOpen}
-      align="right"
-      button={<>Pictures{pictures.length > 0 && <span className="count-chip">{pictures.length}</span>}</>}
-    >
-      <h2>Pictures</h2>
-      {!latest && <p className="muted">No picture yet. Take a shot: each picture appears here as the camera downloads it.</p>}
-      {latest && <Picture picture={latest} large />}
-      {earlier.length > 0 && (
-        <ul className="pictures">
-          {earlier.map((picture) => (
-            <li key={picture.file}>
-              <Picture picture={picture} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </Popover>
-  );
-}
-
-function Picture({ picture, large = false }: { picture: ShotPicture; large?: boolean }) {
-  const [error, setError] = useState<string>();
-  const [saving, setSaving] = useState(false);
-  const save = async () => {
-    setSaving(true);
-    setError(undefined);
-    try {
-      await download(picture);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <figure className={large ? 'shot large' : 'shot'}>
-      {large && (picture.url ? (
-        <a href={picture.url} target="_blank" rel="noreferrer">
-          <img src={picture.url} alt={picture.name} />
-        </a>
-      ) : (
-        <div className="shot-placeholder">
-          {picture.error ?? (picture.size === undefined ? 'Loading…' : 'The browser cannot show this file')}
-        </div>
-      ))}
-      <figcaption>
-        <span className="shot-name">
-          <strong>{picture.name}</strong>
-          {picture.size !== undefined && <span className="muted"> {(picture.size / 1e6).toFixed(1)} MB</span>}
-          {large && picture.preview && <span className="muted"> · its JPEG preview</span>}
-        </span>
-        <button onClick={() => void save()} disabled={saving} title={`Save ${picture.name} on this device`}>
-          <DownloadIcon />
-          {saving ? 'Saving…' : 'Download'}
-        </button>
-      </figcaption>
-      {error && <p className="message error small">{error}</p>}
-    </figure>
   );
 }
