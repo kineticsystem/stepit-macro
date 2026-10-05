@@ -65,7 +65,7 @@ export function Slider(props: {
         />
       </div>
       <div className="slider-speed mono">
-        {speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(1)}`}
+        {speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(2)}`}
         {speed !== 0 && <span className="muted"> turns/s</span>}
       </div>
     </div>

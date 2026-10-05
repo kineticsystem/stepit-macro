@@ -38,7 +38,7 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | On and off. On, it runs the objective `ActivateTeleop`, and the sliders drive the joints; the button is green. Pressed again, it releases the sliders and runs `ActivateController` with `joint_trajectory_controller`, the controller the rig starts with. | the commander |
 | **Camera** | A panel of the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
-| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, up to 1.5 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
+| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, up to 0.75 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.
 
@@ -117,7 +117,7 @@ The page knows whether an objective runs, whoever started it, from the status to
 
 ### The Sliders
 
-The sliders never send velocities. The page sends them as a gamepad, a `sensor_msgs/Joy` on `/ui/joy` with one axis per slider, from -1 to 1, and `ui_teleop` in the rig, a second `gamepad_teleop`, turns the axes into velocities for the velocity controller, up to their speed at the ends: 1.5 turns/s for the rotary stage, which the subject turns on, and the motors' limit, 3 turns/s, for the rail. The page only labels the sliders with these speeds (`SLIDERS` in `motion/store.ts`); `ui_teleop`'s configuration, in the rig's `rig.yaml`, sets them.
+The sliders never send velocities. The page sends them as a gamepad, a `sensor_msgs/Joy` on `/ui/joy` with one axis per slider, from -1 to 1, and `ui_teleop` in the rig, a second `gamepad_teleop`, turns the axes into velocities for the velocity controller, up to their speed at the ends: 0.75 turns/s for the rotary stage, which the subject turns on, and the motors' limit, 3 turns/s, for the rail. The page only labels the sliders with these speeds (`SLIDERS` in `motion/store.ts`); `ui_teleop`'s configuration, in the rig's `rig.yaml`, sets them.
 
 - While a slider is held away from its centre, the axes are sent 20 times a second, even when they do not change. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints. The velocity controller would otherwise keep the last velocity.
 - Letting a slider go sends it once at rest, and then nothing: `ui_teleop` leaves the velocity controller to others, e.g. the gamepad.

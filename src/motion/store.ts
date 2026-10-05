@@ -21,8 +21,8 @@ import { JoyPublisher } from './joy';
  * them in step.
  */
 export const SLIDERS = [
-  // Half the motors' limit: the subject turns on it.
-  { axis: 0, joint: 'joint1', label: 'Rotary stage', maxTurnsPerSecond: 1.5 },
+  // A quarter of the motors' limit: the subject turns on it.
+  { axis: 0, joint: 'joint1', label: 'Rotary stage', maxTurnsPerSecond: 0.75 },
   { axis: 1, joint: 'joint2', label: 'Rail', maxTurnsPerSecond: 3 },
 ] as const;
 
