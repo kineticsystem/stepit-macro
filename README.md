@@ -24,7 +24,7 @@ StepIt UI is the application of [StepIt Macro](https://github.com/kineticsystem/
 - Take a shot, fired by the Freezer board with the lights, and see and download its pictures.
 - Switch the lights on and off.
 - Drive the rotary stage and the rail by hand, with two vertical sliders under the thumbs, which work like the sticks of a gamepad.
-- Stop whatever the rig does, from a button always in the top bar.
+- Stop whatever the rig does, from a button always at the end of the toolbar.
 
 It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS in the browser: it talks to the rig through [rosbridge](https://github.com/RobotWebTools/rosbridge_suite), a WebSocket that speaks JSON.
 
@@ -32,12 +32,13 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 
 | Part | What it does | Through |
 |---|---|---|
-| Top bar | Whether the page reaches the rig, which task runs, and **Stop**, which stops every task, whoever started it, and the sliders. | the commander |
+| Top bar | Whether the page reaches the rig, which task runs, and why the last task of this page failed. | the commander |
 | **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last photo, with its name and **Download**. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
 | **Take a shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. The picture takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | On and off. On, it runs the objective `ActivateTeleop`, and the sliders drive the joints; the button is green. Pressed again, it releases the sliders and runs `ActivateController` with `joint_trajectory_controller`, the controller the rig starts with. | the commander |
 | **Camera** | A panel of the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
+| **Stop** | At the end of the toolbar, always in the same place: stops every task, whoever started it, and lets the sliders go. Red while a task runs, or while the page does not know yet whether one does. | the commander |
 | Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, up to 0.75 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.

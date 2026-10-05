@@ -12,6 +12,7 @@
 import { create } from 'zustand';
 import { useCommander } from '../commander/store';
 import { onConnected, onDisconnected, ros, status } from '../ros/connection';
+import { MAX_TURNS_PER_SECOND } from './axis';
 import { JoyPublisher } from './joy';
 
 /**
@@ -22,8 +23,8 @@ import { JoyPublisher } from './joy';
  */
 export const SLIDERS = [
   // A quarter of the motors' limit: the subject turns on it.
-  { axis: 0, joint: 'joint1', label: 'Rotary stage', maxTurnsPerSecond: 0.75 },
-  { axis: 1, joint: 'joint2', label: 'Rail', maxTurnsPerSecond: 3 },
+  { axis: 0, joint: 'joint1', label: 'Rotary stage', maxTurnsPerSecond: MAX_TURNS_PER_SECOND / 4 },
+  { axis: 1, joint: 'joint2', label: 'Rail', maxTurnsPerSecond: MAX_TURNS_PER_SECOND },
 ] as const;
 
 const CONTROLLER = 'velocity_controller';

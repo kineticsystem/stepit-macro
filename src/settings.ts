@@ -20,7 +20,10 @@ export interface Settings {
   cameraNode: string;
 }
 
-const DEFAULTS: Settings = { theme: 'auto', rosbridgeUrl: '', videoUrl: '', picturesUrl: '', cameraNode: '/camera' };
+/** The camera node of the rig. */
+export const DEFAULT_CAMERA_NODE = '/camera';
+
+const DEFAULTS: Settings = { theme: 'auto', rosbridgeUrl: '', videoUrl: '', picturesUrl: '', cameraNode: DEFAULT_CAMERA_NODE };
 const KEY = 'stepit-ui.settings';
 
 function load(): Settings {

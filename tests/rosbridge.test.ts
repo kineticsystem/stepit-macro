@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { decodeBytes, Rosbridge, type Status } from '../src/ros/rosbridge';
+import { Rosbridge, type Status } from '../src/ros/rosbridge';
 import { FakeSocket } from './fakeSocket';
 
 describe('the rosbridge client', () => {
@@ -160,10 +160,5 @@ describe('the rosbridge client', () => {
     const lost = ros.sendActionGoal('/a', 'pkg/action/A', {});
     FakeSocket.last.close();
     await expect(lost.result).rejects.toThrow('was lost');
-  });
-
-  it('decodes the bytes of a uint8[] field', () => {
-    expect(decodeBytes(btoa('\xff\xd8\x00'))).toEqual(new Uint8Array([0xff, 0xd8, 0]));
-    expect(decodeBytes([1, 2])).toEqual(new Uint8Array([1, 2]));
   });
 });

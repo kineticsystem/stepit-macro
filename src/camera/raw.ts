@@ -52,11 +52,3 @@ export function previewLocation(head: Uint8Array): Location | undefined {
 export function isJpeg(bytes: Uint8Array): boolean {
   return bytes[0] === 0xff && bytes[1] === 0xd8;
 }
-
-/** The JPEG preview inside a whole CR2 file, or undefined if there is none. */
-export function rawPreview(bytes: Uint8Array): Uint8Array | undefined {
-  const at = previewLocation(bytes);
-  if (!at || at.offset + at.length > bytes.length) return undefined;
-  const jpeg = bytes.subarray(at.offset, at.offset + at.length);
-  return isJpeg(jpeg) ? jpeg : undefined;
-}

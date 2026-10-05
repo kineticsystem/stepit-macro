@@ -579,10 +579,8 @@ Each component can still be changed alone; what cannot is a rule that spans them
 | Following a topic across connections: subscribe, then again on every `onConnected`. | `followCommander`, `followLights`; the same idea in `followCamera` and `followMotion`. | Medium: and it overlaps with the client's own re-subscription. |
 | The QoS of a latched topic, `reliable`, `transient_local`, `keep_last`, 1. | [`commander.ts`](../src/commander/commander.ts) and [`lights.ts`](../src/freezer/lights.ts). | Low. |
 | `connected`, `busy` in the buttons. | [`Toolbar.tsx`](../src/components/Toolbar.tsx), [`CameraSettings.tsx`](../src/components/CameraSettings.tsx). | Medium, see above. |
-| The speeds of the sliders. | `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), `MAX_TURNS_PER_SECOND` in [`axis.ts`](../src/motion/axis.ts), the scales of `ui_teleop` in `rig.yaml`. In step today: 0.75 and 3 turns/s. | Medium: a change in `rig.yaml` silently mislabels the sliders. |
-| The default camera node, `/camera`. | `DEFAULTS` in [`settings.ts`](../src/settings.ts), and twice in [`SettingsMenu.tsx`](../src/components/SettingsMenu.tsx). | Low. |
+| The speeds of the sliders. | `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), derived from `MAX_TURNS_PER_SECOND` in [`axis.ts`](../src/motion/axis.ts), and the scales of `ui_teleop` in `rig.yaml`. In step today: 0.75 and 3 turns/s. | Medium: a change in `rig.yaml` silently mislabels the sliders. |
 | The theme: its storage key and how `auto` resolves. | [`index.html`](../index.html), before the first paint, and [`settings.ts`](../src/settings.ts). | Low, and deliberate. |
-| Finding a RAW's preview. | `rawPreview()` in [`raw.ts`](../src/camera/raw.ts), used by the tests only, and the same steps again in `loadPicture()`. | Low. |
 | `Cannot load … : status statusText`. | `fetchSize`, `fetchRange` in [`picture.ts`](../src/camera/picture.ts), `download` in [`shot/store.ts`](../src/shot/store.ts). | Low. |
 
 ### Implementation Issues
@@ -592,8 +590,6 @@ Ordered from the most to the least serious. None of them is a safety issue: the 
 1. **The stores cannot be tested** (*verified*). [`settings.ts`](../src/settings.ts) calls `window.matchMedia` at import time, to apply the theme, so importing it in Node.js fails with `ReferenceError: window is not defined`; every store imports it through `connection.ts`. With the global `ros()` and the stores created at import, a test would also need to reset modules between cases. The untested code is the one that orchestrates: `takeShot`, `enable`/`disable`, the `follow*()` functions.
 2. **Two layers re-subscribe after a connection** (*verified*). `Rosbridge`'s `onopen` sets the status to connected, which runs `onConnected` listeners, before it sends the subscriptions again. `followCommander` and `followLights` then unsubscribe and subscribe again, and `onopen` sends that new subscription a second time. On every connection, the first included, rosbridge receives an `unsubscribe` for an id it never saw, then the same `subscribe` twice. rosbridge copes, but the page does not own its subscriptions in one place, and a store that forgot the dance would silently lose its topic after a change of rosbridge.
 3. **The live view is the page's belief.** `setStreaming()` in [`camera/store.ts`](../src/camera/store.ts) sets `streaming` before the call, and keeps it when the call fails: a failed stop leaves the camera streaming while the button says it is off. The driver publishes no state of its stream to correct it.
-4. **Dead code.** `rawPreview()` and `decodeBytes()` are used by the tests only: the pictures come over HTTP, not rosbridge.
-5. **The README is out of date.** It puts Stop in the top bar (the introduction and the table of [The Page](../README.md#the-page)); it moved to the toolbar in `f53be1d`.
 
 ### Recommendations
 
@@ -604,4 +600,3 @@ In order, each one small enough for one pull request:
 3. **Give every module an interface.** `freezer/freezer.ts` with `setOutputs()` and `onOutputs()`, and `motion/controllers.ts` with `activeControllers()`, as `Camera` does; a `LATCHED` QoS constant in `rosbridge.ts`. Then only the interfaces name ROS topics and services, the page's version of the rig's own rule. Move `errorMessage()` to a `util.ts`.
 4. **Move the rules of the buttons into the stores.** Selectors such as `canTakeShot`, `canSwitchLights`, and a `switching` flag in `useMotion` in place of the objective names in `ManualDriveButton`. Read stores with selectors, or `useShallow`, rather than whole.
 5. **Share the code copied across modules.** One small package, e.g. `stepit-web`, with the rosbridge client and the camera's interface, used by the three pages; or, at the least, port this page's fix of the picture's size back to StepIt Camera's test page. Sharing costs each module its independence at build time, which is why it was copied; three diverging copies of a protocol client is the point where that trade stops paying.
-6. **Small cleanups.** Remove `rawPreview()` or use it in `loadPicture()`; one constant for `/camera`; `SLIDERS`' rail speed from `MAX_TURNS_PER_SECOND`; fix the README.

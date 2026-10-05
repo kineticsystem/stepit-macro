@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { picturesUrl, rosbridgeUrl, useSettings, videoUrl, type Theme } from '../settings';
+import { DEFAULT_CAMERA_NODE, picturesUrl, rosbridgeUrl, useSettings, videoUrl, type Theme } from '../settings';
 import { CameraSettings } from './CameraSettings';
 import { GearIcon } from './icons';
 
@@ -67,8 +67,8 @@ export function SettingsMenu() {
           <UrlField
             label="Camera node"
             value={settings.cameraNode}
-            placeholder="/camera"
-            onChange={(cameraNode) => settings.update({ cameraNode: cameraNode.trim() || '/camera' })}
+            placeholder={DEFAULT_CAMERA_NODE}
+            onChange={(cameraNode) => settings.update({ cameraNode: cameraNode.trim() || DEFAULT_CAMERA_NODE })}
           />
         </div>
       )}
