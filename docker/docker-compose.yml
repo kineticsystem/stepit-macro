@@ -57,6 +57,11 @@ services:
     init: true
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
+    # No core dumps: a node that aborts while the rig stops, e.g. the commander
+    # or joy_linux_node, would write one of about 140 MB into the working
+    # folder, the mounted repo, at every stop.
+    ulimits:
+      core: 0
     # The devices: the serial ports of the robot and of the Freezer, the camera
     # through /dev/bus/usb, and the gamepad through /dev/input. Mounting the
     # whole of /dev, rather than each device, lets them be unplugged and plugged
