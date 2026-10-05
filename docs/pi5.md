@@ -99,7 +99,14 @@ systemctl is-active ModemManager && sudo systemctl disable --now ModemManager
 
 ### Add Swap
 
-With 4 GB of memory or less, the build can run out of memory. Raise the swap to 2 GB:
+**A Pi 5 with 8 GB does not need this step.** With 4 GB or less, the build can run out of memory. Check how the system handles swap:
+
+```
+swapon --show
+ls /etc/dphys-swapfile
+```
+
+If `/etc/dphys-swapfile` exists, the system uses dphys-swapfile: raise the swap to 2 GB.
 
 ```
 sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
@@ -107,7 +114,7 @@ sudo systemctl restart dphys-swapfile
 free -h
 ```
 
-`free -h` then shows 2.0 Gi of swap. A Pi with 8 GB does not need it.
+If it does not exist, the system has no dphys-swapfile: newer releases of Raspberry Pi OS, based on Debian 13, manage swap themselves, in compressed memory (zram), as `swapon --show` lists. Leave it as it is, and only if the build runs out of memory, see [Troubleshooting](#troubleshooting).
 
 ### Check out the Git Repository
 
@@ -217,7 +224,7 @@ sudo reboot
 
 `getconf PAGESIZE` then prints `4096`.
 
-**The build stops with `Killed`, or the Pi stops answering during the build.** It ran out of memory: add swap, see [Add Swap](#add-swap), and build again. The build continues where it stopped.
+**The build stops with `Killed`, or the Pi stops answering during the build.** It ran out of memory, which can happen with 4 GB or less. Add swap, see [Add Swap](#add-swap), and build again: the build continues where it stopped.
 
 **`ls -l /dev/serial/by-id/` does not list a board.** The Pi does not see it. Check the cable, which must carry data and not only power, and the board's LED. `journalctl -kf`, left running while the board is plugged in, prints what the kernel sees: a working Teensy ends with `ttyACM0: USB ACM device`, a working Nano with `now attached to ttyUSB0`.
 
