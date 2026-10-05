@@ -1,0 +1,14 @@
+# The cameras of StepIt Macro, for the host that runs the rig, e.g. its
+# Raspberry Pi 5. Install it with:
+#
+#   sudo cp docker/udev/60-stepit-camera.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# libgphoto2 controls a camera by writing to its USB device, /dev/bus/usb/...,
+# which a system without a desktop leaves writable by root alone. A desktop
+# grants it to the user who is logged in, which is why a PC needs no rule. This
+# rule gives every camera that speaks PTP, the protocol of the Canon EOS
+# (interface class 06, subclass 01, protocol 01), to the group plugdev, which
+# the rig's container joins (see docker-compose.yml). libgphoto2 installs the
+# same rule on a desktop.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:060101:*", GROUP="plugdev", MODE="0664"

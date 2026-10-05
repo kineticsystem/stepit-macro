@@ -96,6 +96,16 @@ command="$1"
 export USER_UID=$(id -u)
 export USER_GID=$(id -g)
 
+# The host's groups of the gamepad (input, which owns /dev/input/js0) and of the
+# cameras (plugdev, see udev/60-stepit-camera.rules), which the container's user
+# joins: their numbers differ from one system to another, e.g. input is 996 on
+# Raspberry Pi OS and 995 on Ubuntu. A group the host lacks falls back to
+# dialout, which the user is in anyway.
+export INPUT_GID=$(getent group input | cut -d: -f3)
+export PLUGDEV_GID=$(getent group plugdev | cut -d: -f3)
+export INPUT_GID=${INPUT_GID:-20}
+export PLUGDEV_GID=${PLUGDEV_GID:-20}
+
 case "$command" in
     download)
         git -C .. submodule update --init --recursive
