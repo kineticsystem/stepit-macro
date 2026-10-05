@@ -471,7 +471,7 @@ flowchart TB
 
 The page never sends a velocity: `ui_teleop` turns the axes into velocities, with the scales of `rig.yaml`, and stops the joints when the axes stop coming for 0.5 s. The page only labels each slider with its speed at the ends, `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), which must be kept in step with `rig.yaml` by hand.
 
-Manual drive is turned on by the objective `ActivateTeleop`, and off by `ActivateController` with `joint_trajectory_controller`. Whether it is on is not the page's own belief: it is read from the controller manager every 2 s, since any objective may take the velocity controller away.
+Manual drive is turned on by the objective `ActivateTeleop`, and off by `ActivateController` with `joint_trajectory_controller`. Whether it is on is not the page's own belief: it is read from the controller manager every 2 s, since any objective may take the velocity controller away, and it is off while the page is disconnected, when the sliders' messages would be dropped.
 
 ## Components
 
@@ -591,10 +591,9 @@ Ordered from the most to the least serious. None of them is a safety issue: the 
 
 1. **The stores cannot be tested** (*verified*). [`settings.ts`](../src/settings.ts) calls `window.matchMedia` at import time, to apply the theme, so importing it in Node.js fails with `ReferenceError: window is not defined`; every store imports it through `connection.ts`. With the global `ros()` and the stores created at import, a test would also need to reset modules between cases. The untested code is the one that orchestrates: `takeShot`, `enable`/`disable`, the `follow*()` functions.
 2. **Two layers re-subscribe after a connection** (*verified*). `Rosbridge`'s `onopen` sets the status to connected, which runs `onConnected` listeners, before it sends the subscriptions again. `followCommander` and `followLights` then unsubscribe and subscribe again, and `onopen` sends that new subscription a second time. On every connection, the first included, rosbridge receives an `unsubscribe` for an id it never saw, then the same `subscribe` twice. rosbridge copes, but the page does not own its subscriptions in one place, and a store that forgot the dance would silently lose its topic after a change of rosbridge.
-3. **The sliders look live while disconnected.** `refresh()` in [`motion/store.ts`](../src/motion/store.ts) returns at once when not connected, so `enabled` keeps its last value: the sliders stay enabled, and their messages are dropped. Nothing moves, but the page says otherwise.
-4. **The live view is the page's belief.** `setStreaming()` in [`camera/store.ts`](../src/camera/store.ts) sets `streaming` before the call, and keeps it when the call fails: a failed stop leaves the camera streaming while the button says it is off. The driver publishes no state of its stream to correct it.
-5. **Dead code.** `rawPreview()` and `decodeBytes()` are used by the tests only: the pictures come over HTTP, not rosbridge.
-6. **The README is out of date.** It puts Stop in the top bar (the introduction and the table of [The Page](../README.md#the-page)); it moved to the toolbar in `f53be1d`.
+3. **The live view is the page's belief.** `setStreaming()` in [`camera/store.ts`](../src/camera/store.ts) sets `streaming` before the call, and keeps it when the call fails: a failed stop leaves the camera streaming while the button says it is off. The driver publishes no state of its stream to correct it.
+4. **Dead code.** `rawPreview()` and `decodeBytes()` are used by the tests only: the pictures come over HTTP, not rosbridge.
+5. **The README is out of date.** It puts Stop in the top bar (the introduction and the table of [The Page](../README.md#the-page)); it moved to the toolbar in `f53be1d`.
 
 ### Recommendations
 
@@ -604,6 +603,5 @@ In order, each one small enough for one pull request:
 2. **Give the connection one owner of the subscriptions.** Let `connection.ts` offer `follow(topic, type, listener, qos)`, which keeps the subscription across a change of rosbridge by moving it to the new `Rosbridge`, and does nothing on a mere reconnection, which the client already handles. `followCommander` and `followLights` then shrink to one line, and the duplicate traffic goes.
 3. **Give every module an interface.** `freezer/freezer.ts` with `setOutputs()` and `onOutputs()`, and `motion/controllers.ts` with `activeControllers()`, as `Camera` does; a `LATCHED` QoS constant in `rosbridge.ts`. Then only the interfaces name ROS topics and services, the page's version of the rig's own rule. Move `errorMessage()` to a `util.ts`.
 4. **Move the rules of the buttons into the stores.** Selectors such as `canTakeShot`, `canSwitchLights`, and a `switching` flag in `useMotion` in place of the objective names in `ManualDriveButton`. Read stores with selectors, or `useShallow`, rather than whole.
-5. **Disable the sliders when the connection drops**, with `onDisconnected` in `followMotion`.
-6. **Share the code copied across modules.** One small package, e.g. `stepit-web`, with the rosbridge client and the camera's interface, used by the three pages; or, at the least, port this page's fix of the picture's size back to StepIt Camera's test page. Sharing costs each module its independence at build time, which is why it was copied; three diverging copies of a protocol client is the point where that trade stops paying.
-7. **Small cleanups.** Remove `rawPreview()` or use it in `loadPicture()`; one constant for `/camera`; `SLIDERS`' rail speed from `MAX_TURNS_PER_SECOND`; fix the README.
+5. **Share the code copied across modules.** One small package, e.g. `stepit-web`, with the rosbridge client and the camera's interface, used by the three pages; or, at the least, port this page's fix of the picture's size back to StepIt Camera's test page. Sharing costs each module its independence at build time, which is why it was copied; three diverging copies of a protocol client is the point where that trade stops paying.
+6. **Small cleanups.** Remove `rawPreview()` or use it in `loadPicture()`; one constant for `/camera`; `SLIDERS`' rail speed from `MAX_TURNS_PER_SECOND`; fix the README.
