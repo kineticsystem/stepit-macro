@@ -33,6 +33,13 @@ export function useStatus(): Status {
   return useStatusStore((s) => s.status);
 }
 
+/** Calls the listener whenever the connection is lost. Returns a function that stops it. */
+export function onDisconnected(listener: () => void): () => void {
+  return useStatusStore.subscribe((s, previous) => {
+    if (s.status !== 'connected' && previous.status === 'connected') listener();
+  });
+}
+
 /** Calls the listener whenever the connection is established. Returns a function that stops it. */
 export function onConnected(listener: () => void): () => void {
   return useStatusStore.subscribe((s, previous) => {

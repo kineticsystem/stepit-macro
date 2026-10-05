@@ -111,7 +111,7 @@ select { width: auto; }
 .settings { position: relative; }
 .settings-popover {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 15;
-  width: 320px; max-width: calc(100vw - 24px); padding: 14px;
+  width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 80px); overflow: auto; padding: 14px;
   border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
 }
@@ -141,9 +141,11 @@ select { width: auto; }
 .task-failure {
   color: var(--error); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw;
 }
-/* Stop is always within reach, whatever runs. */
+/* Stop, at the end of the toolbar: red while a task runs, an ordinary greyed
+   button otherwise, always in the same place. */
 button.stop { background: var(--error); border-color: var(--error); color: #fff; font-weight: 600; }
 button.stop:hover:not(:disabled) { background: var(--error); filter: brightness(1.08); }
+button.stop:disabled { background: var(--panel); border-color: var(--border); color: var(--muted); font-weight: normal; }
 
 .badge { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
 .badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
