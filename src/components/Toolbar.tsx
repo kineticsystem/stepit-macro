@@ -7,19 +7,20 @@ import { useMotion } from '../motion/store';
 import { useStatus } from '../ros/connection';
 import { useShot } from '../shot/store';
 import { CameraSettings } from './CameraSettings';
-import { CameraIcon, HandIcon, LightIcon, PlayIcon, ShutterIcon, StopIcon } from './icons';
+import { CameraIcon, HandIcon, LightIcon, ShutterIcon, VideoIcon } from './icons';
 import { Popover } from './Popover';
 
 /**
- * The commands of the rig, above the live view: the live view itself, a shot,
- * the lights and manual drive, then the panel of the camera's settings. The
- * last photo shows in place of the live view.
+ * The commands of the rig, above the live view: a shot first, then the live
+ * view, the lights and manual drive, then the panel of the camera's settings.
+ * The last photo shows in place of the live view. Live view and Lights are
+ * buttons that light up while they are on.
  */
 export function Toolbar() {
   return (
     <div className="toolbar">
-      <LiveViewButton />
       <ShotButton />
+      <LiveViewButton />
       <LightsButton />
       <ManualDriveButton />
       <span className="row-spacer" />
@@ -28,16 +29,17 @@ export function Toolbar() {
   );
 }
 
+/** The live view: a button, lit while the stream runs. */
 function LiveViewButton() {
   const { streaming, setStreaming } = useCamera();
-  return streaming ? (
-    <button onClick={() => void setStreaming(false)} title="Stop the live view">
-      <StopIcon />
-      Live view
-    </button>
-  ) : (
-    <button onClick={() => void setStreaming(true)} title="Start the live view">
-      <PlayIcon />
+  return (
+    <button
+      className={`live${streaming ? ' on' : ''}`}
+      aria-pressed={streaming}
+      title={streaming ? 'Stop the live view' : 'Start the live view'}
+      onClick={() => void setStreaming(!streaming)}
+    >
+      <VideoIcon />
       Live view
     </button>
   );
