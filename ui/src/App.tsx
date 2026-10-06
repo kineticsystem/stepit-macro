@@ -4,18 +4,22 @@ import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
 import { SettingsMenu } from './components/SettingsMenu';
+import { StackBar } from './components/StackBar';
 import { Slider } from './components/Slider';
 import { TaskStatus } from './components/TaskStatus';
 import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
 import { followMotion, SLIDERS, useMotion } from './motion/store';
+import { useSettings } from './settings';
 
 /**
  * The whole rig on one page, for a tablet held in both hands: a slider at each
  * edge, under each thumb, the rotary stage on the left and the rail on the
- * right; the live view in the middle, with the commands above it.
+ * right; the live view in the middle, with the commands above it, and the
+ * focus stack under them, which the Stack button shows.
  */
 export function App() {
+  const showStack = useSettings((s) => s.showStack);
   useEffect(() => {
     const stops = [followCommander(), followCamera(), followLights(), followMotion()];
     return () => stops.forEach((stop) => stop());
@@ -34,6 +38,7 @@ export function App() {
         <SideSlider index={0} />
         <div className="centre">
           <Toolbar />
+          {showStack && <StackBar />}
           <LiveView />
         </div>
         <SideSlider index={1} />

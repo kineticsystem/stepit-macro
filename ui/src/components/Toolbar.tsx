@@ -4,13 +4,14 @@ import { LIGHTS_JACK, useLights } from '../freezer/lights';
 import { lightsOn } from '../freezer/outputs';
 import { useMotion } from '../motion/store';
 import { useStatus } from '../ros/connection';
+import { useSettings } from '../settings';
 import { useShot } from '../shot/store';
-import { HandIcon, LightIcon, ShutterIcon, StopIcon, VideoIcon } from './icons';
+import { HandIcon, LayersIcon, LightIcon, ShutterIcon, StopIcon, VideoIcon } from './icons';
 
 /**
  * The commands of the rig, above the live view: a shot first, then the live
- * view, the lights and manual drive, and Stop at the other end. The camera's
- * settings are in the settings menu, under the gear.
+ * view, the lights, manual drive and the stack bar, and Stop at the other end.
+ * The camera's settings are in the settings menu, under the gear.
  * The last photo shows in place of the live view. Live view, Lights and
  * Manual drive are buttons that turn green while they are on.
  */
@@ -21,9 +22,26 @@ export function Toolbar() {
       <LiveViewButton />
       <LightsButton />
       <ManualDriveButton />
+      <StackButton />
       <span className="row-spacer" />
       <StopButton />
     </div>
+  );
+}
+
+/** Shows or hides the stack bar, under the toolbar: highlighted while shown. */
+function StackButton() {
+  const { showStack, update } = useSettings();
+  return (
+    <button
+      className={showStack ? 'active' : ''}
+      aria-pressed={showStack}
+      title={showStack ? 'Hide the focus stack' : 'Show the focus stack: its marks, its plan, Start'}
+      onClick={() => update({ showStack: !showStack })}
+    >
+      <LayersIcon />
+      Stack
+    </button>
   );
 }
 

@@ -18,12 +18,14 @@ export interface Settings {
   picturesUrl: string;
   /** The name of the camera node, e.g. /camera. */
   cameraNode: string;
+  /** The stack bar, under the toolbar, is shown. */
+  showStack: boolean;
 }
 
 /** The camera node of the rig. */
 export const DEFAULT_CAMERA_NODE = '/camera';
 
-const DEFAULTS: Settings = { theme: 'auto', rosbridgeUrl: '', videoUrl: '', picturesUrl: '', cameraNode: DEFAULT_CAMERA_NODE };
+const DEFAULTS: Settings = { theme: 'auto', rosbridgeUrl: '', videoUrl: '', picturesUrl: '', cameraNode: DEFAULT_CAMERA_NODE, showStack: true };
 const KEY = 'stepit-ui.settings';
 
 function load(): Settings {

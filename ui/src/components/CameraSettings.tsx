@@ -4,7 +4,7 @@ import { useCommander } from '../commander/store';
 
 /**
  * The settings of the camera, each a list of the values it accepts right now,
- * at the top of the settings menu.
+ * on the first tab of the settings menu.
  * The choices depend on the mode dial and on the lens: a setting the camera
  * does not let us change has a single choice, and is disabled. They are locked
  * while a task runs, so that a shoot is not changed halfway through.
@@ -15,7 +15,6 @@ export function CameraSettings() {
 
   return (
     <div className="camera-settings">
-      <h2>Camera</h2>
       {error && <p className="message error">{error}</p>}
       {!error && settings.length === 0 && <p className="muted">Reading the settings…</p>}
       <div className="fields">

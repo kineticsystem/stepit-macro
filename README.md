@@ -72,13 +72,14 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 [StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
 
 - **The live view** of the camera, started and stopped from the page.
-- **The camera's settings**, at the top of the settings menu: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
+- **The camera's settings**, on the first tab of the settings menu, next to Appearance and Connection: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
 - **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo.
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
+- **The focus stack**, in a bar under the toolbar, which **Stack** shows and hides: **Set near** and **Set far** run [`MarkNear`](docs/MarkNear.md) and [`MarkFar`](docs/MarkFar.md) where the rail is, without leaving manual drive, and show the position marked; the number of shots, the angles of the stage, in turns of its motor, and how many; **Start stack** runs [`FocusStack`](docs/FocusStack.md) and counts the pictures as they come.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 
-**Only the robot's tasks go through the commander**: a shot, and handing the robot to the user. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
+**Only the robot's tasks go through the commander**: a shot, handing the robot to the user, marking and shooting a stack. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
 
 **The sliders are a second gamepad.** The page sends them as a `sensor_msgs/Joy` on `/ui/joy`, 20 times a second while one is held, and a second `gamepad_teleop`, `ui_teleop`, turns them into velocities. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints.
 

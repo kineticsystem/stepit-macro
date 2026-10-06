@@ -119,6 +119,16 @@ select { width: auto; }
 .settings-popover p { margin: 0 0 4px; }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .settings-group { margin-top: 16px !important; }
+
+/* The tabs of the settings menu. */
+.tabs { display: flex; gap: 4px; margin: -4px 0 14px; border-bottom: 1px solid var(--border); }
+.tab {
+  min-height: 40px; padding: 6px 12px;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; color: var(--muted);
+}
+.tab:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .setting-field { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
 .setting-label { color: var(--muted); }
 
@@ -180,6 +190,21 @@ button.live.on, button.lights.on, button.engaged {
 button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
   background: var(--ok); filter: brightness(1.08);
 }
+/* The focus stack, under the toolbar: the marks, the plan, Start. */
+.stack-bar {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.stack-mark { display: inline-flex; align-items: center; gap: 6px; }
+.stack-divider { align-self: stretch; width: 1px; background: var(--border); }
+.stack-field { display: inline-flex; align-items: center; gap: 6px; }
+.stack-field input { width: 64px; }
+.stack-summary { white-space: nowrap; }
+.stack-progress { color: var(--accent); font-weight: 600; white-space: nowrap; }
+
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
 
 /* The panels of the toolbar */
