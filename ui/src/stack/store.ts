@@ -11,10 +11,11 @@
 // them on /parameter_events.
 
 import { create } from 'zustand';
-import { camera } from '../camera/store';
+import { camera, useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 import { onConnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
+import { useShot } from '../shot/store';
 import type { RunResult } from '../commander/commander';
 import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue } from './parameters';
 import { DEFAULT_PLAN, payloadOf, totalShots, type StackPlan } from './plan';
@@ -95,10 +96,13 @@ export const useStack = create<StackState>((set, get) => ({
   async start() {
     const plan = planOf(get());
     set({ progress: { taken: 0, total: totalShots(plan) } });
+    // The pictures show in place of the live view, as a test shot's do.
+    if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
     // Every picture of the camera while the stack runs is one of its shots.
-    const stop = camera().onPicture(() =>
-      set((s) => (s.progress ? { progress: { ...s.progress, taken: s.progress.taken + 1 } } : {})),
-    );
+    const stop = camera().onPicture((picture) => {
+      set((s) => (s.progress ? { progress: { ...s.progress, taken: s.progress.taken + 1 } } : {}));
+      useShot.getState().show(picture);
+    });
     try {
       return await useCommander.getState().run('FocusStack', payloadOf(plan));
     } finally {

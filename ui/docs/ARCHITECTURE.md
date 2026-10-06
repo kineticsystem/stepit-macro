@@ -250,7 +250,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 |---|---|---|---|
 | `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `failure`; `run()`, `stop()` | `followCommander`: the status topic of the action | — |
 | `useCamera` | the settings, the ones `changing` and `refused`, `streaming`, the errors; `refresh()`, `change()`, `setStreaming()` | `followCamera`: reads the settings every 3 s, unless a task runs; starts the live view again after a reconnection | `useCommander` (`busy`), `useSettings` |
-| `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()` | — | `useCamera`, `useCommander`, `useSettings` |
+| `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()`, `show()`, which the stack calls with each of its pictures | — | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
 | `useStack` | the rail's marks this page set, in turns; the counts; the stage's ends from rig.yaml; `marking`, `progress`; `mark()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads the commander's `focus_stack.*` on every connection | `useCommander`, `useCamera` (its pictures, counted) |
