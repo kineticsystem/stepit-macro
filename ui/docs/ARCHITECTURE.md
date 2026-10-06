@@ -254,7 +254,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
 | `useStack` | the rail's marks this page set, in turns; the counts; the stage's configured ends, its marks and its position; `mmPerTurn`, `degPerTurn`; `marking`, `progress`; `mark()`, `markStage()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads the commander's `mm_per_turn.joint2`, `deg_per_turn.joint1` and `focus_stack.*` on every connection, dropping the stage's marks; follows the stage on `/joint_states` | `useCommander`, `useCamera` (its pictures, counted) |
-| `useSettings` | the preferences of the browser, in `localStorage`, `showStack` among them | — | — |
+| `useSettings` | the preferences of the browser, in `localStorage` | — | — |
 
 ```mermaid
 ---
@@ -484,7 +484,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`ConnectionBadge`](../src/components/ConnectionBadge.tsx) | Top bar | Whether the page reaches rosbridge. | `useStatus`, `useSettings` |
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
-| [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stack (shows the stack's controls), Stop: one small component per button. | every store |
+| [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
 | [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | What the stack shoots: the depth and step in mm, the stage's turn; Shots, Angles, and Stack, which runs it, then its count of pictures. | `useStack`, `useCommander` |
 | [`StageMark`](../src/components/StageMark.tsx) | Above and below the stage's slider | Mark: the stage's end of the stack, to above, from below, from where the stage is now; rig.yaml's until marked, a mark kept until the next connection. | `useStack` |
 | [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; the position marked, in mm. | `useStack`, `useCommander` |
