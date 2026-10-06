@@ -60,6 +60,19 @@ export function followObjectives(ros: Rosbridge, listener: (running: boolean) =>
     { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
 }
 
+/** The topic where the commander publishes the objective running, latched: "" when none. */
+const OBJECTIVE_TOPIC = '/stepit_server/objective';
+
+/**
+ * Calls the listener with the name of the objective running, whoever sent
+ * it, or "" when none runs: at once, from the latched topic, and on every
+ * change.
+ */
+export function followObjective(ros: Rosbridge, listener: (objective: string) => void): () => void {
+  return ros.subscribe<{ data: string }>(OBJECTIVE_TOPIC, 'std_msgs/msg/String', (message) => listener(message.data),
+    { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
+}
+
 function describe(status: number): string {
   return { 4: 'Succeeded', 5: 'Stopped', 6: 'Failed' }[status] ?? `Ended with status ${status}`;
 }

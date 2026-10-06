@@ -6,11 +6,13 @@ import { useCommander } from '../commander/store';
  * off.
  */
 export function TaskStatus() {
-  const { busy, running, failure } = useCommander();
+  const { busy, running, objective, failure } = useCommander();
 
+  // The commander names what runs, whichever page or device sent it; a tree
+  // that threw may leave its name behind, so only while something runs.
   let text: string | undefined;
-  if (running) text = `Running ${running}`;
-  else if (busy) text = 'A task is running';
+  const name = running || objective;
+  if (busy || running) text = name ? `Running ${name}` : 'A task is running';
 
   return (
     <div className="task">

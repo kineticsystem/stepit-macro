@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { onConnected, onDisconnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
-import { cancelAll, followObjectives, runObjective, type RunResult } from './commander';
+import { cancelAll, followObjective, followObjectives, runObjective, type RunResult } from './commander';
 
 interface CommanderState {
   /** An objective runs, sent by this page or by anyone else, e.g. the gamepad. */
@@ -16,6 +16,8 @@ interface CommanderState {
   known: boolean;
   /** The objective this page runs, if any. */
   running?: string;
+  /** The objective running, whoever sent it, as the commander says: "" when none. */
+  objective: string;
   /** How the last objective of this page ended, while it failed. */
   failure?: string;
 
@@ -26,6 +28,7 @@ interface CommanderState {
 export const useCommander = create<CommanderState>((set) => ({
   busy: false,
   known: false,
+  objective: '',
 
   async run(objective, payload = '') {
     set({ running: objective, failure: undefined });
@@ -56,7 +59,12 @@ export function followCommander(): () => void {
   let stopFollowing = () => {};
   const follow = () => {
     stopFollowing();
-    stopFollowing = followObjectives(ros(), (busy) => useCommander.setState({ busy, known: true }));
+    const stopStatus = followObjectives(ros(), (busy) => useCommander.setState({ busy, known: true }));
+    const stopObjective = followObjective(ros(), (objective) => useCommander.setState({ objective }));
+    stopFollowing = () => {
+      stopStatus();
+      stopObjective();
+    };
   };
   follow();
   // A new connection, e.g. to another rosbridge in the settings, gets its own subscription.
