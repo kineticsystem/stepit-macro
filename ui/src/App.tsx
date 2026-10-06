@@ -13,6 +13,7 @@ import { TaskStatus } from './components/TaskStatus';
 import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
 import { followMotion, SLIDERS, useMotion } from './motion/store';
+import { followPictures } from './shot/store';
 import { followStack } from './stack/store';
 
 /**
@@ -23,7 +24,7 @@ import { followStack } from './stack/store';
  */
 export function App() {
   useEffect(() => {
-    const stops = [followCommander(), followCamera(), followLights(), followMotion(), followStack()];
+    const stops = [followCommander(), followCamera(), followLights(), followMotion(), followStack(), followPictures()];
     return () => stops.forEach((stop) => stop());
   }, []);
 

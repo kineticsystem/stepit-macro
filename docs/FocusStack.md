@@ -21,6 +21,7 @@ FocusStack
 ├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
 ├── LoadValues  near, far           (the marks, from the state file)
 ├── CurrentTime                     -> {stack_folder}, e.g. 2026-10-06_15-20-04
+├── ReportProgress                  0 of shots × angles, on /focus_stack/progress
 ├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
 ├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
 ├── CommandJointPositions           to {first}, past it and back
@@ -33,6 +34,7 @@ FocusStack
 │       └── RetryUntilSuccessful    2 attempts
 │           └── ExpectPicture       (fails if no picture comes within 15 s)
 │               └── Shoot           (the Freezer's default sequence: the camera and the lights)
+│           └── ReportProgress      one more picture
 ├── SetPictureFolder                "", the pictures folder itself again
 └── CommandJointPositions           back to {home}
 ```
@@ -53,6 +55,8 @@ pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 ```
 
 `SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again. A stack that stops halfway leaves the folder set: the next stack, or a test shot, sets its own.
+
+**Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `[done, total]`, on `/focus_stack/progress` (`std_msgs/Int32MultiArray`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
 
 **The marks are counts of motor steps.** The controller of the motors counts from 0 when it powers up, so marks saved before it restarts point somewhere else after: mark both ends again for every subject.
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ACTION, cancelAll, EXECUTE_TREE, followObjectives, runObjective } from '../src/commander/commander';
+import { ACTION, cancelAll, EXECUTE_TREE, followObjective, followObjectives, runObjective } from '../src/commander/commander';
 import { Rosbridge } from '../src/ros/rosbridge';
 import { FakeSocket } from './fakeSocket';
 
@@ -66,5 +66,18 @@ describe('the commander over rosbridge', () => {
     status([4, 6]);
     status([]);
     expect(running.mock.calls).toEqual([[true], [false], [false]]);
+  });
+
+  // A page opened on any device knows what runs, whoever sent it: the
+  // commander's latched topic gives the current name at once.
+  it('follows the name of the running objective, latched', () => {
+    const objective = vi.fn();
+    followObjective(ros, objective);
+    expect(socket.lastSent('subscribe')).toMatchObject({
+      topic: '/stepit_server/objective', type: 'std_msgs/msg/String', qos: { durability: 'transient_local', reliability: 'reliable' },
+    });
+    socket.receive({ op: 'publish', topic: '/stepit_server/objective', msg: { data: 'FocusStack' } });
+    socket.receive({ op: 'publish', topic: '/stepit_server/objective', msg: { data: '' } });
+    expect(objective.mock.calls).toEqual([['FocusStack'], ['']]);
   });
 });

@@ -27,6 +27,8 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <regex>
 #include <string>
 #include <utility>
@@ -36,6 +38,7 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/int32_multi_array.hpp>
 #include <stepit_behaviors/register_nodes.hpp>
 
 #include "fake/fake_camera.hpp"
@@ -212,6 +215,37 @@ TEST_F(FocusStackObjective, EachAngleHasAFolderOfPicturesInTheStacksFolder)
   for (std::size_t i = 0; i < 6; ++i)
   {
     EXPECT_EQ(pictures[i].rfind(folders[i / 3] + "/", 0), 0u) << pictures[i];
+  }
+}
+
+// Every page shows how far the stack is: the pictures taken, of how many, on a
+// latched topic, whichever page started it.
+TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
+{
+  mark(1.0, 2.0);
+  std::mutex mutex;
+  std::vector<std::vector<int>> reports;
+  const auto subscription = node_->create_subscription<std_msgs::msg::Int32MultiArray>(
+      "/focus_stack/progress", rclcpp::QoS{ 10 }.reliable().transient_local(),
+      [&](const std_msgs::msg::Int32MultiArray& message) {
+        const std::lock_guard<std::mutex> lock{ mutex };
+        reports.push_back({ message.data.begin(), message.data.end() });
+      });
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node_);
+  std::thread spinner{ [&]() { executor.spin(); } };
+
+  const auto status = runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 });
+  std::this_thread::sleep_for(std::chrono::milliseconds{ 300 });
+  executor.cancel();
+  spinner.join();
+  ASSERT_EQ(status, BT::NodeStatus::SUCCESS);
+
+  const std::lock_guard<std::mutex> lock{ mutex };
+  ASSERT_EQ(reports.size(), 7u);
+  for (int i = 0; i <= 6; ++i)
+  {
+    EXPECT_EQ(reports[static_cast<std::size_t>(i)], (std::vector<int>{ i, 6 }));
   }
 }
 

@@ -52,6 +52,7 @@ add_library(stepit_behaviors SHARED
   src/ports.cpp
   src/shoot.cpp
   src/register_nodes.cpp
+  src/report_progress.cpp
   src/set_joints.cpp
   src/steps.cpp
   src/switch_controller.cpp

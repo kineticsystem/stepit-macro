@@ -14,6 +14,7 @@ import { camera, useCamera } from '../camera/store';
 import { Camera, type Picture } from '../camera/camera';
 import { loadPicture } from '../camera/picture';
 import { useCommander } from '../commander/store';
+import { onConnected } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
 import { picturesUrl, useSettings } from '../settings';
 import { release, withLoaded, withPicture, type Kept, type ShotPicture } from './pictures';
@@ -57,10 +58,10 @@ export const useShot = create<ShotState>((set, get) => {
       let first: () => void = () => {};
       const came = new Promise<void>((resolve) => (first = resolve));
       // Listen before the shot, so that the picture cannot come first.
-      const stop = camera().onPicture((picture) => {
+      // followPictures shows it, as every page shows every picture.
+      const stop = camera().onPicture(() => {
         arrived++;
         first();
-        get().show(picture);
       });
       try {
         const result = await useCommander.getState().run('TakeShot');
@@ -105,4 +106,23 @@ async function load(picture: ShotPicture): Promise<ShotPicture> {
   } catch (e) {
     return { ...picture, error: errorMessage(e) };
   }
+}
+
+/**
+ * Shows every picture the camera takes in place of the live view, whoever
+ * fired it: a test shot or a stack started from any page or device. Returns
+ * a function that stops it.
+ */
+export function followPictures(): () => void {
+  let stop = () => {};
+  const follow = () => {
+    stop();
+    stop = camera().onPicture((picture) => useShot.getState().show(picture));
+  };
+  follow();
+  const unsubscribe = onConnected(follow);
+  return () => {
+    unsubscribe();
+    stop();
+  };
 }

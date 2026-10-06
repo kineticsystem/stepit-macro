@@ -11,17 +11,18 @@
 // them on /parameter_events.
 
 import { create } from 'zustand';
-import { camera, useCamera } from '../camera/store';
+import { useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 import { onConnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
-import { useShot } from '../shot/store';
 import type { RunResult } from '../commander/commander';
 import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue } from './parameters';
-import { DEFAULT_PLAN, payloadOf, totalShots, type StackPlan } from './plan';
+import { DEFAULT_PLAN, payloadOf, type StackPlan } from './plan';
 
 /** The commander, whose parameters hold the stack. */
 const COMMANDER = '/stepit_server';
+/** Where FocusStack says how far it is, [taken, total], latched. */
+const PROGRESS_TOPIC = '/focus_stack/progress';
 
 export type End = 'near' | 'far';
 
@@ -37,7 +38,7 @@ interface StackState {
   marking?: End;
   /** Why the rig refused a count, if it did. */
   error?: string;
-  /** While FocusStack runs from this page: the pictures taken so far, of how many. */
+  /** How far the running stack is, as the rig says, whichever page started it. */
   progress?: { taken: number; total: number };
 
   setPlan(change: Partial<Pick<StackState, 'shots' | 'angles'>>): Promise<void>;
@@ -94,21 +95,10 @@ export const useStack = create<StackState>((set, get) => ({
   },
 
   async start() {
-    const plan = planOf(get());
-    set({ progress: { taken: 0, total: totalShots(plan) } });
-    // The pictures show in place of the live view, as a test shot's do.
+    // The pictures show in place of the live view, as a test shot's do: every
+    // page shows every picture, see followPictures.
     if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
-    // Every picture of the camera while the stack runs is one of its shots.
-    const stop = camera().onPicture((picture) => {
-      set((s) => (s.progress ? { progress: { ...s.progress, taken: s.progress.taken + 1 } } : {}));
-      useShot.getState().show(picture);
-    });
-    try {
-      return await useCommander.getState().run('FocusStack', payloadOf(plan));
-    } finally {
-      stop();
-      set({ progress: undefined });
-    }
+    return useCommander.getState().run('FocusStack', payloadOf(planOf(get())));
   },
 }));
 
@@ -140,8 +130,13 @@ export function followStack(): () => void {
   const stopEvents = ros().subscribe<ParameterEvent>('/parameter_events', 'rcl_interfaces/msg/ParameterEvent', (event) => {
     if (event.node === COMMANDER) apply([...event.new_parameters, ...event.changed_parameters]);
   });
+  // FocusStack's progress, latched: a page that opens mid-stack gets it at once.
+  const stopProgress = ros().subscribe<{ data: number[] }>(PROGRESS_TOPIC, 'std_msgs/msg/Int32MultiArray',
+    ({ data: [taken, total] }) => useStack.setState({ progress: { taken, total } }),
+    { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
   return () => {
     unsubscribe();
     stopEvents();
+    stopProgress();
   };
 }

@@ -25,6 +25,9 @@
   A shot whose picture does not come is fired again once; then the stack
   stops, rather than leave a gap.
 
+  How far it is, the pictures taken of how many, goes on the latched topic
+  /focus_stack/progress, for every page to show, whichever started it.
+
   The pictures of a stack go into a folder of their own under the camera's
   pictures folder, named after when it started, with one folder per angle:
   2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on.
@@ -39,6 +42,9 @@
       <LoadValues _description="The near end of the rail, from MarkNear." key="near" values="{near}"/>
       <LoadValues _description="The far end of the rail, from MarkFar." key="far" values="{far}"/>
       <CurrentTime _description="The name of the stack's folder of pictures: when it started." time="{stack_folder}"/>
+      <!-- How far the stack is, for every page: none of its pictures yet. -->
+      <Script code="pictures_total := @shots * @angles"/>
+      <ReportProgress _description="No picture of the stack yet." done="0" total="{pictures_total}"/>
       <DegreesToRadians _description="The first angle, in radians of the stage's motor." joint="joint1"
                         degrees="{@stage_from}" radians="{first_angle}"/>
       <DegreesToRadians _description="The last angle, in radians of the stage's motor." joint="joint1"
@@ -89,6 +95,8 @@
                   <Shoot _description="Fires the default sequence of the Freezer: the camera and the lights."/>
                 </ExpectPicture>
               </RetryUntilSuccessful>
+              <Script code="pictures_done := angle_index * @shots + shot + 1"/>
+              <ReportProgress _description="One more picture of the stack." done="{pictures_done}" total="{pictures_total}"/>
             </Sequence>
           </Steps>
         </Sequence>

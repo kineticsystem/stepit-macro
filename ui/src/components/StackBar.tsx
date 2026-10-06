@@ -16,6 +16,9 @@ import { LayersIcon } from './icons';
 export function StackBar() {
   const stack = useStack();
   const busy = useCommander((s) => s.busy);
+  // The rig's progress, while it runs a stack, whichever page started it.
+  const stacking = useCommander((s) => s.busy && s.objective === 'FocusStack');
+  const progress = stacking ? stack.progress : undefined;
   const connected = useStatus() === 'connected';
   const idle = connected && !busy;
   const plan = planOf(stack);
@@ -25,7 +28,7 @@ export function StackBar() {
     <div className="stack-bar">
       <button
         className="primary"
-        disabled={!idle || problem !== undefined || stack.progress !== undefined}
+        disabled={!idle || problem !== undefined}
         title={problem ?? 'Shoot the stack: the robot moves'}
         onClick={() => void stack.start()}
       >
@@ -35,13 +38,13 @@ export function StackBar() {
       <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => void stack.setPlan({ shots })} />
       <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => void stack.setPlan({ angles })} />
       {stack.error && <span className="error small">{stack.error}</span>}
-      {stack.progress && (
+      {progress && (
         <progress
           className="stack-progress"
-          max={stack.progress.total}
-          value={stack.progress.taken}
+          max={progress.total}
+          value={progress.taken}
           aria-label="Pictures of the stack"
-          title={`${stack.progress.taken} of ${stack.progress.total} pictures`}
+          title={`${progress.taken} of ${progress.total} pictures`}
         />
       )}
     </div>
