@@ -22,6 +22,7 @@
 """The configuration of the rig, rig.yaml, as rig.launch.py reads it, without starting anything."""
 
 import importlib.util
+import math
 from pathlib import Path
 
 import pytest
@@ -72,11 +73,19 @@ def test_the_commander_loads_the_rig_behaviors_and_objectives():
     assert commander["behavior_trees"] == ["stepit_objectives/objectives"]
 
 
-def test_every_motor_of_the_rig_overshoots_against_backlash():
+def test_the_stage_overshoots_by_a_degree_and_the_rail_by_a_millimetre():
     _, parameters = rig.split_config(load_config())
     commander = parameters["stepit_server"]["ros__parameters"]
-    for joint in ("joint1", "joint2"):
-        assert commander["overshoot"][joint] > 0
+    turns = {
+        joint: radians / (2 * math.pi)
+        for joint, radians in commander["overshoot"].items()
+    }
+    assert turns["joint1"] * commander["deg_per_turn"]["joint1"] == pytest.approx(
+        1.0, abs=1e-4
+    )
+    assert turns["joint2"] * commander["mm_per_turn"]["joint2"] == pytest.approx(
+        1.0, abs=1e-4
+    )
 
 
 def test_the_rail_has_its_measured_millimetres_per_turn():

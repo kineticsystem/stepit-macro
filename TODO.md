@@ -439,8 +439,8 @@ yet. To measure on the rig:
   `deg_per_turn.joint1` in `rig.yaml`, which `RotateStageBy` and `FocusStack`
   use. Counter-clockwise is negative.
 - **The backlash of each axis**, which `overshoot.joint1` and
-  `overshoot.joint2` in `rig.yaml` must exceed: they are a twentieth and a
-  tenth of a turn today, a guess. With the live view at full magnification on
+  `overshoot.joint2` in `rig.yaml` must exceed: 1 degree of the stage and
+  1 mm of the rail today, a generous guess. With the live view at full magnification on
   a ruler, move forward, then back in steps of 0.01 turn, and count the steps
   before the image moves.
 - **The settling time** after a move, 500 ms in `focus_stack.xml`: the
