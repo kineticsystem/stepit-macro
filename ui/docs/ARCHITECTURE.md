@@ -484,7 +484,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | The camera's settings, the theme, the servers. | `useSettings` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Take a shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store but `useSettings` |
-| [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo with Download; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
+| [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
 | [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb. Props only: no store. | — |
 | [`icons`](../src/components/icons.tsx) | Shared | Line icons in the text colour. | — |
 
@@ -566,7 +566,7 @@ The rules of what may be done when, connected, no task running, are also in the 
 The stores form a clean, acyclic graph (see [The Stores](#the-stores)). The coupling is in the views:
 
 - **The rules of when a command may run are spread over the buttons.** `connected` is computed in four buttons, `busy` checked in three, and each combines them its own way: `ShotButton` (`!connected || busy || shooting`), `LightsButton` (`!connected || !known || busy || switching`), `ManualDriveButton` (two objective names), `StopButton`, `CameraSettings` (`busy`). A new rule, e.g. "nothing while the Freezer is unknown", means finding each of them, and none of it is tested.
-- **`Toolbar` reads every device store**, and `LiveView` reads four, one of them only to show the lights' error. The errors of the page have five shapes in five places: `error` and `streamError` in `useCamera`, `refused` per setting, `failure` in `useCommander`, `message` with `state` in `useShot`, `error` in `useLights`, plus local state in `Photo`. Each view picks which to show.
+- **`Toolbar` reads every device store**, and `LiveView` reads four, one of them only to show the lights' error. The errors of the page have five shapes in five places: `error` and `streamError` in `useCamera`, `refused` per setting, `failure` in `useCommander`, `message` with `state` in `useShot`, `error` in `useLights`. Each view picks which to show.
 - **`useShot` drives `useCamera`**: it stops the live view itself before a shot. It is the right place, a shot is the one flow that needs both, but it means the shot and the camera cannot change apart.
 
 Each component can still be changed alone; what cannot is a rule that spans them.
@@ -581,7 +581,7 @@ Each component can still be changed alone; what cannot is a rule that spans them
 | `connected`, `busy` in the buttons. | [`Toolbar.tsx`](../src/components/Toolbar.tsx), [`CameraSettings.tsx`](../src/components/CameraSettings.tsx). | Medium, see above. |
 | The speeds of the sliders. | `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), derived from `MAX_TURNS_PER_SECOND` in [`axis.ts`](../src/motion/axis.ts), and the scales of `ui_teleop` in `rig.yaml`. In step today: 0.75 and 3 turns/s. | Medium: a change in `rig.yaml` silently mislabels the sliders. |
 | The theme: its storage key and how `auto` resolves. | [`index.html`](../index.html), before the first paint, and [`settings.ts`](../src/settings.ts). | Low, and deliberate. |
-| `Cannot load … : status statusText`. | `fetchSize`, `fetchRange` in [`picture.ts`](../src/camera/picture.ts), `download` in [`shot/store.ts`](../src/shot/store.ts). | Low. |
+| `Cannot load … : status statusText`. | `fetchSize`, `fetchRange` in [`picture.ts`](../src/camera/picture.ts). | Low. |
 
 ### Implementation Issues
 
