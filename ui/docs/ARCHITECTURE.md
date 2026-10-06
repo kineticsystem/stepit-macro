@@ -485,7 +485,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
-| [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it, then its count of pictures; Shots, Angles. | `useStack`, `useCommander` |
+| [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it; Shots, Angles; while it runs, a progress bar of its pictures. | `useStack`, `useCommander` |
 | [`StageEnd`](../src/components/StageEnd.tsx) | Above and below the stage's slider | The stage's ends of the stack, from rig.yaml, shown only: to above, from below. | `useStack` |
 | [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; Marked once marked. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
