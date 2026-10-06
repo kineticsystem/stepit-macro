@@ -11,7 +11,7 @@
 
 import { create } from 'zustand';
 import { camera, useCamera } from '../camera/store';
-import { Camera } from '../camera/camera';
+import { Camera, type Picture } from '../camera/camera';
 import { loadPicture } from '../camera/picture';
 import { useCommander } from '../commander/store';
 import { errorMessage } from '../ros/rosbridge';
@@ -31,6 +31,8 @@ interface ShotState {
   /** The latest pictures, the latest first: KEPT_PICTURES of them. */
   pictures: ShotPicture[];
   takeShot(): Promise<void>;
+  /** Shows a picture the camera reported in place of the live view, e.g. one of a stack. */
+  show(picture: Picture): void;
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,12 +60,7 @@ export const useShot = create<ShotState>((set, get) => {
       const stop = camera().onPicture((picture) => {
         arrived++;
         first();
-        const added: ShotPicture = {
-          name: picture.name, path: picture.path,
-          file: Camera.pictureUrl(picture, picturesUrl(useSettings.getState())),
-        };
-        keep((pictures) => withPicture(pictures, added));
-        void load(added).then((loaded) => keep((pictures) => withLoaded(pictures, added, loaded)));
+        get().show(picture);
       });
       try {
         const result = await useCommander.getState().run('TakeShot');
@@ -89,6 +86,15 @@ export const useShot = create<ShotState>((set, get) => {
       } finally {
         stop();
       }
+    },
+
+    show(picture) {
+      const added: ShotPicture = {
+        name: picture.name, path: picture.path,
+        file: Camera.pictureUrl(picture, picturesUrl(useSettings.getState())),
+      };
+      keep((pictures) => withPicture(pictures, added));
+      void load(added).then((loaded) => keep((pictures) => withLoaded(pictures, added, loaded)));
     },
   };
 });
