@@ -1,6 +1,5 @@
 import { useCommander } from '../commander/store';
 import { useStatus } from '../ros/connection';
-import { railText } from '../stack/plan';
 import { useStack, type End } from '../stack/store';
 
 /**
@@ -9,9 +8,13 @@ import { useStack, type End } from '../stack/store';
  * the objective MarkNear; below it the camera's position close to the
  * subject, where its back is sharp, MarkFar. The slider moves the camera away
  * when pushed up, so each button sits on the side of the rail it records.
+ *
+ * It reads Marked once its end is. It shows no position: one counted from
+ * wherever the motor started would mean nothing; the depth between the two
+ * marks shows in the stack's bar. Pressing it again marks the end again.
  */
 export function RailMark({ end }: { end: End }) {
-  const { marking, mark, mmPerTurn } = useStack();
+  const { marking, mark } = useStack();
   const position = useStack((s) => s[end]);
   const busy = useCommander((s) => s.busy);
   const connected = useStatus() === 'connected';
@@ -27,9 +30,8 @@ export function RailMark({ end }: { end: End }) {
         }
         onClick={() => void mark(end)}
       >
-        {marking === end ? 'Marking…' : 'Mark'}
+        {marking === end ? 'Marking…' : position === undefined ? 'Mark' : 'Marked'}
       </button>
-      <span className="mono small">{position === undefined ? 'not marked' : railText(position, mmPerTurn)}</span>
     </div>
   );
 }

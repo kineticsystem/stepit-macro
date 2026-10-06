@@ -487,7 +487,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
 | [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it, then its count of pictures; Shots, Angles; what it shoots: the depth and step in mm, the stage's turn. | `useStack`, `useCommander` |
 | [`StageMark`](../src/components/StageMark.tsx) | Above and below the stage's slider | Mark: the stage's end of the stack, to above, from below, from where the stage is now; rig.yaml's until marked, a mark kept until the next connection. | `useStack` |
-| [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; the position marked, in mm. | `useStack`, `useCommander` |
+| [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; Marked once marked. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
 | [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb, an icon of what it drives on its knob. Props only: no store. | — |
 | [`icons`](../src/components/icons.tsx) | Shared | Line icons in the text colour. | — |
