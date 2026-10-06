@@ -40,16 +40,3 @@ export function planProblem(plan: StackPlan & { near?: number; far?: number }): 
 export function payloadOf(plan: StackPlan): string {
   return `{shots: ${plan.shots}, stage_from: ${plan.stageFrom}, stage_to: ${plan.stageTo}, angles: ${plan.angles}}`;
 }
-
-/** The distance between two shots of the rail, in turns of its motor, if there are two. */
-export function railStep(near: number, far: number, shots: number): number | undefined {
-  return shots > 1 ? Math.abs(far - near) / (shots - 1) : undefined;
-}
-
-/**
- * A position or a distance of the rail, in millimetres when its ratio is
- * known, mm_per_turn.joint2 of the commander, in turns of its motor otherwise.
- */
-export function railText(turns: number, mmPerTurn?: number): string {
-  return mmPerTurn ? `${(turns * mmPerTurn).toFixed(2)} mm` : `${turns.toFixed(3)} turns`;
-}

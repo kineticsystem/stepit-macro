@@ -5,9 +5,7 @@
 // only shows whether each end is marked. The stage's ends are the angles of
 // rig.yaml, focus_stack.stage_from and stage_to, in degrees from where the
 // stage is when the stack starts: the page shows them, and sends them.
-//
-// The depth between the rail's marks shows in millimetres, with the
-// commander's mm_per_turn.joint2.
+
 
 import { create } from 'zustand';
 import { camera } from '../camera/store';
@@ -35,8 +33,6 @@ interface StackState extends Saved {
   stageConfig: { from: number; to: number };
   /** The rail end being marked. */
   marking?: End;
-  /** How far the rail travels per turn of its motor, in mm: mm_per_turn.joint2 of the commander, if set. */
-  mmPerTurn?: number;
   /** While FocusStack runs from this page: the pictures taken so far, of how many. */
   progress?: { taken: number; total: number };
 
@@ -149,17 +145,16 @@ const numberOf = (value?: ParameterValue) =>
 
 /**
  * What rig.yaml sets for the stack, from the commander's parameters: the
- * rail's ratio and the stage's angles, read again on every connection, e.g.
- * after the rig restarted.
+ * stage's angles, read again on every connection, e.g. after the rig
+ * restarted.
  */
 async function readConfig() {
   try {
-    const names = [`mm_per_turn.${RAIL}`, 'focus_stack.stage_from', 'focus_stack.stage_to'];
+    const names = ['focus_stack.stage_from', 'focus_stack.stage_to'];
     const { values } = await ros().callService<{ values: ParameterValue[] }>(
       '/stepit_server/get_parameters', 'rcl_interfaces/srv/GetParameters', { names });
-    const [mm, from, to] = values.map(numberOf);
+    const [from, to] = values.map(numberOf);
     useStack.setState({
-      mmPerTurn: mm || undefined,
       stageConfig: { from: from ?? DEFAULT_PLAN.stageFrom, to: to ?? DEFAULT_PLAN.stageTo },
     });
   } catch {
