@@ -43,14 +43,16 @@ gamepad_teleop:
 
     # The axis that drives each joint, and its velocity at full deflection, in
     # rad/s: 12.566 is 2 turns/s, the motors allow 18.85. A negative scale
-    # reverses the direction. A stick pushed up is positive.
+    # reverses the direction. A stick pushed up, or left, is positive.
     #
-    # As the sliders of StepIt UI, under the thumbs: the rotary stage on the
-    # left stick, the rail on the right stick, each up and down. The rig has
-    # no other motor: the other joints get no axis, and are held at 0.
+    # The rotary stage turns with the left stick, left and right, and the rail
+    # moves with the right stick, up and down: as each one moves. Pushed
+    # right, the stick turns the stage counter-clockwise, a positive velocity:
+    # the negative scale turns the axis around. The rig
+    # has no other motor: the other joints get no axis, and are held at 0.
     # The rotary stage, which the subject turns on, at a quarter of the speed
     # of the rail, as on the sliders of StepIt UI: 0.5 turns/s.
-    joint1: { axis: 1, scale: 3.1416 }  # the rotary stage: left stick up/down
+    joint1: { axis: 0, scale: -3.1416 }  # the rotary stage: left stick left/right
     joint2: { axis: 3, scale: 12.566 }  # the rail: right stick up/down
     joint3: { axis: -1, scale: 0.0 }
     joint4: { axis: -1, scale: 0.0 }

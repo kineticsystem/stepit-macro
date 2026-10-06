@@ -16,7 +16,7 @@
 
 The package [`stepit_teleop`](../src/stepit-macro/stepit_teleop) drives the robot with a Logitech Dual Action gamepad:
 
-- the left stick, up and down, moves the rotary stage (`joint1`), and the right stick, up and down, the rail (`joint2`), at a velocity proportional to how far it is pushed, up to 0.5 turns/s for the stage and 2 turns/s for the rail: as the two sliders of StepIt UI, under the thumbs, up for positive, the stage at a quarter of the speed of the rail;
+- the left stick, left and right, turns the rotary stage (`joint1`), and the right stick, up and down, moves the rail (`joint2`), each as the part moves, at a velocity proportional to how far it is pushed, up to 0.5 turns/s for the stage and 2 turns/s for the rail, the stage at a quarter of the speed of the rail;
 - a stop button stops whatever moves the robot, an objective or the sticks, and hands the robot to the gamepad.
 
 The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ActivateTeleop`](ActivateTeleop.md). That is why the gamepad belongs to StepIt Macro, and not to StepIt Motors, which only provides the controllers.
@@ -179,11 +179,11 @@ The configuration maps the joints as follows; the motors allow up to 18.85 rad/s
 
 | Joint | Axis | Velocity at full deflection |
 |---|---|---|
-| `joint1`, the rotary stage | `1`, left stick up/down | `3.1416` rad/s, 0.5 turns/s: a quarter of the rail's, the subject turns on it |
+| `joint1`, the rotary stage | `0`, left stick left/right: right turns it counter-clockwise | `-3.1416` rad/s, 0.5 turns/s: a quarter of the rail's, the subject turns on it; negative, so that right is positive |
 | `joint2`, the rail | `3`, right stick up/down | `12.566` rad/s, 2 turns/s |
 | `joint3`, `joint4`, `joint5` | none: the rig has no other motor | held at 0 |
 
-A stick pushed up is positive: `joy_linux_node` turns the Linux joystick's sign around, so that up is 1, as on the sliders of StepIt UI.
+A stick pushed up, or left, is positive: `joy_linux_node` turns the Linux joystick's sign around, so that up and left are 1. The rail's stick is the same way round as its slider in StepIt UI; the stage's stick, pushed right, would give a negative velocity, which turns a StepIt motor clockwise: its negative scale turns it around, so that right turns the stage counter-clockwise.
 
 ### Launch Arguments
 
