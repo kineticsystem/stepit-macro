@@ -1,5 +1,5 @@
-import { useRef, type PointerEvent } from 'react';
-import { axisAt, turnsPerSecond } from '../motion/axis';
+import { useRef, type PointerEvent, type ReactNode } from 'react';
+import { axisAt } from '../motion/axis';
 
 /** The diameter of the knob, in pixels: a thumb's width. Keep in step with styles.css. */
 const KNOB = 64;
@@ -14,9 +14,9 @@ const KNOB = 64;
  * sliders at once on a touch screen.
  */
 export function Slider(props: {
+  /** What it drives, for its tooltip and for screen readers: the knob shows icon instead. */
   label: string;
-  /** The speed at the ends, in turns per second. */
-  maxTurnsPerSecond: number;
+  icon: ReactNode;
   value: number;
   disabled: boolean;
   onChange(value: number): void;
@@ -43,13 +43,18 @@ export function Slider(props: {
     props.onChange(0);
   };
 
-  const speed = turnsPerSecond(props.value, props.maxTurnsPerSecond);
   return (
     <div className={`slider${props.disabled ? ' disabled' : ''}${props.value !== 0 ? ' moving' : ''}`}>
-      <div className="slider-label">{props.label}</div>
       <div
         ref={track}
         className="slider-track"
+        role="slider"
+        aria-label={props.label}
+        aria-orientation="vertical"
+        aria-valuemin={-1}
+        aria-valuemax={1}
+        aria-valuenow={props.value}
+        title={props.label}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -62,11 +67,9 @@ export function Slider(props: {
         <span
           className="slider-knob"
           style={{ top: `calc(50% - ${props.value} * (50% - ${KNOB / 2}px))` }}
-        />
-      </div>
-      <div className="slider-speed mono">
-        {speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(2)}`}
-        {speed !== 0 && <span className="muted"> turns/s</span>}
+        >
+          {props.icon}
+        </span>
       </div>
     </div>
   );

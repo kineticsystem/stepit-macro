@@ -72,13 +72,14 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 [StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
 
 - **The live view** of the camera, started and stopped from the page.
-- **The camera's settings**, at the top of the settings menu: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
-- **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo.
+- **The camera's settings**, on the first tab of the settings menu, next to Appearance and Connection: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
+- **Test shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo.
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
+- **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button reads **Marked** once its end is. The ends of the stage's slider show, without setting them, the angles the stage turns between, from where it is when the stack starts: `focus_stack.stage_to` of `rig.yaml` above, 17°, and `stage_from` below, −17°. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md) and counts the pictures as they come, and the number of shots and of angles.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 
-**Only the robot's tasks go through the commander**: a shot, and handing the robot to the user. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
+**Only the robot's tasks go through the commander**: a shot, handing the robot to the user, marking and shooting a stack. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
 
 **The sliders are a second gamepad.** The page sends them as a `sensor_msgs/Joy` on `/ui/joy`, 20 times a second while one is held, and a second `gamepad_teleop`, `ui_teleop`, turns them into velocities. When they stop coming for 0.5 s, e.g. when the tablet loses the network in the middle of a move, `ui_teleop` stops the joints.
 
@@ -293,6 +294,10 @@ the objective, i.e. after the `target_tree` of the command:
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
+| [`MoveRailBy`](docs/MoveRailBy.md) | Moves the rail by a distance in millimetres, with its measured 1.592 mm per turn of the motor. |
+| [`RotateStageBy`](docs/RotateStageBy.md) | Turns the rotary stage by an angle in degrees, with its 4.5 degrees per turn of the motor, an 80:1 gear. |
+| [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. |
+| [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
 
 Run one from a terminal in the container, opened with `./docker/dock.sh shell`, e.g. to turn `joint1` and `joint3` by one turn clockwise:
 
@@ -306,8 +311,20 @@ ros2 action send_goal /commander/execute_objective \
 The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
-on a subscription (`CommandJointPositions`) and pure logic (`OffsetVector`,
-`TrapezoidalTrajectory`). `Steps` is a decorator that loops over values.
+on a subscription (`CommandJointPositions`), pure logic (`OffsetVector`,
+`SetJoints`, `TrapezoidalTrajectory`) and a file (`SaveValues`, `LoadValues`).
+`Steps` is a decorator that loops over values, and `ExpectPicture` one that
+waits for the camera's picture of the shot it wraps.
+
+Some behaviors read parameters of their own from the commander's section of
+`rig.yaml`, which the plugin declares on the commander's node when it loads:
+the overshoot of each motor against backlash, `overshoot.<joint>`, which
+`CommandJointPositions` uses when given an approach; the millimetres a linear
+axis travels per turn of its motor, `mm_per_turn.<joint>`, and the degrees a
+rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
+`DegreesToRadians` convert with; and `state_file`, where
+`SaveValues` and `LoadValues` keep what the objectives remember, e.g. the marks
+of a stack. The commander itself knows nothing about them.
 
 Building a trajectory and following it are separate behaviors, and
 `FollowJointTrajectory` sends whatever trajectory it is given to the controller.

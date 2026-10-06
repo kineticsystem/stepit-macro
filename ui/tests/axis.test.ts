@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisAt, DEAD_ZONE, turnsPerSecond } from '../src/motion/axis';
+import { axisAt, DEAD_ZONE } from '../src/motion/axis';
 
 describe('a vertical slider as an axis', () => {
   // A slider from y = 100, its top, to y = 300: its centre is at 200.
@@ -15,13 +15,6 @@ describe('a vertical slider as an axis', () => {
   it('is 0 near the centre, where a thumb never rests exactly', () => {
     expect(axisAt(200 - (DEAD_ZONE * 100) / 2, 100, 200)).toBe(0);
     expect(axisAt(200 - DEAD_ZONE * 100 * 2, 100, 200)).toBeGreaterThan(0);
-  });
-
-  it('asks for the motors limit, 3 turns/s, at the ends, or for the speed of the slider', () => {
-    expect(turnsPerSecond(1)).toBe(3);
-    expect(turnsPerSecond(-0.5)).toBe(-1.5);
-    expect(turnsPerSecond(1, 1.5)).toBe(1.5);
-    expect(turnsPerSecond(-0.5, 1.5)).toBe(-0.75);
   });
 
   it('is 0 on a slider that has no height, e.g. before it is laid out', () => {

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: RotateStageBy
+
+  Turns the rotary stage, joint1, by an angle in degrees from where it is:
+  positive one way, negative the other, as the motor counts; a full
+  counter-clockwise revolution, seen as when it was measured, is -360.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: RotateStageBy, payload: '{deg: 10.0}'}"
+
+  The degrees become radians of the motor with deg_per_turn.joint1, in the
+  commander's section of rig.yaml: 4.5 degrees per motor turn, an 80:1 gear.
+  The move goes through the position controller, on the microcontroller's own
+  profile; it does not overshoot against backlash.
+-->
+<root BTCPP_format="4" main_tree_to_execute="RotateStageBy">
+
+  <BehaviorTree ID="RotateStageBy" _description="Turns the rotary stage by an angle in degrees from where it is.">
+    <Sequence>
+      <SubTree ID="EnsureControllers" controllers="position_controller"/>
+      <GetJointPositions _description="Where the stage is." topic_name="/joint_states" joint_names="joint1" positions="{start}"/>
+      <DegreesToRadians _description="The angle, in radians of the stage's motor." joint="joint1"
+                        degrees="{@deg}" radians="{offset}"/>
+      <OffsetVector _description="Where the stage goes." input="{start}" offset="{offset}" output="{target}"/>
+      <CommandJointPositions _description="Turns the stage there, and waits until it is."
+                             topic_name="/position_controller/commands"
+                             controller_joints="joint1;joint2;joint3;joint4;joint5"
+                             joint_names="joint1" positions="{target}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: what each entry is, with an example. -->
+  <TreeNodesModel>
+    <SubTree ID="RotateStageBy">
+      <input_port name="deg">how far to turn the stage, in degrees: negative counter-clockwise, as the motor counts, e.g. 10.0</input_port>
+    </SubTree>
+  </TreeNodesModel>
+
+</root>

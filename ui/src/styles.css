@@ -119,6 +119,16 @@ select { width: auto; }
 .settings-popover p { margin: 0 0 4px; }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .settings-group { margin-top: 16px !important; }
+
+/* The tabs of the settings menu. */
+.tabs { display: flex; gap: 4px; margin: -4px 0 14px; border-bottom: 1px solid var(--border); }
+.tab {
+  min-height: 40px; padding: 6px 12px;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; color: var(--muted);
+}
+.tab:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .setting-field { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
 .setting-label { color: var(--muted); }
 
@@ -180,6 +190,29 @@ button.live.on, button.lights.on, button.engaged {
 button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
   background: var(--ok); filter: brightness(1.08);
 }
+/* The focus stack, under the live view: Stack and the counts. */
+.stack-bar {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+.stack-field { display: inline-flex; align-items: center; gap: 6px; }
+.stack-field input { width: 64px; }
+.rail-mark { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.rail-mark.top { margin-bottom: 8px; }
+.rail-mark.bottom { margin-top: 8px; }
+.rail-mark button { width: 100%; }
+/* The stage's ends: shaped like the rail's Mark buttons, but only shown. */
+.stage-end {
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; width: 100%; min-height: 44px; padding: 6px 4px;
+  border: 1px dashed var(--border); border-radius: 8px;
+  color: var(--muted); white-space: nowrap;
+}
+.stack-progress { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
 
 /* The panels of the toolbar */
@@ -237,8 +270,6 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .side-slider:first-child { border-right: 1px solid var(--border); }
 .side-slider:last-child { border-left: 1px solid var(--border); }
 .slider { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.slider-label { font-weight: 600; text-align: center; line-height: 1.2; }
-.slider-speed { font-size: 13px; text-align: center; min-height: 2.6em; }
 .slider-track {
   position: relative; flex: 1; min-height: 200px; width: 72px;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 14px 0;
@@ -250,6 +281,8 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .slider-centre { position: absolute; top: 50%; left: 14px; right: 14px; height: 2px; background: var(--border); }
 .slider-knob {
   position: absolute; left: 3px; width: 64px; height: 64px; margin-top: -32px;
+  /* What the slider drives, as an icon in the middle of the knob. */
+  display: flex; align-items: center; justify-content: center; color: #fff;
   border-radius: 50%; background: var(--accent); box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
   /* Back to the centre smoothly when let go; under the thumb at once. */
   transition: top 0.15s ease-out;
@@ -257,6 +290,7 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .slider.moving .slider-knob { transition: none; }
 .slider.disabled .slider-track { opacity: 0.45; }
 .slider.disabled .slider-knob { background: var(--muted); }
+.slider-knob .icon { width: 28px; height: 28px; pointer-events: none; }
 
 /* A narrow screen, e.g. a tablet held upright: narrower sliders, and the
    commands on several rows. */

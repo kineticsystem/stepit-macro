@@ -3,21 +3,27 @@ import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
+import { RailMark } from './components/RailMark';
+import { StageEnd } from './components/StageEnd';
+import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
+import { StackBar } from './components/StackBar';
 import { Slider } from './components/Slider';
 import { TaskStatus } from './components/TaskStatus';
 import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
 import { followMotion, SLIDERS, useMotion } from './motion/store';
+import { followStack } from './stack/store';
 
 /**
  * The whole rig on one page, for a tablet held in both hands: a slider at each
  * edge, under each thumb, the rotary stage on the left and the rail on the
- * right; the live view in the middle, with the commands above it.
+ * right; the live view in the middle, with the commands above it, and the
+ * focus stack under it.
  */
 export function App() {
   useEffect(() => {
-    const stops = [followCommander(), followCamera(), followLights(), followMotion()];
+    const stops = [followCommander(), followCamera(), followLights(), followMotion(), followStack()];
     return () => stops.forEach((stop) => stop());
   }, []);
 
@@ -35,6 +41,7 @@ export function App() {
         <div className="centre">
           <Toolbar />
           <LiveView />
+          <StackBar />
         </div>
         <SideSlider index={1} />
       </main>
@@ -42,19 +49,29 @@ export function App() {
   );
 }
 
-/** The slider of a joint, at one edge of the page. */
+/**
+ * The slider of a joint, at one edge of the page. Each carries the ends of
+ * the stack at its own ends: where the rail
+ * goes between, and the angles the stage turns between.
+ */
 function SideSlider({ index }: { index: number }) {
   const { enabled, axes, setAxis } = useMotion();
   const slider = SLIDERS[index];
+  const marks = slider.joint === 'joint2';
+  const limits = slider.joint === 'joint1';
   return (
     <aside className="side-slider">
+      {marks && <RailMark end="near" />}
+      {limits && <StageEnd end="to" />}
       <Slider
         label={slider.label}
-        maxTurnsPerSecond={slider.maxTurnsPerSecond}
+        icon={slider.joint === 'joint1' ? <RotateIcon /> : <RailIcon />}
         value={axes[slider.axis]}
         disabled={!enabled}
         onChange={(value) => setAxis(slider.axis, value)}
       />
+      {marks && <RailMark end="far" />}
+      {limits && <StageEnd end="from" />}
     </aside>
   );
 }

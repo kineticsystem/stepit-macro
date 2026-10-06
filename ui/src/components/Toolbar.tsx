@@ -8,9 +8,9 @@ import { useShot } from '../shot/store';
 import { HandIcon, LightIcon, ShutterIcon, StopIcon, VideoIcon } from './icons';
 
 /**
- * The commands of the rig, above the live view: a shot first, then the live
- * view, the lights and manual drive, and Stop at the other end. The camera's
- * settings are in the settings menu, under the gear.
+ * The commands of the rig, above the live view: a test shot first, then the
+ * live view, the lights and manual drive, and Stop at the other end.
+ * The camera's settings are in the settings menu, under the gear.
  * The last photo shows in place of the live view. Live view, Lights and
  * Manual drive are buttons that turn green while they are on.
  */
@@ -52,7 +52,7 @@ function ShotButton() {
   return (
     <button className="primary" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
       <ShutterIcon />
-      {shooting ? 'Shooting…' : 'Take a shot'}
+      {shooting ? 'Shooting…' : 'Test shot'}
     </button>
   );
 }

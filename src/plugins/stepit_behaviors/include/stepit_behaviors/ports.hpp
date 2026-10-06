@@ -66,4 +66,19 @@ std::optional<std::vector<double>> getNumbers(const BT::TreeNode& node, const st
  */
 std::vector<double> getNumbersOr(const BT::TreeNode& node, const std::string& port, double fallback);
 
+/// @brief Whether the XML gives the port, even if its blackboard entry is missing.
+bool isGiven(const BT::TreeNode& node, const std::string& port);
+
+/**
+ * @brief Read a port like getNumbers, which must hold at least one number.
+ * @throws BT::RuntimeError naming the node and the port otherwise.
+ */
+std::vector<double> requireNumbers(const BT::TreeNode& node, const std::string& port);
+
+/**
+ * @brief An input of numbers that can be left out. The empty default tells
+ * editors that the port is optional, and still counts as not given for isGiven.
+ */
+BT::PortsList::value_type optionalInput(const std::string& name, const std::string& description);
+
 }  // namespace stepit_behaviors

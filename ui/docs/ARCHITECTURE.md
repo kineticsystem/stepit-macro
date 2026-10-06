@@ -253,6 +253,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()` | — | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
+| `useStack` | the rail's marks this page set, in turns; the counts; the stage's ends from rig.yaml; `marking`, `progress`; `mark()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads the commander's `focus_stack.*` on every connection | `useCommander`, `useCamera` (its pictures, counted) |
 | `useSettings` | the preferences of the browser, in `localStorage` | — | — |
 
 ```mermaid
@@ -324,7 +325,7 @@ flowchart TB
 
 ## A Shot, from the Button to the Picture
 
-**Take a shot** is the longest flow of the page, and the one that crosses the most stores:
+**Test shot** is the longest flow of the page, and the one that crosses the most stores:
 
 ```mermaid
 ---
@@ -481,11 +482,14 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 |---|---|---|---|
 | [`TaskStatus`](../src/components/TaskStatus.tsx) | Top bar | The task that runs, and why the last one of this page failed. | `useCommander` |
 | [`ConnectionBadge`](../src/components/ConnectionBadge.tsx) | Top bar | Whether the page reaches rosbridge. | `useStatus`, `useSettings` |
-| [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | The camera's settings, the theme, the servers. | `useSettings` |
+| [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
-| [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Take a shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store but `useSettings` |
+| [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
+| [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it, then its count of pictures; Shots, Angles. | `useStack`, `useCommander` |
+| [`StageEnd`](../src/components/StageEnd.tsx) | Above and below the stage's slider | The stage's ends of the stack, from rig.yaml, shown only: to above, from below. | `useStack` |
+| [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; Marked once marked. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
-| [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb. Props only: no store. | — |
+| [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb, an icon of what it drives on its knob. Props only: no store. | — |
 | [`icons`](../src/components/icons.tsx) | Shared | Line icons in the text colour. | — |
 
 `Slider` is the one purely presentational component: `SideSlider`, in `App.tsx`, connects it to `useMotion`. The others read the stores they need directly.
@@ -515,7 +519,7 @@ Every test is of the transport or of the layer of interfaces and logic. **No sto
 | support a new module | a folder `src/<module>/`: an interface that takes a `Rosbridge`, a store with a `follow<Module>()`, started in `App.tsx`. Its messages must be installed next to the commander's rosbridge. |
 | add a camera setting | nothing in the page: the driver lists it in `get_settings`. Add a label and an order in [`format.ts`](../src/camera/format.ts). |
 | add a preference | `Settings` and `DEFAULTS` in [`settings.ts`](../src/settings.ts), and a control in `SettingsMenu`. |
-| change a slider's speed | `rig.yaml`'s section `ui_teleop`, and `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), which only labels it. |
+| change a slider's speed | `rig.yaml`'s section `ui_teleop`: the page sends only where the knob is. |
 
 ## Design Decisions and Trade-offs
 
@@ -579,7 +583,6 @@ Each component can still be changed alone; what cannot is a rule that spans them
 | Following a topic across connections: subscribe, then again on every `onConnected`. | `followCommander`, `followLights`; the same idea in `followCamera` and `followMotion`. | Medium: and it overlaps with the client's own re-subscription. |
 | The QoS of a latched topic, `reliable`, `transient_local`, `keep_last`, 1. | [`commander.ts`](../src/commander/commander.ts) and [`lights.ts`](../src/freezer/lights.ts). | Low. |
 | `connected`, `busy` in the buttons. | [`Toolbar.tsx`](../src/components/Toolbar.tsx), [`CameraSettings.tsx`](../src/components/CameraSettings.tsx). | Medium, see above. |
-| The speeds of the sliders. | `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), derived from `MAX_TURNS_PER_SECOND` in [`axis.ts`](../src/motion/axis.ts), and the scales of `ui_teleop` in `rig.yaml`. In step today: 0.75 and 3 turns/s. | Medium: a change in `rig.yaml` silently mislabels the sliders. |
 | The theme: its storage key and how `auto` resolves. | [`index.html`](../index.html), before the first paint, and [`settings.ts`](../src/settings.ts). | Low, and deliberate. |
 | `Cannot load … : status statusText`. | `fetchSize`, `fetchRange` in [`picture.ts`](../src/camera/picture.ts). | Low. |
 

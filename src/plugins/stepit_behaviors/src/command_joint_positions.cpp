@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "stepit_behaviors/parameters.hpp"
 #include "stepit_behaviors/ports.hpp"
 
 namespace stepit_behaviors
@@ -60,6 +61,13 @@ BT::PortsList CommandJointPositions::providedPorts()
     BT::InputPort<double>("tolerance", 0.01, "how close to its target a joint must be, in radians"),
     BT::InputPort<double>("velocity_tolerance", 0.01, "how slow a joint must be to count as stopped, in rad/s"),
     BT::InputPort<double>("timeout", 60.0, "how long the joints may take to get there, in seconds"),
+    optionalInput("approach_from",
+                  "with approach_to: each joint reaches its target moving from this position toward that one"),
+    optionalInput("approach_to", "with approach_from: the other end of the approach direction"),
+    optionalInput("overshoot", "how far past its target a joint first goes, in radians, one per joint; by default "
+                               "the parameter overshoot.<joint> of the commander"),
+    BT::InputPort<bool>("overshoot_in_place", false,
+                        "joints already at their target go past it too: it is unknown which way they got there"),
   };
 }
 
@@ -145,6 +153,11 @@ BT::NodeStatus CommandJointPositions::onStart()
                            std::to_string(joints_.size()), " joints");
   }
 
+  final_targets_ = targets_;
+  readApproach();
+  overshooting_ = false;
+  approach_decided_ = false;
+
   tolerance_ = tolerance.value();
   velocity_tolerance_ = velocity_tolerance.value();
   timeout_ = timeout.value();
@@ -169,6 +182,11 @@ BT::NodeStatus CommandJointPositions::onRunning()
     }
     if (current && publisher_->get_subscription_count() > 0)
     {
+      if (!approach_decided_)
+      {
+        overshooting_ = overshoot(current.value());
+        approach_decided_ = true;
+      }
       std_msgs::msg::Float64MultiArray command;
       command.data = current.value();
       for (std::size_t i = 0; i < joints_.size(); ++i)
@@ -182,7 +200,14 @@ BT::NodeStatus CommandJointPositions::onRunning()
   }
   else if (arrived())
   {
-    return BT::NodeStatus::SUCCESS;
+    if (!overshooting_)
+    {
+      return BT::NodeStatus::SUCCESS;
+    }
+    // Past the target: now to it, in the direction of the approach.
+    overshooting_ = false;
+    targets_ = final_targets_;
+    sent_ = false;
   }
 
   if (std::chrono::steady_clock::now() >= deadline_)
@@ -250,6 +275,70 @@ void CommandJointPositions::stop()
   request->strictness = controller_manager_msgs::srv::SwitchController::Request::BEST_EFFORT;
   switch_client_->async_send_request(request);
   RCLCPP_INFO(logger_, "%s: deactivating %s to stop the robot", name().c_str(), controller.value().c_str());
+}
+
+void CommandJointPositions::readApproach()
+{
+  directions_.assign(joints_.size(), 0.0);
+  overshoots_.assign(joints_.size(), 0.0);
+  const bool from = isGiven(*this, "approach_from");
+  const bool to = isGiven(*this, "approach_to");
+  if (!from && !to)
+  {
+    return;
+  }
+  const auto per_joint = [this](const std::string& port) {
+    auto values = requireNumbers(*this, port);
+    if (values.size() == 1 && joints_.size() > 1)
+    {
+      values.assign(joints_.size(), values.front());
+    }
+    if (values.size() != joints_.size())
+    {
+      throw BT::RuntimeError("CommandJointPositions: [", port, "] has ", std::to_string(values.size()), " values for ",
+                             std::to_string(joints_.size()), " joints");
+    }
+    return values;
+  };
+  const auto start = per_joint("approach_from");
+  const auto end = per_joint("approach_to");
+  const auto node = node_.lock();
+  for (std::size_t i = 0; i < joints_.size(); ++i)
+  {
+    directions_[i] = end[i] > start[i] ? 1.0 : (end[i] < start[i] ? -1.0 : 0.0);
+    overshoots_[i] = node ? overshootParameter(*node, joints_[i]) : 0.0;
+  }
+  if (isGiven(*this, "overshoot"))
+  {
+    overshoots_ = per_joint("overshoot");
+  }
+  overshoot_in_place_ = getInput<bool>("overshoot_in_place").value_or(false);
+}
+
+bool CommandJointPositions::overshoot(const std::vector<double>& current)
+{
+  bool any = false;
+  for (std::size_t i = 0; i < joints_.size(); ++i)
+  {
+    if (directions_[i] == 0.0 || overshoots_[i] <= 0.0)
+    {
+      continue;
+    }
+    const auto it = std::find(controller_joints_.cbegin(), controller_joints_.cend(), joints_[i]);
+    const double position = current[static_cast<std::size_t>(std::distance(controller_joints_.cbegin(), it))];
+    // Moving with the approach, it gets there the right way already. Already
+    // there, it got there this way, unless that is unknown.
+    const double travel = directions_[i] * (final_targets_[i] - position);
+    if (travel > tolerance_ || (std::abs(travel) <= tolerance_ && !overshoot_in_place_))
+    {
+      continue;
+    }
+    targets_[i] = final_targets_[i] - directions_[i] * overshoots_[i];
+    any = true;
+    RCLCPP_INFO(logger_, "%s: %s first to %.4f, %.4f before its target, against backlash", name().c_str(),
+                joints_[i].c_str(), targets_[i], overshoots_[i]);
+  }
+  return any;
 }
 
 bool CommandJointPositions::arrived() const

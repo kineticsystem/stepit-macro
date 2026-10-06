@@ -3,13 +3,22 @@ import { DEFAULT_CAMERA_NODE, picturesUrl, rosbridgeUrl, useSettings, videoUrl, 
 import { CameraSettings } from './CameraSettings';
 import { GearIcon } from './icons';
 
+type Tab = 'camera' | 'appearance' | 'connection';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'camera', label: 'Camera' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'connection', label: 'Connection' },
+];
+
 /**
- * The settings, under the gear, by how often they change: the camera's,
- * before a shoot; the theme of this browser; and, rarely, where the rig's
- * servers are.
+ * The settings, under the gear, on tabs, by how often they change: the
+ * camera's, before a shoot; the theme of this browser; and, rarely, where the
+ * rig's servers are. The menu opens on the tab it was closed on.
  */
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('camera');
   const ref = useRef<HTMLDivElement>(null);
   const settings = useSettings();
 
@@ -34,42 +43,59 @@ export function SettingsMenu() {
       </button>
       {open && (
         <div className="settings-popover">
-          <CameraSettings />
-          <h2 className="settings-group">Appearance</h2>
-          <label className="setting">
-            <span className="setting-label">Theme</span>
-            <select value={settings.theme} onChange={(e) => settings.update({ theme: e.target.value as Theme })}>
-              <option value="auto">Auto</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <h2 className="settings-group">Connection</h2>
-          <p className="muted small">Empty for the computer that serves this page.</p>
-          <UrlField
-            label="rosbridge"
-            value={settings.rosbridgeUrl}
-            placeholder={rosbridgeUrl({ rosbridgeUrl: '' })}
-            onChange={(rosbridgeUrl) => settings.update({ rosbridgeUrl })}
-          />
-          <UrlField
-            label="Live view"
-            value={settings.videoUrl}
-            placeholder={videoUrl({ videoUrl: '' })}
-            onChange={(videoUrl) => settings.update({ videoUrl })}
-          />
-          <UrlField
-            label="Pictures"
-            value={settings.picturesUrl}
-            placeholder={picturesUrl({ picturesUrl: '' })}
-            onChange={(picturesUrl) => settings.update({ picturesUrl })}
-          />
-          <UrlField
-            label="Camera node"
-            value={settings.cameraNode}
-            placeholder={DEFAULT_CAMERA_NODE}
-            onChange={(cameraNode) => settings.update({ cameraNode: cameraNode.trim() || DEFAULT_CAMERA_NODE })}
-          />
+          <div className="tabs" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`tab${tab === t.id ? ' active' : ''}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {tab === 'camera' && <CameraSettings />}
+          {tab === 'appearance' && (
+            <label className="setting">
+              <span className="setting-label">Theme</span>
+              <select value={settings.theme} onChange={(e) => settings.update({ theme: e.target.value as Theme })}>
+                <option value="auto">Auto</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          )}
+          {tab === 'connection' && (
+            <>
+              <p className="muted small">Empty for the computer that serves this page.</p>
+              <UrlField
+                label="rosbridge"
+                value={settings.rosbridgeUrl}
+                placeholder={rosbridgeUrl({ rosbridgeUrl: '' })}
+                onChange={(rosbridgeUrl) => settings.update({ rosbridgeUrl })}
+              />
+              <UrlField
+                label="Live view"
+                value={settings.videoUrl}
+                placeholder={videoUrl({ videoUrl: '' })}
+                onChange={(videoUrl) => settings.update({ videoUrl })}
+              />
+              <UrlField
+                label="Pictures"
+                value={settings.picturesUrl}
+                placeholder={picturesUrl({ picturesUrl: '' })}
+                onChange={(picturesUrl) => settings.update({ picturesUrl })}
+              />
+              <UrlField
+                label="Camera node"
+                value={settings.cameraNode}
+                placeholder={DEFAULT_CAMERA_NODE}
+                onChange={(cameraNode) => settings.update({ cameraNode: cameraNode.trim() || DEFAULT_CAMERA_NODE })}
+              />
+            </>
+          )}
         </div>
       )}
     </div>

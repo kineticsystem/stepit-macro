@@ -22,6 +22,7 @@
 """The configuration of the rig, rig.yaml, as rig.launch.py reads it, without starting anything."""
 
 import importlib.util
+import math
 from pathlib import Path
 
 import pytest
@@ -70,6 +71,45 @@ def test_the_commander_loads_the_rig_behaviors_and_objectives():
     commander = parameters["stepit_server"]["ros__parameters"]
     assert commander["plugins"] == ["stepit_behaviors/bt_plugins"]
     assert commander["behavior_trees"] == ["stepit_objectives/objectives"]
+
+
+def test_the_stage_overshoots_by_a_degree_and_the_rail_by_a_millimetre():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    turns = {
+        joint: radians / (2 * math.pi)
+        for joint, radians in commander["overshoot"].items()
+    }
+    assert turns["joint1"] * commander["deg_per_turn"]["joint1"] == pytest.approx(
+        1.0, abs=1e-4
+    )
+    assert turns["joint2"] * commander["mm_per_turn"]["joint2"] == pytest.approx(
+        1.0, abs=1e-4
+    )
+
+
+def test_the_rail_has_its_measured_millimetres_per_turn():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["mm_per_turn"]["joint2"] == 1.592
+
+
+def test_the_stage_turns_on_an_80_to_1_gear():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["deg_per_turn"]["joint1"] == 360 / 80
+
+
+def test_a_stack_turns_the_stage_from_minus_17_to_17_degrees():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["focus_stack"] == {"stage_from": -17.0, "stage_to": 17.0}
+
+
+def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["state_file"].startswith("~/ws/state/")
 
 
 def test_the_camera_and_its_web_server_share_the_pictures_folder():

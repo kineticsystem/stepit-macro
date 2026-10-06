@@ -20,14 +20,23 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(stepit_camera_msgs REQUIRED)
 find_package(stepit_server REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
+# yaml-cpp 0.8 exports a namespaced target, older versions only the plain one.
+if(TARGET yaml-cpp::yaml-cpp)
+  set(YAML_CPP_TARGET yaml-cpp::yaml-cpp)
+else()
+  set(YAML_CPP_TARGET yaml-cpp)
+endif()
 
 ######################################################
 # The behaviors, as a normal library. Anything owning a BT factory (the tests,
 # for instance) can link against it and call stepit_behaviors::registerNodes.
 
 add_library(stepit_behaviors SHARED
+  src/axis_units.cpp
   src/command_joint_positions.cpp
   src/follow_joint_trajectory.cpp
   src/get_active_controllers.cpp
@@ -35,13 +44,17 @@ add_library(stepit_behaviors SHARED
   src/is_controller_active.cpp
   src/nodes_model.cpp
   src/offset_vector.cpp
+  src/parameters.cpp
   src/cubic_trajectory.cpp
+  src/expect_picture.cpp
   src/ports.cpp
   src/shoot.cpp
   src/register_nodes.cpp
+  src/set_joints.cpp
   src/steps.cpp
   src/switch_controller.cpp
-  src/trapezoidal_trajectory.cpp)
+  src/trapezoidal_trajectory.cpp
+  src/values_file.cpp)
 
 target_include_directories(stepit_behaviors PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -58,7 +71,9 @@ target_link_libraries(stepit_behaviors PUBLIC
   ${freezer_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
-  ${trajectory_msgs_TARGETS})
+  ${stepit_camera_msgs_TARGETS}
+  ${trajectory_msgs_TARGETS}
+  ${YAML_CPP_TARGET})
 
 ######################################################
 # The same behaviors, wrapped into a BehaviorTree.CPP plugin, which is how the
@@ -106,7 +121,9 @@ ament_export_dependencies(
   rclcpp_action
   sensor_msgs
   std_msgs
+  stepit_camera_msgs
   stepit_server
-  trajectory_msgs)
+  trajectory_msgs
+  yaml-cpp)
 
 ament_package()

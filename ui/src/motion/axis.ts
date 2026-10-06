@@ -5,17 +5,9 @@
 /** Around the centre, the axis is 0: a finger never rests exactly there. */
 export const DEAD_ZONE = 0.05;
 
-/** The motors' limit: 3 turns/s. A slider may ask for less at its ends, see SLIDERS in store.ts. */
-export const MAX_TURNS_PER_SECOND = 3;
-
 /** The axis at a vertical position over a slider, which starts at top and is height high: 1 at the top. */
 export function axisAt(y: number, top: number, height: number): number {
   if (height <= 0) return 0;
   const value = Math.max(-1, Math.min(1, (top + height / 2 - y) / (height / 2)));
   return Math.abs(value) < DEAD_ZONE ? 0 : value;
-}
-
-/** The speed an axis asks for, in turns per second of the motor, given the speed at the ends. */
-export function turnsPerSecond(axis: number, max = MAX_TURNS_PER_SECOND): number {
-  return axis * max;
 }

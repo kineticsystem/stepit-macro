@@ -10,16 +10,20 @@
 <root BTCPP_format="4">
     <TreeNodesModel>
         <Action ID="CommandJointPositions">
-            <input_port name="timeout" type="double" default="60.000000">how long the joints may take to get there, in seconds</input_port>
-            <input_port name="tolerance" type="double" default="0.010000">how close to its target a joint must be, in radians</input_port>
-            <input_port name="joint_states_topic" type="std::string" default="/joint_states">topic the joint states are published on</input_port>
-            <input_port name="positions" type="BT::AnyTypeAllowed">target positions, in radians: one for every joint, or one per joint</input_port>
+            <input_port name="overshoot_in_place" type="bool" default="false">joints already at their target go past it too: it is unknown which way they got there</input_port>
+            <input_port name="switch_service" type="std::string" default="/controller_manager/switch_controller">the switch_controller service of the controller manager</input_port>
+            <input_port name="velocity_tolerance" type="double" default="0.010000">how slow a joint must be to count as stopped, in rad/s</input_port>
+            <input_port name="controller_name" type="std::string" default="position_controller">the position controller, which a halt deactivates to stop the robot</input_port>
             <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">joints to move</input_port>
             <input_port name="controller_joints" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">every joint of the position controller, in the order of its commands</input_port>
-            <input_port name="controller_name" type="std::string" default="position_controller">the position controller, which a halt deactivates to stop the robot</input_port>
-            <input_port name="velocity_tolerance" type="double" default="0.010000">how slow a joint must be to count as stopped, in rad/s</input_port>
-            <input_port name="switch_service" type="std::string" default="/controller_manager/switch_controller">the switch_controller service of the controller manager</input_port>
+            <input_port name="approach_from" type="BT::AnyTypeAllowed" default="">with approach_to: each joint reaches its target moving from this position toward that one</input_port>
+            <input_port name="positions" type="BT::AnyTypeAllowed">target positions, in radians: one for every joint, or one per joint</input_port>
+            <input_port name="joint_states_topic" type="std::string" default="/joint_states">topic the joint states are published on</input_port>
+            <input_port name="tolerance" type="double" default="0.010000">how close to its target a joint must be, in radians</input_port>
+            <input_port name="timeout" type="double" default="60.000000">how long the joints may take to get there, in seconds</input_port>
             <input_port name="topic_name" type="std::string" default="/position_controller/commands">the commands topic of the position controller</input_port>
+            <input_port name="approach_to" type="BT::AnyTypeAllowed" default="">with approach_from: the other end of the approach direction</input_port>
+            <input_port name="overshoot" type="BT::AnyTypeAllowed" default="">how far past its target a joint first goes, in radians, one per joint; by default the parameter overshoot.&lt;joint&gt; of the commander</input_port>
         </Action>
         <Action ID="CubicTrajectory">
             <output_port name="trajectory" type="trajectory_msgs::msg::JointTrajectory_&lt;std::allocator&lt;void&gt; &gt;">the trajectory, for FollowJointTrajectory</output_port>
@@ -27,6 +31,16 @@
             <input_port name="duration" type="double">time to reach the target, in seconds (default 5.0)</input_port>
             <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">joints to move</input_port>
         </Action>
+        <Action ID="DegreesToRadians">
+            <output_port name="radians" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the same, in radians of the motor, always a list</output_port>
+            <input_port name="degrees" type="BT::AnyTypeAllowed">an angle of the axis, in degrees: a number, or a list</input_port>
+            <input_port name="joint" type="std::string">the joint of the rotary axis, e.g. joint1</input_port>
+        </Action>
+        <Decorator ID="ExpectPicture">
+            <input_port name="files" type="int" default="1">how many files a shot gives: 2 for RAW+JPEG</input_port>
+            <input_port name="timeout" type="double" default="15.000000">how long the picture may take after the shot, in seconds</input_port>
+            <input_port name="topic_name" type="std::string" default="/camera/picture">the topic StepIt Camera reports its pictures on</input_port>
+        </Decorator>
         <Action ID="FollowJointTrajectory">
             <input_port name="trajectory" type="trajectory_msgs::msg::JointTrajectory_&lt;std::allocator&lt;void&gt; &gt;">the trajectory to follow</input_port>
             <input_port name="action_name" type="std::string" default="">Action server name</input_port>
@@ -46,10 +60,33 @@
             <input_port name="controller" type="std::string">the controller to check, e.g. velocity_controller</input_port>
             <input_port name="service_name" type="std::string" default="">Service name</input_port>
         </Action>
+        <Action ID="LoadValues">
+            <input_port name="file" type="std::string" default="">the YAML file; by default the commander's parameter state_file</input_port>
+            <output_port name="values" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers saved, always a list</output_port>
+            <input_port name="key" type="std::string">the name the values were saved under, e.g. near</input_port>
+        </Action>
+        <Action ID="MillimetresToRadians">
+            <output_port name="radians" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the same, in radians of the motor, always a list</output_port>
+            <input_port name="millimetres" type="BT::AnyTypeAllowed">a distance along the axis, in mm: a number, or a list</input_port>
+            <input_port name="joint" type="std::string">the joint of the linear axis, e.g. joint2</input_port>
+        </Action>
         <Action ID="OffsetVector">
             <output_port name="output" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers, offset</output_port>
             <input_port name="offset" type="BT::AnyTypeAllowed">a number added to every element, or a list with one per element</input_port>
             <input_port name="input" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers to offset</input_port>
+        </Action>
+        <Action ID="SaveValues">
+            <input_port name="file" type="std::string" default="">the YAML file; by default the commander's parameter state_file</input_port>
+            <input_port name="values" type="BT::AnyTypeAllowed">the numbers to save: a number, or a list</input_port>
+            <input_port name="key" type="std::string">the name to save the values under, e.g. near</input_port>
+        </Action>
+        <Action ID="SetJoints">
+            <output_port name="output" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the positions of every joint, these set</output_port>
+            <input_port name="relative" type="bool" default="false">add the values to the positions instead of replacing them</input_port>
+            <input_port name="values" type="BT::AnyTypeAllowed">their values, in radians: one per joint, or one for all</input_port>
+            <input_port name="joints" type="BT::AnyTypeAllowed">the joints to set: a name, or a list of names</input_port>
+            <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">the joints of input, in its order</input_port>
+            <input_port name="input" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the positions of every joint, in the order of joint_names</input_port>
         </Action>
         <Action ID="Shoot">
             <input_port name="sequence" type="std::string" default="">the sequence to fire, as named in the Freezer's parameters; empty for its default_sequence</input_port>

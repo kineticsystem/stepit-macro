@@ -22,6 +22,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -96,6 +97,13 @@ public:
   FakeFreezer(const FakeFreezer&) = delete;
   FakeFreezer& operator=(const FakeFreezer&) = delete;
 
+  /// @brief Call `listener` after each shot, e.g. for a fake camera to report its picture.
+  void onShot(std::function<void()> listener)
+  {
+    const std::lock_guard<std::mutex> lock{ mutex_ };
+    on_shot_ = std::move(listener);
+  }
+
   /// @brief The sequences fired so far, the default one by its name.
   std::vector<std::string> fired() const
   {
@@ -123,6 +131,15 @@ private:
       shot_id = static_cast<std::uint16_t>(fired_.size());
     }
     std::this_thread::sleep_for(duration_);
+    std::function<void()> on_shot;
+    {
+      const std::lock_guard<std::mutex> lock{ mutex_ };
+      on_shot = on_shot_;
+    }
+    if (on_shot)
+    {
+      on_shot();
+    }
 
     result->shot_id = shot_id;
     result->duration_us =
@@ -141,6 +158,7 @@ private:
   mutable std::mutex mutex_;
   std::vector<std::string> fired_;
   std::vector<std::thread> shots_;
+  std::function<void()> on_shot_;
 };
 
 }  // namespace stepit_tests
