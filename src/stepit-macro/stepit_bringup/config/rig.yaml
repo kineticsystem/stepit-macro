@@ -87,6 +87,12 @@ stepit_server:
     overshoot:
       joint1: 0.31  # the rotary stage
       joint2: 0.63  # the rail
+    # How far a linear axis travels per turn of its motor, in mm, for the
+    # objectives that take millimetres, e.g. MoveRailBy. The rail: 198 mm for
+    # 124.347 turns, measured on 2026-10-06. Its motor counts away from the
+    # subject: toward the subject is negative.
+    mm_per_turn:
+      joint2: 1.592
     # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
     # not configuration, in the repo's state folder, which git ignores.
     state_file: ~/ws/state/stack.yaml

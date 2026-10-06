@@ -294,6 +294,7 @@ the objective, i.e. after the `target_tree` of the command:
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
+| [`MoveRailBy`](docs/MoveRailBy.md) | Moves the rail by a distance in millimetres, with its measured 1.592 mm per turn of the motor. |
 | [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. |
 | [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
 
@@ -317,7 +318,9 @@ waits for the camera's picture of the shot it wraps.
 Some behaviors read parameters of their own from the commander's section of
 `rig.yaml`, which the plugin declares on the commander's node when it loads:
 the overshoot of each motor against backlash, `overshoot.<joint>`, which
-`CommandJointPositions` uses when given an approach, and `state_file`, where
+`CommandJointPositions` uses when given an approach; the millimetres a linear
+axis travels per turn of its motor, `mm_per_turn.<joint>`, which
+`MillimetresToRadians` converts with; and `state_file`, where
 `SaveValues` and `LoadValues` keep what the objectives remember, e.g. the marks
 of a stack. The commander itself knows nothing about them.
 

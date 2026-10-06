@@ -429,10 +429,10 @@ StepIt at runtime until the panel is built.
 `FocusStack` runs on motor radians, with estimates where nothing was measured
 yet. To measure on the rig:
 
-- **The rail, millimetres per motor turn.** Move it 10 turns with
-  `OffsetJointsDirectlyBy` and measure the travel with calipers. The stack
-  does not need it, its ends are marked where they are, but StepIt UI does, to
-  show the step between two shots next to the depth of field.
+- **The rail, millimetres per motor turn: done.** 1.592 mm per turn, from
+  198 mm of travel for 124.347 turns, measured on 2026-10-06:
+  `mm_per_turn.joint2` in `rig.yaml`, which `MoveRailBy` uses. The motor
+  counts away from the subject.
 - **The stage, degrees per motor turn**, its gear ratio. Mark the stage, turn
   its motor a whole number of turns until the mark comes back, and count. Then
   `FocusStack` can take its angles in degrees of the stage.

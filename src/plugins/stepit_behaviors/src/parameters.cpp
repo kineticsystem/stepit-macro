@@ -27,6 +27,7 @@ namespace stepit_behaviors
 namespace
 {
 constexpr auto kOvershootPrefix = "overshoot.";
+constexpr auto kMmPerTurnPrefix = "mm_per_turn.";
 constexpr auto kStateFile = "state_file";
 
 /// @brief A number of a parameter, whether the YAML wrote it as an integer or a double.
@@ -51,7 +52,8 @@ void declareParameters(rclcpp::Node& node)
   // are both accepted.
   for (const auto& [name, value] : node.get_node_parameters_interface()->get_parameter_overrides())
   {
-    if (name.rfind(kOvershootPrefix, 0) == 0 && !node.has_parameter(name))
+    const bool per_joint = name.rfind(kOvershootPrefix, 0) == 0 || name.rfind(kMmPerTurnPrefix, 0) == 0;
+    if (per_joint && !node.has_parameter(name))
     {
       node.declare_parameter(name, value);
     }
@@ -66,6 +68,16 @@ double overshootParameter(rclcpp::Node& node, const std::string& joint)
 {
   const auto name = kOvershootPrefix + joint;
   return node.has_parameter(name) ? asNumber(node.get_parameter(name).get_parameter_value()) : 0.0;
+}
+
+std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint)
+{
+  const auto name = kMmPerTurnPrefix + joint;
+  if (!node.has_parameter(name))
+  {
+    return std::nullopt;
+  }
+  return asNumber(node.get_parameter(name).get_parameter_value());
 }
 
 std::string stateFileParameter(rclcpp::Node& node)

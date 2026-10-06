@@ -126,8 +126,9 @@ StepIt Freezer, and `ExpectPicture` reads StepIt Camera's `/camera/picture`, so 
 behavior (BehaviorTree.CPP refuses it): the objective of `Shoot` is `TakeShot`.
 
 **Parameters of the behaviors** (the overshoot of each motor against backlash, `overshoot.<joint>`,
-and `state_file`) go in the section `stepit_server` of `rig.yaml`: `registerNodes` declares them on
-the commander's node, which knows nothing about them. Configuration measured by hand goes there;
+the millimetres a linear axis travels per motor turn, `mm_per_turn.<joint>`, and `state_file`) go
+in the section `stepit_server` of `rig.yaml`: `registerNodes` declares them on the commander's
+node, which knows nothing about them. Configuration measured by hand goes there;
 what the objectives learn while the rig runs, e.g. the marks of a focus stack, goes in the state
 file, in the git-ignored folder `state`, never in `rig.yaml`.
 

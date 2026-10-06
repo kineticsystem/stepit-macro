@@ -20,42 +20,35 @@
 
 #pragma once
 
-#include <optional>
+#include <memory>
 #include <string>
 
+#include <behaviortree_cpp/action_node.h>
+#include <behaviortree_ros2/ros_node_params.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace stepit_behaviors
 {
 
 /**
- * @brief The parameters of the behaviors, read from the node of the commander,
- * which loads them: the section of the commander in the robot's parameter
- * file, e.g.
+ * @brief Converts millimetres of a linear axis into radians of its motor, the
+ * unit of every position the objectives send.
  *
- *     stepit_server:
- *       ros__parameters:
- *         overshoot:
- *           joint2: 0.5
- *         mm_per_turn:
- *           joint2: 1.592
- *         state_file: ~/ws/state/stack.yaml
- *
- * The commander knows nothing about them: registerNodes declares them on its
- * node, so that they show in `ros2 param list` and can be read.
+ * The ratio is the commander's parameter `mm_per_turn.<joint>`, measured on
+ * the robot and set in its parameter file: how far the axis travels per turn
+ * of its motor. A positive distance turns the motor the positive way.
  */
-void declareParameters(rclcpp::Node& node);
+class MillimetresToRadians : public BT::SyncActionNode
+{
+public:
+  MillimetresToRadians(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
 
-/// @brief The overshoot of a joint against backlash, `overshoot.<joint>`, in radians: 0 if not set.
-double overshootParameter(rclcpp::Node& node, const std::string& joint);
+  static BT::PortsList providedPorts();
 
-/// @brief How far a linear axis travels per turn of its motor, `mm_per_turn.<joint>`, in mm, if set.
-std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint);
+  BT::NodeStatus tick() override;
 
-/// @brief The YAML file where SaveValues and LoadValues keep their values, `state_file`, with `~` expanded.
-std::string stateFileParameter(rclcpp::Node& node);
-
-/// @brief The default of `state_file`.
-inline constexpr auto kDefaultStateFile = "~/.ros/stepit_state.yaml";
+private:
+  std::weak_ptr<rclcpp::Node> node_;
+};
 
 }  // namespace stepit_behaviors

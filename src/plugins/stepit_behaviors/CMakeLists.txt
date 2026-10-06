@@ -40,6 +40,7 @@ add_library(stepit_behaviors SHARED
   src/follow_joint_trajectory.cpp
   src/get_active_controllers.cpp
   src/get_joint_positions.cpp
+  src/millimetres_to_radians.cpp
   src/is_controller_active.cpp
   src/nodes_model.cpp
   src/offset_vector.cpp

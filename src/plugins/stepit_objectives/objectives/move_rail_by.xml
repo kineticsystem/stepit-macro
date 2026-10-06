@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: MoveRailBy
+
+  Moves the rail, joint2, by a distance in millimetres from where it is:
+  positive away from the subject, negative toward it, as the motor counts.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: MoveRailBy, payload: '{mm: -5.0}'}"
+
+  The millimetres become radians of the motor with mm_per_turn.joint2, in the
+  commander's section of rig.yaml, measured on the rig. The move goes through
+  the position controller, on the microcontroller's own profile, as
+  OffsetJointsDirectlyBy does; it does not overshoot against backlash.
+-->
+<root BTCPP_format="4" main_tree_to_execute="MoveRailBy">
+
+  <BehaviorTree ID="MoveRailBy" _description="Moves the rail by a distance in millimetres from where it is.">
+    <Sequence>
+      <SubTree ID="EnsureControllers" controllers="position_controller"/>
+      <GetJointPositions _description="Where the rail is." topic_name="/joint_states" joint_names="joint2" positions="{start}"/>
+      <MillimetresToRadians _description="The distance, in radians of the rail's motor." joint="joint2"
+                            millimetres="{@mm}" radians="{offset}"/>
+      <OffsetVector _description="Where the rail goes." input="{start}" offset="{offset}" output="{target}"/>
+      <CommandJointPositions _description="Moves the rail there, and waits until it is."
+                             topic_name="/position_controller/commands"
+                             controller_joints="joint1;joint2;joint3;joint4;joint5"
+                             joint_names="joint2" positions="{target}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: what each entry is, with an example. -->
+  <TreeNodesModel>
+    <SubTree ID="MoveRailBy">
+      <input_port name="mm">how far to move the rail, in millimetres: positive away from the subject, negative toward it, e.g. -5.0</input_port>
+    </SubTree>
+  </TreeNodesModel>
+
+</root>

@@ -196,6 +196,20 @@ if(BUILD_TESTING)
     ${stepit_camera_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
+  # MoveRailBy, and so MillimetresToRadians, against a fake robot.
+  ament_add_gtest(test_move_rail_by_objective tests/test_move_rail_by_objective.cpp)
+  target_include_directories(test_move_rail_by_objective PRIVATE tests)
+  target_link_libraries(test_move_rail_by_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${control_msgs_TARGETS}
+    ${controller_manager_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${trajectory_msgs_TARGETS})
+
   # The ToggleTeleop objective, and so IsControllerActive.
   ament_add_gtest(test_toggle_teleop_objective
     tests/test_toggle_teleop_objective.cpp)

@@ -60,6 +60,11 @@
             <output_port name="values" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers saved, always a list</output_port>
             <input_port name="key" type="std::string">the name the values were saved under, e.g. near</input_port>
         </Action>
+        <Action ID="MillimetresToRadians">
+            <output_port name="radians" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the same, in radians of the motor, always a list</output_port>
+            <input_port name="millimetres" type="BT::AnyTypeAllowed">a distance along the axis, in mm: a number, or a list</input_port>
+            <input_port name="joint" type="std::string">the joint of the linear axis, e.g. joint2</input_port>
+        </Action>
         <Action ID="OffsetVector">
             <output_port name="output" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers, offset</output_port>
             <input_port name="offset" type="BT::AnyTypeAllowed">a number added to every element, or a list with one per element</input_port>

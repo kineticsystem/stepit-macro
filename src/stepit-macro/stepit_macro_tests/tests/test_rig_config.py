@@ -79,6 +79,12 @@ def test_every_motor_of_the_rig_overshoots_against_backlash():
         assert commander["overshoot"][joint] > 0
 
 
+def test_the_rail_has_its_measured_millimetres_per_turn():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["mm_per_turn"]["joint2"] == 1.592
+
+
 def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
     _, parameters = rig.split_config(load_config())
     commander = parameters["stepit_server"]["ros__parameters"]
