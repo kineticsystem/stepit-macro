@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: ToggleTeleop
+
+  Hands the robot to the gamepad, or takes it back: the gamepad's button 1
+  runs it. When the velocity controller, the one the sticks command, is not
+  driving the robot, it runs ActivateTeleop: the commander halts the running
+  objective, if any, and the gamepad drives the robot. When it is, it hands the
+  robot back to the trajectory controller, which the motion objectives use,
+  as the Manual drive button of StepIt UI does when it is switched off.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: ToggleTeleop, payload: ''}"
+
+  Either way, the controller stopped brakes the motors it releases to 0 at
+  their acceleration.
+
+  StepIt UI reads the controllers every 2 s: its Manual drive button follows
+  the gamepad.
+-->
+<root BTCPP_format="4" main_tree_to_execute="ToggleTeleop">
+
+  <BehaviorTree ID="ToggleTeleop" _description="Hands the robot to the gamepad, or back to the trajectory controller when the gamepad already drives it.">
+    <!-- IfThenElse rather than a Fallback: a failed hand-back must fail, not
+         hand the robot to the gamepad again. -->
+    <IfThenElse>
+      <IsControllerActive _description="Does the gamepad drive the robot?"
+                          service_name="/controller_manager/list_controllers"
+                          controller="velocity_controller"/>
+      <SubTree ID="EnsureControllers" controllers="joint_trajectory_controller"/>
+      <SubTree ID="ActivateTeleop"/>
+    </IfThenElse>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: it takes none. -->
+  <TreeNodesModel>
+    <SubTree ID="ToggleTeleop"/>
+  </TreeNodesModel>
+
+</root>

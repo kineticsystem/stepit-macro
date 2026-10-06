@@ -17,9 +17,9 @@
 The package [`stepit_teleop`](../src/stepit-macro/stepit_teleop) drives the robot with a Logitech Dual Action gamepad:
 
 - the left stick, left and right, turns the rotary stage (`joint1`), and the right stick, up and down, moves the rail (`joint2`), each as the part moves, at a velocity proportional to how far it is pushed, up to 0.5 turns/s for the stage and 2 turns/s for the rail, the stage at a quarter of the speed of the rail;
-- a stop button stops whatever moves the robot, an objective or the sticks, and hands the robot to the gamepad.
+- a stop button stops whatever moves the robot, an objective or the sticks, and hands the robot to the gamepad; pressed again, it hands the robot back to the trajectory controller, as **Manual drive** in StepIt UI does when switched off.
 
-The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ActivateTeleop`](ActivateTeleop.md). That is why the gamepad belongs to StepIt Macro, and not to StepIt Motors, which only provides the controllers.
+The sticks command the robot's `velocity_controller`, which only one controller at a time may drive: only the commander switches controllers in the rig, so the stop button asks the commander to run the objective [`ToggleTeleop`](ToggleTeleop.md), which runs [`ActivateTeleop`](ActivateTeleop.md) or hands the robot back. That is why the gamepad belongs to StepIt Macro, and not to StepIt Motors, which only provides the controllers.
 
 ## Prerequisites
 
@@ -51,10 +51,10 @@ Follow what it does:
 When the robot starts, the trajectory controller drives it and the sticks do nothing. Press the stop button, button 1 by default, and the log says:
 
 ```
-ActivateTeleop succeeded: the gamepad drives the robot
+ToggleTeleop succeeded
 ```
 
-From then on the sticks move the joints. Any objective sent afterwards, from the editor or the command line, switches back to the controller it needs by itself, as every objective does.
+From then on the sticks move the joints. Press it again, and the trajectory controller drives the robot again: the sticks do nothing until the next press. StepIt UI's **Manual drive** button follows within 2 s, since the page reads the controllers every 2 s. Any objective sent afterwards, from the editor or the command line, switches back to the controller it needs by itself, as every objective does.
 
 After a change to the code of `stepit_teleop`, build the rig and restart it:
 
@@ -64,18 +64,18 @@ After a change to the code of `stepit_teleop`, build the rig and restart it:
 ./docker/dock.sh start
 ```
 
-A change to the configuration needs the same, because the launch file reads the copy installed by the build. A change to [`activate_teleop.xml`](../src/plugins/stepit_objectives/objectives/activate_teleop.xml) needs nothing: the commander reads it again before the next press.
+A change to the configuration needs the same, because the launch file reads the copy installed by the build. A change to [`toggle_teleop.xml`](../src/plugins/stepit_objectives/objectives/toggle_teleop.xml) or [`activate_teleop.xml`](../src/plugins/stepit_objectives/objectives/activate_teleop.xml) needs nothing: the commander reads it again before the next press.
 
 ## The Stop Button
 
-The stop button makes the velocity controller the only controller driving the robot. Doing so stops the robot whatever it is doing: when a controller is deactivated, StepIt Motors sends velocity 0 to the joints it released, and the velocity controller sends nothing until a stick moves.
+The stop button makes the velocity controller the only controller driving the robot, or, when it already is, hands the robot back to the trajectory controller. Either way it stops the robot whatever it is doing: when a controller is deactivated, StepIt Motors sends velocity 0 to the joints it released, and the velocity controller sends nothing until a stick moves.
 
 **The motors brake, they do not stop dead.** A velocity lower than the current one makes the firmware decelerate at the motor's acceleration, 2 turns/s² (`acceleration` in the driver's `stepit.ros2_control.xacro`), down to 0; the fake motor does the same. A joint turning at the gamepad's 2 turns/s therefore takes 1 s and one turn to stop, one at the motors' 3 turns/s 1.5 s and 2.25 turns. Every stop below works this way, whether it comes from a controller being released or from the gamepad sending velocity 0.
 
 Pressing the button does two things, in order:
 
 1. It sends velocity 0 to every joint, which brakes them if the velocity controller is already active.
-2. It runs the objective [`ActivateTeleop`](ActivateTeleop.md). The commander halts the objective it is running, if any, and runs `ActivateTeleop` in its place, which stops every other controller driving the robot, leaves the broadcasters running, and activates `velocity_controller`.
+2. It runs the objective [`ToggleTeleop`](ToggleTeleop.md). The commander halts the objective it is running, if any, and runs `ToggleTeleop` in its place. When `velocity_controller` is not active, it runs `ActivateTeleop`, which stops every other controller driving the robot, leaves the broadcasters running, and activates `velocity_controller`. When it is, it activates `joint_trajectory_controller` instead, and the sticks no longer move the robot.
 
 ```mermaid
 ---
@@ -140,17 +140,19 @@ sequenceDiagram
 
     Joy->>Teleop: /joy, stop button pressed
     Teleop->>Manager: /velocity_controller/commands, all 0
-    Teleop->>Commander: ActivateTeleop
+    Teleop->>Commander: ToggleTeleop
     Note over Commander: halts the running objective,<br/>if any, within 10 ms
+    Commander->>Manager: list_controllers
+    Note over Commander: velocity_controller not active:<br/>runs ActivateTeleop
     Commander->>Manager: list_controllers
     Commander->>Manager: switch_controller
     Note over Manager: other controllers stopped,<br/>the motors brake to 0
     Commander-->>Teleop: succeeded
 ```
 
-**The commander preempts.** A goal sent while an objective runs replaces it: the commander halts the running tree at its next tick, which cancels its trajectory or deactivates its position controller, aborts its goal with the message `Preempted by objective 'ActivateTeleop'`, and runs the new objective. This is the commander's parameter `preempt`, on by default; with it off, `ActivateTeleop` would wait for the running objective to end, and the button would stop nothing. See [One Objective at a Time](https://github.com/kineticsystem/stepit-commander#one-objective-at-a-time) in the README of StepIt Commander.
+**The commander preempts.** A goal sent while an objective runs replaces it: the commander halts the running tree at its next tick, which cancels its trajectory or deactivates its position controller, aborts its goal with the message `Preempted by objective 'ToggleTeleop'`, and runs the new objective. This is the commander's parameter `preempt`, on by default; with it off, `ToggleTeleop` would wait for the running objective to end, and the button would stop nothing. See [One Objective at a Time](https://github.com/kineticsystem/stepit-commander#one-objective-at-a-time) in the README of StepIt Commander.
 
-**The switch is an objective, so it can change without a build.** The node only knows the name of the objective, its parameter `objective`; what handing the robot to the gamepad means is the XML of `ActivateTeleop`, which another objective can also call as a step of its own.
+**The switch is an objective, so it can change without a build.** The node only knows the name of the objective, its parameter `objective`, and not whether the gamepad drives the robot: `ToggleTeleop` decides, from the controllers. What handing the robot to the gamepad means is the XML of `ActivateTeleop`, which another objective can also call as a step of its own.
 
 **Holding the button asks once.** Only the press counts, so holding the button does not send a goal 20 times a second. A second press while a switch is still under way only sends velocity 0 again; after 5 s without an answer from the commander, a press asks again.
 
@@ -167,8 +169,8 @@ The parameters of the node `gamepad_teleop` are in [`config/logitech_dual_action
 
 | Parameter | Default | Description |
 |---|---|---|
-| `stop_button` | `0` | The index of the button that stops the robot and hands it to the gamepad, counted from 0: button 1 on the gamepad. |
-| `objective` | `ActivateTeleop` | The objective the stop button runs, in place of the running one. |
+| `stop_button` | `0` | The index of the button that stops the robot and hands it to the gamepad, or back, counted from 0: button 1 on the gamepad. |
+| `objective` | `ActivateTeleop` | The objective the stop button runs, in place of the running one. The rig's configuration sets `ToggleTeleop`, so that a second press hands the robot back. |
 | `controller` | `velocity_controller` | The controller the sticks command, a `JointGroupVelocityController`, which `objective` activates. The node publishes on `/<controller>/commands`. |
 | `joints` | `[joint1, joint2, joint3, joint4, joint5]` | The joints of the controller, in the order of its configuration in the driver's `controllers.yaml`: the controller takes one velocity per joint, by position. |
 | `<joint>.axis` | `-1` | The index of the axis that drives the joint. A joint with no axis is held at 0. |
@@ -210,11 +212,11 @@ The numbers are those of the Linux joystick interface, which `jstest-gtk` and `j
 
 **The sticks move nothing.** The velocity controller is not active: the robot starts with the trajectory controller, and every objective switches back to the controller it needs. Press the stop button.
 
-**The log says `The commander is not running`.** The button found no commander to run `ActivateTeleop`. The commander runs in the rig: look at `./docker/dock.sh logs` for why it stopped.
+**The log says `The commander is not running`.** The button found no commander to run `ToggleTeleop`. The commander runs in the rig: look at `./docker/dock.sh logs` for why it stopped.
 
 **The log says `Couldn't open joystick /dev/input/js0`.** The gamepad is not plugged in, or it is not the first joystick. `ls /dev/input/js*` on the host lists the joysticks; pass another one with the launch argument `dev`.
 
-**The log says `ActivateTeleop failed`.** The objective could not switch the controllers, e.g. because the driver is not running; `./docker/dock.sh logs` says why.
+**The log says `ToggleTeleop failed`.** The objective could not switch the controllers, e.g. because the driver is not running; `./docker/dock.sh logs` says why.
 
 **A joint turns the wrong way.** Change the sign of its `scale` in the configuration, then build and restart the rig.
 

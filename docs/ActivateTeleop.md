@@ -17,7 +17,7 @@ ActivateTeleop
     └── SwitchController        (calls /controller_manager/switch_controller)
 ```
 
-The gamepad's stop button runs it; the commander halts the running objective, if any, and runs this one in its place, see [Driving the Robot with a Gamepad](Gamepad.md). The motors released by the other controllers brake to 0 at their acceleration, 2 turns/s²; they do not stop dead.
+**Manual drive** in StepIt UI runs it, and so does the gamepad's stop button, through [`ToggleTeleop`](ToggleTeleop.md); the commander halts the running objective, if any, and runs this one in its place, see [Driving the Robot with a Gamepad](Gamepad.md). The motors released by the other controllers brake to 0 at their acceleration, 2 turns/s²; they do not stop dead.
 
 **What handing the robot to the user means lives here, not in the gamepad's code.** The gamepad only asks for the objective named by its parameter `objective`, so a change to this XML takes effect on the next press, with no build. Another objective hands the robot to the user the same way, as a step of its own:
 

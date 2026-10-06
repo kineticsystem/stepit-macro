@@ -24,6 +24,7 @@
 #include "stepit_behaviors/follow_joint_trajectory.hpp"
 #include "stepit_behaviors/get_active_controllers.hpp"
 #include "stepit_behaviors/get_joint_positions.hpp"
+#include "stepit_behaviors/is_controller_active.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
 #include "stepit_behaviors/shoot.hpp"
 #include "stepit_behaviors/cubic_trajectory.hpp"
@@ -44,6 +45,7 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<FollowJointTrajectory>("FollowJointTrajectory", params);
   factory.registerNodeType<CommandJointPositions>("CommandJointPositions", params);
   factory.registerNodeType<GetActiveControllers>("GetActiveControllers", params);
+  factory.registerNodeType<IsControllerActive>("IsControllerActive", params);
   factory.registerNodeType<SwitchController>("SwitchController", params);
 
   // The Freezer node's action, unless the tree names another in action_name.
