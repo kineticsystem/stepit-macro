@@ -5,6 +5,7 @@ import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
 import { RailMark } from './components/RailMark';
 import { StageMark } from './components/StageMark';
+import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
 import { StackBar } from './components/StackBar';
 import { Slider } from './components/Slider';
@@ -64,6 +65,7 @@ function SideSlider({ index }: { index: number }) {
       {limits && <StageMark end="to" />}
       <Slider
         label={slider.label}
+        icon={slider.joint === 'joint1' ? <RotateIcon /> : <RailIcon />}
         value={axes[slider.axis]}
         disabled={!enabled}
         onChange={(value) => setAxis(slider.axis, value)}

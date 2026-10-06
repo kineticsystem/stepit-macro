@@ -83,3 +83,24 @@ export function LayersIcon() {
     </svg>
   );
 }
+
+/** The rotary stage: an arrow turning round. */
+export function RotateIcon() {
+  return (
+    <svg {...common}>
+      <path d="M13 8a5 5 0 1 1-1.5-3.55" />
+      <path d="M11.5 1.75v2.75h-2.75" />
+    </svg>
+  );
+}
+
+/** The rail: an arrow up and down, as the slider moves the camera. */
+export function RailIcon() {
+  return (
+    <svg {...common}>
+      <path d="M8 2v12" />
+      <path d="M5 4.75 8 2l3 2.75" />
+      <path d="M5 11.25 8 14l3-2.75" />
+    </svg>
+  );
+}

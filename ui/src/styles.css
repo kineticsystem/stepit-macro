@@ -264,7 +264,6 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .side-slider:first-child { border-right: 1px solid var(--border); }
 .side-slider:last-child { border-left: 1px solid var(--border); }
 .slider { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.slider-label { font-weight: 600; text-align: center; line-height: 1.2; }
 .slider-track {
   position: relative; flex: 1; min-height: 200px; width: 72px;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 14px 0;
@@ -276,6 +275,8 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .slider-centre { position: absolute; top: 50%; left: 14px; right: 14px; height: 2px; background: var(--border); }
 .slider-knob {
   position: absolute; left: 3px; width: 64px; height: 64px; margin-top: -32px;
+  /* What the slider drives, as an icon in the middle of the knob. */
+  display: flex; align-items: center; justify-content: center; color: #fff;
   border-radius: 50%; background: var(--accent); box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
   /* Back to the centre smoothly when let go; under the thumb at once. */
   transition: top 0.15s ease-out;
@@ -283,6 +284,7 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .slider.moving .slider-knob { transition: none; }
 .slider.disabled .slider-track { opacity: 0.45; }
 .slider.disabled .slider-knob { background: var(--muted); }
+.slider-knob .icon { width: 28px; height: 28px; pointer-events: none; }
 
 /* A narrow screen, e.g. a tablet held upright: narrower sliders, and the
    commands on several rows. */

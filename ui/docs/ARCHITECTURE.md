@@ -489,7 +489,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`StageMark`](../src/components/StageMark.tsx) | Above and below the stage's slider | Mark: the stage's end of the stack, to above, from below, from where the stage is now; rig.yaml's until marked, a mark kept until the next connection. | `useStack` |
 | [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; the position marked, in mm. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
-| [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb. Props only: no store. | — |
+| [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb, an icon of what it drives on its knob. Props only: no store. | — |
 | [`icons`](../src/components/icons.tsx) | Shared | Line icons in the text colour. | — |
 
 `Slider` is the one purely presentational component: `SideSlider`, in `App.tsx`, connects it to `useMotion`. The others read the stores they need directly.
@@ -519,7 +519,7 @@ Every test is of the transport or of the layer of interfaces and logic. **No sto
 | support a new module | a folder `src/<module>/`: an interface that takes a `Rosbridge`, a store with a `follow<Module>()`, started in `App.tsx`. Its messages must be installed next to the commander's rosbridge. |
 | add a camera setting | nothing in the page: the driver lists it in `get_settings`. Add a label and an order in [`format.ts`](../src/camera/format.ts). |
 | add a preference | `Settings` and `DEFAULTS` in [`settings.ts`](../src/settings.ts), and a control in `SettingsMenu`. |
-| change a slider's speed | `rig.yaml`'s section `ui_teleop`, and `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), which only labels it. |
+| change a slider's speed | `rig.yaml`'s section `ui_teleop`: the page sends only where the knob is. |
 
 ## Design Decisions and Trade-offs
 
