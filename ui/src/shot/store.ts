@@ -100,21 +100,3 @@ async function load(picture: ShotPicture): Promise<ShotPicture> {
     return { ...picture, error: errorMessage(e) };
   }
 }
-
-/**
- * Saves a picture on this device, under its name. The camera's web server is
- * another origin than the page, where the download attribute of a link is
- * ignored: the file is fetched first, which its server allows.
- */
-export async function download(picture: ShotPicture): Promise<void> {
-  const response = await fetch(picture.file);
-  if (!response.ok) throw new Error(`Cannot download ${picture.name}: ${response.status} ${response.statusText}`.trim());
-  const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = picture.name;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}

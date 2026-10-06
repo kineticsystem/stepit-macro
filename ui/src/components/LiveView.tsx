@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react';
 import { Camera } from '../camera/camera';
 import { useCamera } from '../camera/store';
 import { useLights } from '../freezer/lights';
-import { errorMessage } from '../ros/rosbridge';
 import { useSettings, videoUrl } from '../settings';
-import { download, useShot, type ShotPicture } from '../shot/store';
-import { DownloadIcon } from './icons';
+import { useShot, type ShotPicture } from '../shot/store';
 
 /**
  * The middle of the page, between the two sliders: the live view while it is
@@ -63,43 +61,16 @@ export function LiveView() {
   );
 }
 
-/** The last photo, as large as the viewport allows, with its name and Download. */
+/**
+ * The last photo, as large as the viewport allows. Its file is in the camera
+ * driver's folder of pictures, on the rig: the page neither names nor saves it.
+ */
 function Photo({ picture }: { picture: ShotPicture }) {
-  const [error, setError] = useState<string>();
-  const [saving, setSaving] = useState(false);
-  const save = async () => {
-    setSaving(true);
-    setError(undefined);
-    try {
-      await download(picture);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <>
-      {picture.url ? (
-        <img src={picture.url} alt={picture.name} />
-      ) : (
-        <div className="viewport-message">
-          <p>{picture.error ?? (picture.size === undefined ? `Loading ${picture.name}…` : 'The browser cannot show this file')}</p>
-        </div>
-      )}
-      <div className="photo-bar">
-        <span className="photo-name">
-          <strong>{picture.name}</strong>
-          {picture.size !== undefined && <span> {(picture.size / 1e6).toFixed(1)} MB</span>}
-          {picture.preview && <span> · its JPEG preview</span>}
-        </span>
-        <button onClick={() => void save()} disabled={saving} title={`Save ${picture.name} on this device`}>
-          <DownloadIcon />
-          {saving ? 'Saving…' : 'Download'}
-        </button>
-        {error && <span className="error">{error}</span>}
-      </div>
-    </>
+  return picture.url ? (
+    <img src={picture.url} alt="The last photo" />
+  ) : (
+    <div className="viewport-message">
+      <p>{picture.error ?? (picture.size === undefined ? 'Loading the photo…' : 'The browser cannot show this file')}</p>
+    </div>
   );
 }
