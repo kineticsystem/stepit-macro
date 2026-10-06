@@ -41,10 +41,14 @@ namespace stepit_behaviors
  *           joint2: 1.592
  *         deg_per_turn:
  *           joint1: 4.5
+ *         focus_stack:
+ *           stage_from: -17.0
  *         state_file: ~/ws/state/stack.yaml
  *
  * The commander knows nothing about them: registerNodes declares them on its
- * node, so that they show in `ros2 param list` and can be read.
+ * node, so that they show in `ros2 param list` and can be read, by the
+ * behaviors and by the pages of the rig: `focus_stack.*` is read by StepIt UI
+ * alone, the defaults of its stack.
  */
 void declareParameters(rclcpp::Node& node);
 

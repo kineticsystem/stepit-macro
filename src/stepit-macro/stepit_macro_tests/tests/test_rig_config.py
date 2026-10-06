@@ -91,6 +91,12 @@ def test_the_stage_turns_on_an_80_to_1_gear():
     assert commander["deg_per_turn"]["joint1"] == 360 / 80
 
 
+def test_a_stack_turns_the_stage_from_minus_17_to_17_degrees():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["focus_stack"] == {"stage_from": -17.0, "stage_to": 17.0}
+
+
 def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
     _, parameters = rig.split_config(load_config())
     commander = parameters["stepit_server"]["ros__parameters"]

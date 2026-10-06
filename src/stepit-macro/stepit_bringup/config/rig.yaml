@@ -99,6 +99,13 @@ stepit_server:
     # worm gear. Counter-clockwise is negative.
     deg_per_turn:
       joint1: 4.5
+    # The angles a focus stack turns the stage between, in degrees from where
+    # the stage is when the stack starts. StepIt UI shows them at the ends of
+    # the stage's slider, and its Mark buttons there override them until the
+    # rig restarts: they are never saved.
+    focus_stack:
+      stage_from: -17.0
+      stage_to: 17.0
     # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
     # not configuration, in the repo's state folder, which git ignores.
     state_file: ~/ws/state/stack.yaml
@@ -149,11 +156,9 @@ freezer:
 # the page sends each slider as an axis of a sensor_msgs/Joy on /ui/joy, from -1
 # to 1, and this second gamepad_teleop turns them into velocities. The ends of a
 # slider are the rail's top speed, the motors' limit, 3 turns/s, and a quarter of
-# it, 0.75 turns/s, for the rotary stage, which the subject turns on. StepIt UI
-# shows these speeds under its sliders (SLIDERS in its motion/store.ts): keep
-# them in step. When the page stops sending for
-# joy_timeout seconds during a move, e.g. when the tablet loses the network,
-# the joints stop.
+# it, 0.75 turns/s, for the rotary stage, which the subject turns on. When the
+# page stops sending for joy_timeout seconds during a move, e.g. when the
+# tablet loses the network, the joints stop.
 ui_teleop:
   ros__parameters:
     stop_button: -1  # none: the page runs ActivateTeleop through the commander

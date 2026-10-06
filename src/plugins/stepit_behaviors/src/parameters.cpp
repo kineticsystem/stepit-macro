@@ -29,6 +29,8 @@ namespace
 constexpr auto kOvershootPrefix = "overshoot.";
 constexpr auto kMmPerTurnPrefix = "mm_per_turn.";
 constexpr auto kDegPerTurnPrefix = "deg_per_turn.";
+/// What the rig configures for its pages, e.g. StepIt UI, which read it from the commander.
+constexpr auto kFocusStackPrefix = "focus_stack.";
 constexpr auto kStateFile = "state_file";
 
 /// @brief A number of a parameter, whether the YAML wrote it as an integer or a double.
@@ -53,9 +55,9 @@ void declareParameters(rclcpp::Node& node)
   // are both accepted.
   for (const auto& [name, value] : node.get_node_parameters_interface()->get_parameter_overrides())
   {
-    const bool per_joint = name.rfind(kOvershootPrefix, 0) == 0 || name.rfind(kMmPerTurnPrefix, 0) == 0 ||
-                           name.rfind(kDegPerTurnPrefix, 0) == 0;
-    if (per_joint && !node.has_parameter(name))
+    const bool ours = name.rfind(kOvershootPrefix, 0) == 0 || name.rfind(kMmPerTurnPrefix, 0) == 0 ||
+                      name.rfind(kDegPerTurnPrefix, 0) == 0 || name.rfind(kFocusStackPrefix, 0) == 0;
+    if (ours && !node.has_parameter(name))
     {
       node.declare_parameter(name, value);
     }

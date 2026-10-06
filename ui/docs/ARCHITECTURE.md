@@ -253,7 +253,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()` | — | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
-| `useStack` | the marks this page set, in turns; the plan; `mmPerTurn`, read from the commander's `mm_per_turn.joint2`; `marking`, `progress`; `mark()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads `mmPerTurn` on every connection | `useCommander`, `useCamera` (its pictures, counted) |
+| `useStack` | the rail's marks this page set, in turns; the counts; the stage's configured ends, its marks and its position; `mmPerTurn`, `degPerTurn`; `marking`, `progress`; `mark()`, `markStage()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads the commander's `mm_per_turn.joint2`, `deg_per_turn.joint1` and `focus_stack.*` on every connection, dropping the stage's marks; follows the stage on `/joint_states` | `useCommander`, `useCamera` (its pictures, counted) |
 | `useSettings` | the preferences of the browser, in `localStorage`, `showStack` among them | — | — |
 
 ```mermaid
@@ -486,7 +486,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Take a shot, Live view, Lights, Manual drive, Stack, Stop: one small component per button. | every store |
 | [`StackBar`](../src/components/StackBar.tsx) | Centre, under the toolbar | The plan of the stack, the depth and step in mm, Start stack and its count of pictures. | `useStack`, `useCommander` |
-| [`StageLimit`](../src/components/StageLimit.tsx) | Above and below the stage's slider | The angles of the stack's turn, from the plan, shown only: the larger above, clockwise. | `useStack` |
+| [`StageMark`](../src/components/StageMark.tsx) | Above and below the stage's slider | Mark: the stage's end of the stack, to above, from below, from where the stage is now; rig.yaml's until marked, a mark kept until the next connection. | `useStack` |
 | [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; the position marked, in mm. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
 | [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb. Props only: no store. | — |
@@ -583,7 +583,6 @@ Each component can still be changed alone; what cannot is a rule that spans them
 | Following a topic across connections: subscribe, then again on every `onConnected`. | `followCommander`, `followLights`; the same idea in `followCamera` and `followMotion`. | Medium: and it overlaps with the client's own re-subscription. |
 | The QoS of a latched topic, `reliable`, `transient_local`, `keep_last`, 1. | [`commander.ts`](../src/commander/commander.ts) and [`lights.ts`](../src/freezer/lights.ts). | Low. |
 | `connected`, `busy` in the buttons. | [`Toolbar.tsx`](../src/components/Toolbar.tsx), [`CameraSettings.tsx`](../src/components/CameraSettings.tsx). | Medium, see above. |
-| The speeds of the sliders. | `SLIDERS` in [`motion/store.ts`](../src/motion/store.ts), derived from `MAX_TURNS_PER_SECOND` in [`axis.ts`](../src/motion/axis.ts), and the scales of `ui_teleop` in `rig.yaml`. In step today: 0.75 and 3 turns/s. | Medium: a change in `rig.yaml` silently mislabels the sliders. |
 | The theme: its storage key and how `auto` resolves. | [`index.html`](../index.html), before the first paint, and [`settings.ts`](../src/settings.ts). | Low, and deliberate. |
 | `Cannot load … : status statusText`. | `fetchSize`, `fetchRange` in [`picture.ts`](../src/camera/picture.ts). | Low. |
 

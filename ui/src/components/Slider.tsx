@@ -1,5 +1,5 @@
 import { useRef, type PointerEvent } from 'react';
-import { axisAt, turnsPerSecond } from '../motion/axis';
+import { axisAt } from '../motion/axis';
 
 /** The diameter of the knob, in pixels: a thumb's width. Keep in step with styles.css. */
 const KNOB = 64;
@@ -15,8 +15,6 @@ const KNOB = 64;
  */
 export function Slider(props: {
   label: string;
-  /** The speed at the ends, in turns per second. */
-  maxTurnsPerSecond: number;
   value: number;
   disabled: boolean;
   onChange(value: number): void;
@@ -43,7 +41,6 @@ export function Slider(props: {
     props.onChange(0);
   };
 
-  const speed = turnsPerSecond(props.value, props.maxTurnsPerSecond);
   return (
     <div className={`slider${props.disabled ? ' disabled' : ''}${props.value !== 0 ? ' moving' : ''}`}>
       <div className="slider-label">{props.label}</div>
@@ -63,10 +60,6 @@ export function Slider(props: {
           className="slider-knob"
           style={{ top: `calc(50% - ${props.value} * (50% - ${KNOB / 2}px))` }}
         />
-      </div>
-      <div className="slider-speed mono">
-        {speed === 0 ? 'stopped' : `${speed > 0 ? '+' : ''}${speed.toFixed(2)}`}
-        {speed !== 0 && <span className="muted"> turns/s</span>}
       </div>
     </div>
   );
