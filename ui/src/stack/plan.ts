@@ -14,7 +14,8 @@ export interface StackPlan {
   angles: number;
 }
 
-export const DEFAULT_PLAN: StackPlan = { shots: 10, stageFrom: 0, stageTo: 0, angles: 1 };
+/** By default, 35 angles from -17 to 17 degrees: one every degree. */
+export const DEFAULT_PLAN: StackPlan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 
 /** How many pictures a plan takes. */
 export const totalShots = (plan: StackPlan) => plan.shots * plan.angles;

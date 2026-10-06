@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { payloadOf, planProblem, railStep, railText, totalShots } from '../src/stack/plan';
+import { DEFAULT_PLAN, payloadOf, planProblem, railStep, railText, totalShots } from '../src/stack/plan';
 
 const plan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 
@@ -33,5 +33,9 @@ describe('the plan of a focus stack', () => {
   it('shows the rail in millimetres once its ratio is known, in turns before', () => {
     expect(railText(10, 1.592)).toBe('15.92 mm');
     expect(railText(10)).toBe('10.000 turns');
+  });
+
+  it('turns the stage from -17 to 17 degrees by default, one stack every degree', () => {
+    expect(DEFAULT_PLAN).toMatchObject({ stageFrom: -17, stageTo: 17, angles: 35 });
   });
 });
