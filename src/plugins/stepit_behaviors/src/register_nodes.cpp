@@ -26,8 +26,12 @@
 #include "stepit_behaviors/get_joint_positions.hpp"
 #include "stepit_behaviors/is_controller_active.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
+#include "stepit_behaviors/parameters.hpp"
 #include "stepit_behaviors/shoot.hpp"
 #include "stepit_behaviors/cubic_trajectory.hpp"
+#include "stepit_behaviors/expect_picture.hpp"
+#include "stepit_behaviors/set_joints.hpp"
+#include "stepit_behaviors/values_file.hpp"
 #include "stepit_behaviors/steps.hpp"
 #include "stepit_behaviors/switch_controller.hpp"
 #include "stepit_behaviors/trapezoidal_trajectory.hpp"
@@ -37,6 +41,11 @@ namespace stepit_behaviors
 
 void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& params)
 {
+  if (const auto node = params.nh.lock())
+  {
+    declareParameters(*node);
+  }
+
   factory.registerNodeType<OffsetVector>("OffsetVector");
   factory.registerNodeType<Steps>("Steps");
   factory.registerNodeType<CubicTrajectory>("CubicTrajectory");
@@ -47,6 +56,10 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<GetActiveControllers>("GetActiveControllers", params);
   factory.registerNodeType<IsControllerActive>("IsControllerActive", params);
   factory.registerNodeType<SwitchController>("SwitchController", params);
+  factory.registerNodeType<SetJoints>("SetJoints");
+  factory.registerNodeType<SaveValues>("SaveValues", params);
+  factory.registerNodeType<LoadValues>("LoadValues", params);
+  factory.registerNodeType<ExpectPicture>("ExpectPicture", params);
 
   // The Freezer node's action, unless the tree names another in action_name.
   BT::RosNodeParams shoot_params = params;

@@ -31,36 +31,6 @@ namespace stepit_behaviors
 namespace
 {
 
-/// @brief Whether the XML gives the port, even if its blackboard entry is missing.
-bool isGiven(const BT::TreeNode& node, const std::string& port)
-{
-  const auto& ports = node.config().input_ports;
-  const auto it = ports.find(port);
-  return it != ports.end() && !it->second.empty();
-}
-
-std::vector<double> requireNumbers(const BT::TreeNode& node, const std::string& port)
-{
-  auto numbers = getNumbers(node, port);
-  if (!numbers || numbers->empty())
-  {
-    throw BT::RuntimeError("Steps: [", port, "] must be a number, or a list of numbers");
-  }
-  return std::move(numbers.value());
-}
-
-/**
- * @brief An input that can be left out: Steps takes either [values] or [start],
- * [end] and [count]. The empty default tells editors that the port is optional,
- * and still counts as not given for isGiven.
- */
-BT::PortsList::value_type optionalInput(const std::string& name, const std::string& description)
-{
-  auto port = BT::InputPort<BT::AnyTypeAllowed>(name, description);
-  port.second.setDefaultValue(std::string());
-  return port;
-}
-
 /// @brief The [count] port: a whole number of at least 1, as a payload gives it, e.g. 5.0.
 std::size_t requireCount(const BT::TreeNode& node)
 {

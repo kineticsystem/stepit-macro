@@ -26,6 +26,7 @@ if(BUILD_TESTING)
   find_package(rclcpp_action REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(stepit_camera_msgs REQUIRED)
   find_package(trajectory_msgs REQUIRED)
 
   # The behaviors, ticked inside a behavior tree.
@@ -155,6 +156,45 @@ if(BUILD_TESTING)
     stepit_server::stepit_server
     rclcpp::rclcpp
     ${controller_manager_msgs_TARGETS})
+
+  # Setting some joints of a list of positions.
+  ament_add_gtest(test_set_joints tests/test_set_joints.cpp)
+  target_link_libraries(test_set_joints
+    stepit_behaviors::stepit_behaviors)
+
+  # Saving and loading values, e.g. the marks of a stack, in a YAML file.
+  ament_add_gtest(test_values_file tests/test_values_file.cpp)
+  target_link_libraries(test_values_file
+    stepit_behaviors::stepit_behaviors
+    rclcpp::rclcpp)
+
+  # Waiting for the picture of a shot, against a fake Freezer and a fake camera.
+  ament_add_gtest(test_expect_picture tests/test_expect_picture.cpp)
+  target_include_directories(test_expect_picture PRIVATE tests)
+  target_link_libraries(test_expect_picture
+    stepit_behaviors::stepit_behaviors
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${freezer_msgs_TARGETS}
+    ${stepit_camera_msgs_TARGETS})
+
+  # MarkNear, MarkFar and FocusStack, against the fakes of the whole rig.
+  ament_add_gtest(test_focus_stack_objective
+    tests/test_focus_stack_objective.cpp
+    TIMEOUT 300)
+  target_include_directories(test_focus_stack_objective PRIVATE tests)
+  target_link_libraries(test_focus_stack_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${control_msgs_TARGETS}
+    ${controller_manager_msgs_TARGETS}
+    ${freezer_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${stepit_camera_msgs_TARGETS}
+    ${trajectory_msgs_TARGETS})
 
   # The ToggleTeleop objective, and so IsControllerActive.
   ament_add_gtest(test_toggle_teleop_objective

@@ -53,6 +53,16 @@ namespace stepit_behaviors
  * has stopped, as read on the joint states, and fails after `timeout`
  * seconds. The joints are not synchronised: each one runs its own profile.
  *
+ * Backlash: given `approach_from` and `approach_to`, every moved joint reaches
+ * its target moving in the direction from the one to the other, e.g. from the
+ * first to the last position of a stack. A joint that would get there moving
+ * the other way first goes past its target by its overshoot, then back to it,
+ * so that its gears always end loaded the same way. A joint already at its
+ * target stays, as it got there this way, unless `overshoot_in_place` says
+ * that it may not have, e.g. driven there by hand. The overshoot of a joint is the parameter `overshoot.<joint>` of the
+ * commander's node, in radians, from the robot's parameter file, unless the
+ * port `overshoot` gives it; a joint without one goes straight.
+ *
  * Halting it, or a timeout, deactivates the position controller, without
  * waiting for the answer: the hardware then brakes every joint the controller
  * released to rest, on its own profile, where it naturally stops. Sending the
@@ -84,6 +94,12 @@ private:
   /// @brief Whether every moved joint is within tolerance of its target, and stopped.
   bool arrived() const;
 
+  /// @brief Read the approach direction and the overshoot of each moved joint, if an approach is given.
+  void readApproach();
+
+  /// @brief Whether some joint must first go past its target, given where the joints are; if so, aim there.
+  bool overshoot(const std::vector<double>& current);
+
   std::weak_ptr<rclcpp::Node> node_;
   rclcpp::Logger logger_;
   rclcpp::CallbackGroup::SharedPtr callback_group_;
@@ -96,6 +112,15 @@ private:
   std::vector<std::string> controller_joints_;
   std::vector<std::string> joints_;
   std::vector<double> targets_;
+  /// The targets of the move, while targets_ holds those of the overshoot before it.
+  std::vector<double> final_targets_;
+  /// Per moved joint: +1 or -1, the direction of its final approach, or 0 for none.
+  std::vector<double> directions_;
+  /// Per moved joint: how far past its target it first goes, in radians.
+  std::vector<double> overshoots_;
+  bool overshoot_in_place_{ false };
+  bool overshooting_{ false };
+  bool approach_decided_{ false };
   double tolerance_{ 0.0 };
   double velocity_tolerance_{ 0.0 };
   double timeout_{ 0.0 };

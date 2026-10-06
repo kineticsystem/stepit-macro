@@ -72,6 +72,19 @@ def test_the_commander_loads_the_rig_behaviors_and_objectives():
     assert commander["behavior_trees"] == ["stepit_objectives/objectives"]
 
 
+def test_every_motor_of_the_rig_overshoots_against_backlash():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    for joint in ("joint1", "joint2"):
+        assert commander["overshoot"][joint] > 0
+
+
+def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["state_file"].startswith("~/ws/state/")
+
+
 def test_the_camera_and_its_web_server_share_the_pictures_folder():
     _, parameters = rig.split_config(load_config())
     camera = parameters["camera"]["ros__parameters"]

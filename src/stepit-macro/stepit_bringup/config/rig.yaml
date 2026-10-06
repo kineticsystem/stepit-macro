@@ -76,6 +76,21 @@ stepit_server:
     behavior_trees:
       - stepit_objectives/objectives
 
+    # The parameters of the rig's behaviors, which the plugin declares on the
+    # commander's node: the commander itself knows nothing about them.
+    #
+    # Backlash: a move that approaches its position against the direction of
+    # the stack, e.g. the rail back to the near mark, first goes this far past
+    # it, in radians of the motor, then back. It must exceed the backlash of
+    # each axis. Estimates, a tenth of a turn for the rail and a twentieth for
+    # the stage, until measured: see TODO.md.
+    overshoot:
+      joint1: 0.31  # the rotary stage
+      joint2: 0.63  # the rail
+    # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
+    # not configuration, in the repo's state folder, which git ignores.
+    state_file: ~/ws/state/stack.yaml
+
 # The camera, and its web server, which serves the pictures from the same
 # folder. The repo is mounted at ~/ws: the pictures land in its `pictures`
 # folder on the host. See camera.yaml of StepIt Camera for the other

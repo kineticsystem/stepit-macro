@@ -78,4 +78,28 @@ std::vector<double> getNumbersOr(const BT::TreeNode& node, const std::string& po
   return { fallback };
 }
 
+bool isGiven(const BT::TreeNode& node, const std::string& port)
+{
+  const auto& ports = node.config().input_ports;
+  const auto it = ports.find(port);
+  return it != ports.end() && !it->second.empty();
+}
+
+std::vector<double> requireNumbers(const BT::TreeNode& node, const std::string& port)
+{
+  auto numbers = getNumbers(node, port);
+  if (!numbers || numbers->empty())
+  {
+    throw BT::RuntimeError(node.registrationName(), ": [", port, "] must be a number, or a list of numbers");
+  }
+  return std::move(numbers.value());
+}
+
+BT::PortsList::value_type optionalInput(const std::string& name, const std::string& description)
+{
+  auto port = BT::InputPort<BT::AnyTypeAllowed>(name, description);
+  port.second.setDefaultValue(std::string());
+  return port;
+}
+
 }  // namespace stepit_behaviors

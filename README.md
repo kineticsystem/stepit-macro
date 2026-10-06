@@ -293,6 +293,8 @@ the objective, i.e. after the `target_tree` of the command:
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
+| [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. |
+| [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
 
 Run one from a terminal in the container, opened with `./docker/dock.sh shell`, e.g. to turn `joint1` and `joint3` by one turn clockwise:
 
@@ -306,8 +308,17 @@ ros2 action send_goal /commander/execute_objective \
 The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
-on a subscription (`CommandJointPositions`) and pure logic (`OffsetVector`,
-`TrapezoidalTrajectory`). `Steps` is a decorator that loops over values.
+on a subscription (`CommandJointPositions`), pure logic (`OffsetVector`,
+`SetJoints`, `TrapezoidalTrajectory`) and a file (`SaveValues`, `LoadValues`).
+`Steps` is a decorator that loops over values, and `ExpectPicture` one that
+waits for the camera's picture of the shot it wraps.
+
+Some behaviors read parameters of their own from the commander's section of
+`rig.yaml`, which the plugin declares on the commander's node when it loads:
+the overshoot of each motor against backlash, `overshoot.<joint>`, which
+`CommandJointPositions` uses when given an approach, and `state_file`, where
+`SaveValues` and `LoadValues` keep what the objectives remember, e.g. the marks
+of a stack. The commander itself knows nothing about them.
 
 Building a trajectory and following it are separate behaviors, and
 `FollowJointTrajectory` sends whatever trajectory it is given to the controller.

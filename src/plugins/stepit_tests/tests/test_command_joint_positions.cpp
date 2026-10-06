@@ -195,4 +195,107 @@ TEST_F(CommandJointPositionsTest, RefusesAsManyPositionsAsJointsButOne)
   EXPECT_TRUE(robot_->positionCommands().empty());
 }
 
+// Backlash: with an approach, every joint reaches its target moving from
+// approach_from toward approach_to. Joint 2 is at 1.0.
+
+TEST_F(CommandJointPositionsTest, AJointArrivingAgainstTheApproachGoesPastFirst)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="0.5" approach_from="0" approach_to="1" overshoot="0.2")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 2u);
+  EXPECT_NEAR(commands[0][1], 0.3, 1e-9);
+  EXPECT_NEAR(commands[1][1], 0.5, 1e-9);
+  EXPECT_NEAR(robot_->positions()[1], 0.5, 0.01);
+}
+
+TEST_F(CommandJointPositionsTest, AJointArrivingWithTheApproachGoesStraight)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="1.5" approach_from="0" approach_to="1" overshoot="0.2")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 1u);
+  EXPECT_NEAR(commands[0][1], 1.5, 1e-9);
+}
+
+// A joint the move leaves where it is, e.g. the stage while the rail steps,
+// got there the right way: it stays.
+TEST_F(CommandJointPositionsTest, AJointAlreadyThereStays)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="1.0" approach_from="0" approach_to="1" overshoot="0.2")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 1u);
+  EXPECT_NEAR(commands[0][1], 1.0, 1e-9);
+}
+
+// Unless it may have come there the other way, e.g. driven there by hand.
+TEST_F(CommandJointPositionsTest, AJointAlreadyThereGoesPastFirstWhenAsked)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="1.0" approach_from="0" approach_to="1" overshoot="0.2" )"
+                R"(overshoot_in_place="true")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 2u);
+  EXPECT_NEAR(commands[0][1], 0.8, 1e-9);
+  EXPECT_NEAR(commands[1][1], 1.0, 1e-9);
+}
+
+TEST_F(CommandJointPositionsTest, TheApproachCanGoDownward)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="1.2" approach_from="1" approach_to="0" overshoot="0.2")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 2u);
+  EXPECT_NEAR(commands[0][1], 1.4, 1e-9);
+  EXPECT_NEAR(commands[1][1], 1.2, 1e-9);
+}
+
+// Only the joints that would arrive the wrong way go past.
+TEST_F(CommandJointPositionsTest, EachJointHasItsOwnApproach)
+{
+  ASSERT_EQ(run(R"(joint_names="joint1;joint2" positions="1.0;0.5" approach_from="0;0" approach_to="1;1" )"
+                R"(overshoot="0.1;0.2")"),
+            BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 2u);
+  EXPECT_NEAR(commands[0][0], 1.0, 1e-9);
+  EXPECT_NEAR(commands[0][1], 0.3, 1e-9);
+  EXPECT_NEAR(commands[1][1], 0.5, 1e-9);
+}
+
+TEST_F(CommandJointPositionsTest, WithoutAnOvershootAJointGoesStraight)
+{
+  ASSERT_EQ(run(R"(joint_names="joint2" positions="0.5" approach_from="0" approach_to="1")"), BT::NodeStatus::SUCCESS);
+
+  EXPECT_EQ(robot_->positionCommands().size(), 1u);
+}
+
+// The overshoot of each joint comes from the parameters of the commander's
+// node, as rig.yaml sets them.
+TEST_F(CommandJointPositionsTest, TheOvershootComesFromTheParameters)
+{
+  rclcpp::NodeOptions options;
+  options.parameter_overrides({ rclcpp::Parameter("overshoot.joint2", 0.25) });
+  const auto node = std::make_shared<rclcpp::Node>("stepit_tests_overshoot", options);
+  BT::BehaviorTreeFactory factory;
+  stepit_behaviors::registerNodes(factory, BT::RosNodeParams{ node });
+  EXPECT_DOUBLE_EQ(node->get_parameter("overshoot.joint2").as_double(), 0.25);
+
+  auto tree = factory.createTreeFromText(treeXml(R"(joint_names="joint2" positions="0.5" approach_from="0" )"
+                                                 R"(approach_to="1")"));
+  ASSERT_EQ(run(tree), BT::NodeStatus::SUCCESS);
+
+  const auto commands = robot_->positionCommands();
+  ASSERT_EQ(commands.size(), 2u);
+  EXPECT_NEAR(commands[0][1], 0.25, 1e-9);
+  EXPECT_NEAR(commands[1][1], 0.5, 1e-9);
+}
+
 }  // namespace stepit_tests

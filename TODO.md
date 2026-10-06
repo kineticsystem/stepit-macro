@@ -421,3 +421,25 @@ axes, or mark the positions unknown until they are.
 Start with steps 1 and 2 in `framed-serial` and Freezer, and the
 `/dev/serial/by-id/` names, which already help. Leave the port change of
 StepIt at runtime until the panel is built.
+
+## Focus stacking
+
+### 14. Measurements the stack needs
+
+`FocusStack` runs on motor radians, with estimates where nothing was measured
+yet. To measure on the rig:
+
+- **The rail, millimetres per motor turn.** Move it 10 turns with
+  `OffsetJointsDirectlyBy` and measure the travel with calipers. The stack
+  does not need it, its ends are marked where they are, but StepIt UI does, to
+  show the step between two shots next to the depth of field.
+- **The stage, degrees per motor turn**, its gear ratio. Mark the stage, turn
+  its motor a whole number of turns until the mark comes back, and count. Then
+  `FocusStack` can take its angles in degrees of the stage.
+- **The backlash of each axis**, which `overshoot.joint1` and
+  `overshoot.joint2` in `rig.yaml` must exceed: they are a twentieth and a
+  tenth of a turn today, a guess. With the live view at full magnification on
+  a ruler, move forward, then back in steps of 0.01 turn, and count the steps
+  before the image moves.
+- **The settling time** after a move, 500 ms in `focus_stack.xml`: the
+  shortest wait after which two pictures of the same position match.
