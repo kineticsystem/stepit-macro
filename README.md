@@ -313,10 +313,13 @@ ros2 action send_goal /commander/execute_objective \
 The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
-on a subscription (`CommandJointPositions`), pure logic (`OffsetVector`,
-`SetJoints`, `TrapezoidalTrajectory`) and a file (`SaveValues`, `LoadValues`).
-`Steps` is a decorator that loops over values, and `ExpectPicture` one that
-waits for the camera's picture of the shot it wraps.
+on a subscription (`CommandJointPositions`), a latched publisher
+(`ReportProgress`, a stack's progress for every page), a parameter of another
+node (`SetPictureFolder`, the camera's folder of pictures), pure logic
+(`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
+`MillimetresToRadians`, `DegreesToRadians`) and a file (`SaveValues`,
+`LoadValues`). `Steps` is a decorator that loops over values, and
+`ExpectPicture` one that waits for the camera's picture of the shot it wraps.
 
 Some behaviors read parameters of their own from the commander's section of
 `rig.yaml`, which the plugin declares on the commander's node when it loads:
@@ -324,9 +327,11 @@ the overshoot of each motor against backlash, `overshoot.<joint>`, which
 `CommandJointPositions` uses when given an approach; the millimetres a linear
 axis travels per turn of its motor, `mm_per_turn.<joint>`, and the degrees a
 rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
-`DegreesToRadians` convert with; and `state_file`, where
-`SaveValues` and `LoadValues` keep what the objectives remember, e.g. the marks
-of a stack. The commander itself knows nothing about them.
+`DegreesToRadians` convert with; `focus_stack.*`, the defaults of a stack,
+which StepIt UI reads; and `state_file`, where `SaveValues` and `LoadValues`
+keep what the objectives remember, e.g. the marks of a stack. The plugin shows
+that file as the parameters `state.*`, and writes into it what a page sets
+there, e.g. the number of shots. The commander itself knows nothing about them.
 
 Building a trajectory and following it are separate behaviors, and
 `FollowJointTrajectory` sends whatever trajectory it is given to the controller.

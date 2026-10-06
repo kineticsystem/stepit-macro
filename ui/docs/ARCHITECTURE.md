@@ -235,7 +235,8 @@ A store that follows a topic subscribes through `ros()`, and subscribes again on
 
 | Module | Where its interface is | What the page uses |
 |---|---|---|
-| StepIt Commander | [`commander/commander.ts`](../src/commander/commander.ts) | `runObjective` (the action `/commander/execute_objective`), `cancelAll` (its `cancel_goal` service, with a goal of zeros), `followObjectives` (its status topic, transient local). |
+| StepIt Commander | [`commander/commander.ts`](../src/commander/commander.ts) | `runObjective` (the action `/commander/execute_objective`), `cancelAll` (its `cancel_goal` service, with a goal of zeros), `followObjectives` (its status topic, transient local), `followObjective` (the name of the running objective, `/stepit_server/objective`, transient local). |
+| The rig's stack | [`stack/store.ts`](../src/stack/store.ts), [`stack/parameters.ts`](../src/stack/parameters.ts) | The commander's parameters `focus_stack.*` (rig.yaml) and `state.*` (the rig's state file: the marks, the counts), with `get_parameters`, `set_parameters` and `/parameter_events`; FocusStack's progress, `/focus_stack/progress`, transient local. |
 | The camera's driver | [`camera/camera.ts`](../src/camera/camera.ts), the class `Camera` | `get_settings`, `set_parameters`, `start_streaming`, `stop_streaming`, the topic `picture`; the URLs of the live view and of a picture. |
 | The camera's web server | [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts) | A picture's size with `HEAD`, a RAW's JPEG preview with two `Range` requests. |
 | StepIt Freezer | in the store, [`freezer/lights.ts`](../src/freezer/lights.ts), with the bits of a jack in [`freezer/outputs.ts`](../src/freezer/outputs.ts) | `/freezer/set_outputs`, `/freezer/outputs`. |
@@ -250,7 +251,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 |---|---|---|---|
 | `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `objective` (the one running, whoever sent it, from the commander's latched `/stepit_server/objective`), `failure`; `run()`, `stop()` | `followCommander`: the status topic of the action, and the objective's | — |
 | `useCamera` | the settings, the ones `changing` and `refused`, `streaming`, the errors; `refresh()`, `change()`, `setStreaming()` | `followCamera`: reads the settings every 3 s, unless a task runs; starts the live view again after a reconnection | `useCommander` (`busy`), `useSettings` |
-| `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()`, `show()` | `followPictures`: shows every picture on `/camera/picture`, whoever fired it | — | `useCamera`, `useCommander`, `useSettings` |
+| `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()`, `show()` | `followPictures`: shows every picture on `/camera/picture`, whoever fired it | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
 | `useStack` | the rail's marks and the counts, from the rig's state file; the stage's ends from rig.yaml; `marking`, `progress`, from the rig; `setPlan()`, which sets the counts on the rig, `mark()`, `start()`. Nothing in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), the parameters in [`stack/parameters.ts`](../src/stack/parameters.ts), which the tests import | `followStack`: reads the commander's `focus_stack.*` and `state.*` on every connection, follows `/parameter_events` and the latched `/focus_stack/progress` | `useCommander`, `useCamera` |
@@ -316,12 +317,14 @@ flowchart TB
     Shot --> Commander["useCommander"]
     Camera --> Commander
     Motion["useMotion"] --> Commander
+    Stack["useStack"] --> Commander
+    Stack --> Camera
     Camera --> Settings["useSettings"]
 
     classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
 ```
 
-`useShot` also reads `useSettings`, for the address of the pictures, and `useLights` depends on no other store. The stores form no cycle, and `useCommander` is the one they all lean on: whether a task runs decides what may be changed.
+`useShot` also reads `useSettings`, for the address of the pictures, `useStack` stops the live view through `useCamera` before a stack, and `useLights` depends on no other store. The stores form no cycle, and `useCommander` is the one they all lean on: whether a task runs decides what may be changed.
 
 ## A Shot, from the Button to the Picture
 
@@ -387,18 +390,20 @@ sequenceDiagram
     participant Rig as rosbridge
     participant Web as web server
 
+    Note over Shot: followPictures: listening since the page opened
     Note over Shot: stop the live view
-    Shot->>Rig: subscribe picture
     Shot->>Rig: run TakeShot
-    Rig-->>Shot: picture: IMG_0042.CR2
-    Shot->>Web: HEAD, Range
+    Note over Rig: SetPictureFolder tests, then Shoot
+    Rig-->>Shot: picture: tests/IMG_0042.CR2
+    Shot->>Web: HEAD, Range /pictures/tests/IMG_0042.CR2
     Web-->>Shot: JPEG preview
     Rig-->>Shot: TakeShot succeeded
     Note over Shot: wait 2 s for a second file
-    Shot->>Rig: unsubscribe picture
 ```
 
-The Toolbar's button calls `takeShot()`. The live view is stopped through `useCamera`, and the objective runs through `useCommander`, which the diagram leaves out: both talk to rosbridge. If the objective ends before any picture came, the store waits up to 30 s for one, then says why none came.
+The Toolbar's button calls `takeShot()`. The live view is stopped through `useCamera`, and the objective runs through `useCommander`, which the diagram leaves out: both talk to rosbridge. **Every page shows every picture**: `followPictures` hands each one the camera reports to `show()`, whoever fired the shot, a test shot or a stack, from this page or another device; `takeShot()` only listens to know whether one came. If the objective ends before any picture came, the store waits up to 30 s for one, then says why none came.
+
+The picture is loaded at its `relative_path` under `/pictures`: a test shot's is in `tests`, a stack's in the stack's folder and the folder of its angle, which the rig chose.
 
 The page shows only the latest picture, and keeps two, the files of a shot in RAW+JPEG ([`shot/pictures.ts`](../src/shot/pictures.ts)). The preview of a RAW is an object URL, which holds its JPEG in memory until revoked: a picture the page drops is released, and so is one dropped while it was still loading.
 

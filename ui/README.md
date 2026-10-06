@@ -19,10 +19,13 @@
 StepIt UI is the application of [StepIt Macro](../README.md), an automated macro photography rig for 3D focus stacking: a camera on a motorized rail, on a rotary stage, with lights. It puts the whole rig on one web page, made for a tablet with a touch screen on the rig's network, and usable from a desktop too.
 
 - See what the camera sees, live, and set the ISO, the shutter speed, the aperture, the white balance and the exposure compensation.
-- Take a shot, fired by the Freezer board with the lights, and see and download its pictures.
+- Take a test shot, fired by the Freezer board with the lights, and see its picture.
 - Switch the lights on and off.
 - Drive the rotary stage and the rail by hand, with two vertical sliders under the thumbs, which work like the sticks of a gamepad.
+- Mark the two ends of a focus stack on the rail, and shoot the stack at every angle of the stage, watching its progress and its pictures.
 - Stop whatever the rig does, from a button always at the end of the toolbar.
+
+Every page shows the same, whichever device opened it, and when: what runs, the marks and the counts of a stack, its progress and its pictures come from the rig, not from the page that started them.
 
 It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS in the browser: it talks to the rig through [rosbridge](https://github.com/RobotWebTools/rosbridge_suite), a WebSocket that speaks JSON.
 
@@ -30,14 +33,17 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 
 | Part | What it does | Through |
 |---|---|---|
-| Top bar | Whether the page reaches the rig, which task runs, and why the last task of this page failed. | the commander |
-| **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last photo, with its name and **Download**. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
-| **Take a shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights. The picture takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
+| Top bar | Whether the page reaches the rig, which task runs, whoever started it, and why the last task of this page failed. | the commander |
+| **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last picture the camera took, whoever fired it. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
+| **Test shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights, and the picture goes into the folder `tests` of the pictures. It takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | On and off. On, it runs the objective `ActivateTeleop`, and the sliders drive the joints; the button is green. Pressed again, it releases the sliders and runs `ActivateController` with `joint_trajectory_controller`, the controller the rig starts with. | the commander |
-| **Camera** | A panel of the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens. | the camera's driver |
+| **Settings** | Under the gear, on three tabs: the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens; the theme; the servers. | the camera's driver |
+| **Mark** | Above and below the rail's slider: the ends of a stack, the camera away from the subject above, close to it below. Runs `MarkNear` or `MarkFar`, which save where the rail is in the rig's state file; reads **Marked** once marked, on every page. | the commander |
+| Stage's ends | Above and below the stage's slider, shown only: the angles a stack turns the stage to and from, `focus_stack` of `rig.yaml`. | the commander's parameters |
+| **Stack** | Under the live view, with **Shots** and **Angles**, which the rig keeps in its state file: runs `FocusStack`. While it runs, a progress bar fills as its pictures come, on every page, and each picture takes the place of the live view. | the commander, `/focus_stack/progress` |
 | **Stop** | At the end of the toolbar, always in the same place: stops every task, whoever started it, and lets the sliders go. Red while a task runs, or while the page does not know yet whether one does. | the commander |
-| Sliders | One at each edge, under each thumb: the rotary stage (`joint1`) on the left, up to 0.75 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up. | `ui_teleop` |
+| Sliders | One at each edge, under each thumb, with an icon on the knob: the rotary stage (`joint1`) on the left, up to 0.75 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up: it turns the stage clockwise, and moves the camera away from the subject. | `ui_teleop` |
 
 While a task runs, the page locks the camera's settings and the lights, so that a shoot is not changed halfway through.
 
@@ -110,11 +116,13 @@ It reconnects on its own, and subscribes and advertises again; a message publish
 
 ### Tasks and Configuration
 
-**Only the robot's tasks go through the commander**, StepIt Commander, as objectives: a shot (`TakeShot`), and handing the robot to the user (`ActivateTeleop`). The commander runs one objective at a time, and a new one replaces the one running, which is what a task should do: driving by hand stops a move.
+**Only the robot's tasks go through the commander**, StepIt Commander, as objectives: a shot (`TakeShot`), handing the robot to the user (`ActivateTeleop`), marking and shooting a stack (`MarkNear`, `MarkFar`, `FocusStack`). The commander runs one objective at a time, and a new one replaces the one running, which is what a task should do: driving by hand stops a move.
 
 **Configuring the rig goes straight to the drivers**: the camera's settings (`/camera/set_parameters`, `/camera/get_settings`), its live view (`/camera/start_streaming`, `/camera/stop_streaming`) and the lights (`/freezer/set_outputs`). Through the commander, a change of ISO would replace a running shoot.
 
-The page knows whether an objective runs, whoever started it, from the status topic of the commander's action, `/commander/execute_objective/_action/status`. **Stop** cancels every goal of the action, as `ros2 service call /commander/execute_objective/_action/cancel_goal action_msgs/srv/CancelGoal "{}"` does.
+The page knows whether an objective runs, whoever started it, from the status topic of the commander's action, `/commander/execute_objective/_action/status`, and which one from the commander's `/stepit_server/objective`. Both are latched: a page opened at any time gets them at once.
+
+**What the rig keeps, every page shows.** The page keeps nothing of the rig in the browser, only its own preferences, e.g. the theme. The marks of the rail and the counts of a stack are in the rig's state file, which the commander shows as its parameters `state.*`: the page reads them on every connection, follows them on `/parameter_events`, and sets the counts there, so that a mark or a count set on one device shows on every other. A running stack says how far it is on `/focus_stack/progress`, latched. **Stop** cancels every goal of the action, as `ros2 service call /commander/execute_objective/_action/cancel_goal action_msgs/srv/CancelGoal "{}"` does.
 
 ### The Sliders
 
@@ -131,7 +139,9 @@ The sliders work while the velocity controller runs, which the page reads from t
 
 We stream to frame the subject, and take pictures with the live view off: a shot stops it, and the last picture takes its place. A Canon EOS breaks its live view during a shot anyway.
 
-The camera is fired by StepIt Freezer, through its jack, not over USB: the camera's driver sees the new file, downloads it, and tells of it on `/camera/picture`. The page listens before the shot, so that the picture cannot come first, and loads it from the camera's web server, as StepIt Camera's test page does: a JPEG as it is, the preview inside a RAW with two `Range` requests. The server allows every origin, so the page, served from another port, can load the pictures and download them: the `download` attribute of a link is ignored across origins, so **Download** fetches the file first. The page asks the size of a picture first, with a `HEAD` request, and never reads past its end: the server, cpp-httplib 0.14, answers a range past the end with a wrong `Content-Length`, which the browser drops.
+The camera is fired by StepIt Freezer, through its jack, not over USB: the camera's driver sees the new file, downloads it, and tells of it on `/camera/picture`. Every page listens all the time, and shows every picture, whoever fired it. It loads it from the camera's web server at its `relative_path`, in the folder the rig chose (`tests` for a test shot, the stack's folder and its angle's for a stack), as StepIt Camera's test page does: a JPEG as it is, the preview inside a RAW with two `Range` requests. The server allows every origin, so the page, served from another port, can load the pictures. The page asks the size of a picture first, with a `HEAD` request, and never reads past its end: the server, cpp-httplib 0.14, answers a range past the end with a wrong `Content-Length`, which the browser drops.
+
+The files stay on the rig, in the folder `pictures` of the repo: the page neither names nor downloads them.
 
 ## Tests
 
@@ -140,12 +150,14 @@ The camera is fired by StepIt Freezer, through its jack, not over USB: the camer
 | Test | What it covers |
 |---|---|
 | `rosbridge.test.ts` | Services, subscriptions, fragments, reconnection, publishing and action goals. |
-| `commander.test.ts` | Running an objective, how it ended, stopping them all, and whether one runs. |
-| `camera.test.ts` | The camera's settings, live view and pictures, and how the settings are shown. |
+| `commander.test.ts` | Running an objective, how it ended, stopping them all, whether one runs, and which. |
+| `camera.test.ts` | The camera's settings, live view and pictures, their address in their folder, and how the settings are shown. |
 | `picture.test.ts`, `raw.test.ts` | Loading a picture, and the preview inside a RAW. |
 | `shot.test.ts` | The pictures kept, the latest two, and the previews of the others released. |
 | `joy.test.ts` | The sliders as a gamepad: what is sent, and how often. |
-| `axis.test.ts` | A slider as an axis, and the speed it asks for. |
+| `axis.test.ts` | A slider as an axis. |
+| `stack.test.ts` | The plan of a stack: the pictures it takes, the payload of `FocusStack`, what stops it from running, the defaults. |
+| `stackParameters.test.ts` | The stack as the rig keeps it, in the commander's parameters: the marks, the counts, rig.yaml's angles. |
 | `lights.test.ts` | The lights as outputs of the Freezer board. |
 
 The page itself, its layout on a tablet and the touch of the sliders, has no automated test: check it by hand on the rig.
