@@ -24,19 +24,6 @@ export const DEFAULT_PLAN: StackPlan = { shots: 10, stageFrom: -17, stageTo: 17,
 /** An end of the stage's turn: from, below its slider, and to, above. */
 export type StageEnd = 'from' | 'to';
 
-/**
- * The angle of an end of the stage's turn, in degrees from where the stage is
- * now: the configured one, or, when the end was marked at a position of the
- * stage's motor, in radians, how far that is from where the motor is now.
- * Undefined while a mark cannot be converted: the ratio or the position is
- * unknown.
- */
-export function stageAngle(configured: number, mark?: number, now?: number, degPerTurn?: number): number | undefined {
-  if (mark === undefined) return configured;
-  if (now === undefined || !degPerTurn) return undefined;
-  return ((mark - now) / TURN) * degPerTurn;
-}
-
 /** How many pictures a plan takes. */
 export const totalShots = (plan: StackPlan) => plan.shots * plan.angles;
 

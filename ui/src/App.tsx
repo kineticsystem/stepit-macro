@@ -4,7 +4,7 @@ import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
 import { RailMark } from './components/RailMark';
-import { StageMark } from './components/StageMark';
+import { StageEnd } from './components/StageEnd';
 import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
 import { StackBar } from './components/StackBar';
@@ -62,7 +62,7 @@ function SideSlider({ index }: { index: number }) {
   return (
     <aside className="side-slider">
       {marks && <RailMark end="near" />}
-      {limits && <StageMark end="to" />}
+      {limits && <StageEnd end="to" />}
       <Slider
         label={slider.label}
         icon={slider.joint === 'joint1' ? <RotateIcon /> : <RailIcon />}
@@ -71,7 +71,7 @@ function SideSlider({ index }: { index: number }) {
         onChange={(value) => setAxis(slider.axis, value)}
       />
       {marks && <RailMark end="far" />}
-      {limits && <StageMark end="from" />}
+      {limits && <StageEnd end="from" />}
     </aside>
   );
 }

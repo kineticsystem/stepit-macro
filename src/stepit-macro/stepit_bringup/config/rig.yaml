@@ -101,8 +101,7 @@ stepit_server:
       joint1: 4.5
     # The angles a focus stack turns the stage between, in degrees from where
     # the stage is when the stack starts. StepIt UI shows them at the ends of
-    # the stage's slider, and its Mark buttons there override them until the
-    # rig restarts: they are never saved.
+    # the stage's slider, and sends them to FocusStack.
     focus_stack:
       stage_from: -17.0
       stage_to: 17.0
