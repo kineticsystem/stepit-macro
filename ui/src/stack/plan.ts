@@ -15,9 +15,9 @@ export interface StackPlan {
 }
 
 /**
- * By default, 35 angles from -17 to 17 degrees: one every degree. The angles
- * come from focus_stack.stage_from and stage_to of the commander, which
- * rig.yaml sets; these are for before the page has read them.
+ * By default, 10 shots at 35 angles from -17 to 17 degrees: one every degree.
+ * The rig's own come from the commander's parameters, which rig.yaml and the
+ * rig's state file set; these are for before the page has read them.
  */
 export const DEFAULT_PLAN: StackPlan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 

@@ -20,8 +20,10 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -48,7 +50,11 @@ namespace stepit_behaviors
  * The commander knows nothing about them: registerNodes declares them on its
  * node, so that they show in `ros2 param list` and can be read, by the
  * behaviors and by the pages of the rig: `focus_stack.*` is read by StepIt UI
- * alone, the defaults of its stack.
+ * alone, the defaults of its stack. It also shows what the state file holds
+ * as `state.<key>`, see publishState, and writes into the file every
+ * `state.<key>` a page sets, e.g. the number of shots a page typed:
+ * `state.shots` and `state.angles` exist from the start, with the defaults
+ * `focus_stack.shots` and `focus_stack.angles`.
  */
 void declareParameters(rclcpp::Node& node);
 
@@ -63,6 +69,21 @@ std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string&
 
 /// @brief The YAML file where SaveValues and LoadValues keep their values, `state_file`, with `~` expanded.
 std::string stateFileParameter(rclcpp::Node& node);
+
+/**
+ * @brief Save numbers under a name in a YAML file, keeping the other names:
+ * to a temporary file first, then renamed, so that a crash never leaves it
+ * half written. Throws on failure.
+ */
+void writeStateValues(const std::filesystem::path& path, const std::string& key, const std::vector<double>& values);
+
+/**
+ * @brief Show values saved in the state file as the parameter `state.<key>`
+ * of the commander's node, e.g. state.near, for the pages of the rig to read,
+ * and to follow on /parameter_events: what one page marked, every page knows.
+ * The node declares it the first time.
+ */
+void publishState(rclcpp::Node& node, const std::string& key, const std::vector<double>& values);
 
 /// @brief The default of `state_file`.
 inline constexpr auto kDefaultStateFile = "~/.ros/stepit_state.yaml";
