@@ -28,6 +28,7 @@
 #include "stepit_behaviors/is_controller_active.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
 #include "stepit_behaviors/parameters.hpp"
+#include "stepit_behaviors/picture_folder.hpp"
 #include "stepit_behaviors/shoot.hpp"
 #include "stepit_behaviors/cubic_trajectory.hpp"
 #include "stepit_behaviors/expect_picture.hpp"
@@ -68,6 +69,12 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   BT::RosNodeParams shoot_params = params;
   shoot_params.default_port_value = "/freezer/shoot";
   factory.registerNodeType<Shoot>("Shoot", shoot_params);
+
+  // The camera node's parameters, unless the tree names another service in service_name.
+  BT::RosNodeParams camera_params = params;
+  camera_params.default_port_value = "/camera/set_parameters";
+  factory.registerNodeType<SetPictureFolder>("SetPictureFolder", camera_params);
+  factory.registerNodeType<CurrentTime>("CurrentTime");
 }
 
 }  // namespace stepit_behaviors

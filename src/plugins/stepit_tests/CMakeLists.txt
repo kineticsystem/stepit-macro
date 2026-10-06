@@ -231,7 +231,8 @@ if(BUILD_TESTING)
     stepit_server::stepit_server
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
-    ${freezer_msgs_TARGETS})
+    ${freezer_msgs_TARGETS}
+    ${stepit_camera_msgs_TARGETS})
 
   ament_add_gtest(test_activate_controller_objective
     tests/test_activate_controller_objective.cpp)

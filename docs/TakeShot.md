@@ -14,10 +14,14 @@ ros2 action send_goal /commander/execute_objective \
 
 ```
 TakeShot
-└── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
+└── Sequence
+    ├── SetPictureFolder   tests   (where the camera saves the picture)
+    └── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
 ```
 
-The objective is the behavior `Shoot` alone, which another objective uses as one of its steps, e.g. a shot at each position of a stack. The objective cannot have the name of the behavior: BehaviorTree.CPP refuses a tree named like a node.
+**A test shot goes into the folder `tests`** of the camera's pictures, apart from the folders of the stacks, see [`FocusStack`](FocusStack.md). StepIt UI's **Test shot** runs this objective.
+
+The shot is the behavior `Shoot`, which another objective uses as one of its steps, e.g. a shot at each position of a stack. The objective cannot have the name of the behavior: BehaviorTree.CPP refuses a tree named like a node.
 
 **The sequences belong to the rig, not to the objective.** Which jack holds a camera, a flash or a light, and the timing of each step, are parameters of the Freezer node, in the section `freezer` of `rig.yaml`. On the rig today, the camera is on OUT8 and the lights on OUT1, and `test_shot` is a `timed_light` sequence: it focuses the camera, opens its shutter, switches the lights on and off, then releases the camera. The exposure of the camera must last until the lights are off, see the timings in `rig.yaml`.
 

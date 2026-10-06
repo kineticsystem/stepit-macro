@@ -60,7 +60,7 @@ export const useShot = create<ShotState>((set, get) => {
         first();
         const added: ShotPicture = {
           name: picture.name, path: picture.path,
-          file: Camera.pictureUrl(picture.path, picturesUrl(useSettings.getState())),
+          file: Camera.pictureUrl(picture, picturesUrl(useSettings.getState())),
         };
         keep((pictures) => withPicture(pictures, added));
         void load(added).then((loaded) => keep((pictures) => withLoaded(pictures, added, loaded)));

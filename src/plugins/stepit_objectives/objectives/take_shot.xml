@@ -14,8 +14,9 @@
       btcpp_ros2_interfaces/action/ExecuteTree \
       "{target_tree: TakeShot, payload: '{sequence: test_shot}'}"
 
-  The tree is one node, the behavior Shoot: BehaviorTree.CPP does not let a
-  tree have the name of a node.
+  Its picture goes into the folder tests of the camera's pictures, apart from
+  those of the stacks, as StepIt UI's Test shot is. The tree is named TakeShot,
+  not Shoot: BehaviorTree.CPP does not let a tree have the name of a node.
 
   A shot that has started always runs to its end, even when another objective
   replaces this one: the Freezer refuses to stop it, so that the shutters close.
@@ -23,8 +24,11 @@
 <root BTCPP_format="4" main_tree_to_execute="TakeShot">
 
   <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
-    <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
-           sequence="{@sequence}"/>
+    <Sequence>
+      <SetPictureFolder _description="A test shot goes into the folder tests of the pictures." folder="tests"/>
+      <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
+             sequence="{@sequence}"/>
+    </Sequence>
   </BehaviorTree>
 
   <!-- The payload of the objective, for editors: what each entry is, with an example. -->

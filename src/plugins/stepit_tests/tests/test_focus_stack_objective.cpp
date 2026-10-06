@@ -27,6 +27,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -187,6 +188,31 @@ TEST_F(FocusStackObjective, ShootsAtEveryRailPositionOfEveryAngle)
   EXPECT_EQ(freezer_->fired().size(), 6u);
   EXPECT_EQ(camera_->taken(), 6);
   EXPECT_EQ(manager_->stateOf("position_controller"), "active");
+}
+
+// The pictures of a stack go into a folder named after when it started, with
+// one folder per angle, its number and its angle; then back to the pictures
+// folder itself.
+TEST_F(FocusStackObjective, EachAngleHasAFolderOfPicturesInTheStacksFolder)
+{
+  mark(1.0, 2.0);
+  ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 }), BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  const std::regex stack_folder{ R"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})" };
+  const auto stack = folders[0].substr(0, folders[0].find('/'));
+  EXPECT_TRUE(std::regex_match(stack, stack_folder)) << stack;
+  EXPECT_EQ(folders[0], stack + "/angle_01_-1.0deg");
+  EXPECT_EQ(folders[1], stack + "/angle_02_1.0deg");
+  EXPECT_EQ(folders[2], "");
+
+  const auto pictures = camera_->pictures();
+  ASSERT_EQ(pictures.size(), 6u);
+  for (std::size_t i = 0; i < 6; ++i)
+  {
+    EXPECT_EQ(pictures[i].rfind(folders[i / 3] + "/", 0), 0u) << pictures[i];
+  }
 }
 
 // Every move approaches its position from the start of the stack: the rail

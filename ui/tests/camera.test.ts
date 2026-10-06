@@ -62,13 +62,27 @@ describe('the camera over rosbridge', () => {
     expect(socket.lastSent('subscribe')).toMatchObject({
       topic: '/camera/picture', type: 'stepit_camera_msgs/msg/Picture', qos: { reliability: 'reliable' },
     });
-    socket.receive({ op: 'publish', topic: '/camera/picture', msg: { name: 'IMG_0001.JPG', path: '/p/IMG_0001_1.JPG' } });
-    expect(listener).toHaveBeenCalledWith({ name: 'IMG_0001.JPG', path: '/p/IMG_0001_1.JPG' });
+    socket.receive({
+      op: 'publish', topic: '/camera/picture',
+      msg: { name: 'IMG_0001.JPG', path: '/p/tests/IMG_0001_1.JPG', relative_path: 'tests/IMG_0001_1.JPG' },
+    });
+    expect(listener).toHaveBeenCalledWith({
+      name: 'IMG_0001.JPG', path: '/p/tests/IMG_0001_1.JPG', relativePath: 'tests/IMG_0001_1.JPG',
+    });
   });
 
-  it('loads a saved picture from the web server, under the name it was saved with', () => {
-    expect(Camera.pictureUrl('/home/developer/ws/pictures/IMG_0001_1.CR2', 'http://rig:8090')).toBe('http://rig:8090/pictures/IMG_0001_1.CR2');
-    expect(Camera.pictureUrl('/p/IMG 1#.JPG', 'http://camera-pc:8090')).toBe('http://camera-pc:8090/pictures/IMG%201%23.JPG');
+  it('loads a saved picture from the web server, in its folder', () => {
+    const picture = { path: '/home/developer/ws/pictures/2026-10-06_15-20-04/angle_01_-17.0deg/IMG_0001_1.CR2',
+      relativePath: '2026-10-06_15-20-04/angle_01_-17.0deg/IMG_0001_1.CR2' };
+    expect(Camera.pictureUrl(picture, 'http://rig:8090')).toBe(
+      'http://rig:8090/pictures/2026-10-06_15-20-04/angle_01_-17.0deg/IMG_0001_1.CR2');
+    expect(Camera.pictureUrl({ path: '/p/tests/IMG 1#.JPG', relativePath: 'tests/IMG 1#.JPG' }, 'http://camera-pc:8090'))
+      .toBe('http://camera-pc:8090/pictures/tests/IMG%201%23.JPG');
+  });
+
+  it('loads a picture of an older driver under the name it was saved with', () => {
+    expect(Camera.pictureUrl({ path: '/home/developer/ws/pictures/IMG_0001_1.CR2', relativePath: '' }, 'http://rig:8090'))
+      .toBe('http://rig:8090/pictures/IMG_0001_1.CR2');
   });
 
   it('streams the live view through web_video_server, without decoding it', () => {
