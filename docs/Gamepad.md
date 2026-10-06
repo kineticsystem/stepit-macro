@@ -179,11 +179,11 @@ The configuration maps the joints as follows; the motors allow up to 18.85 rad/s
 
 | Joint | Axis | Velocity at full deflection |
 |---|---|---|
-| `joint1`, the rotary stage | `0`, left stick left/right: right turns it clockwise | `3.1416` rad/s, 0.5 turns/s: a quarter of the rail's, the subject turns on it |
+| `joint1`, the rotary stage | `0`, left stick left/right: right turns it counter-clockwise | `-3.1416` rad/s, 0.5 turns/s: a quarter of the rail's, the subject turns on it; negative, so that right is positive |
 | `joint2`, the rail | `3`, right stick up/down | `12.566` rad/s, 2 turns/s |
 | `joint3`, `joint4`, `joint5` | none: the rig has no other motor | held at 0 |
 
-A stick pushed up, or left, is positive: `joy_linux_node` turns the Linux joystick's sign around, so that up and left are 1. The rail's stick is the same way round as its slider in StepIt UI; the stage's stick, pushed right, gives a negative velocity, which turns a StepIt motor clockwise.
+A stick pushed up, or left, is positive: `joy_linux_node` turns the Linux joystick's sign around, so that up and left are 1. The rail's stick is the same way round as its slider in StepIt UI; the stage's stick, pushed right, would give a negative velocity, which turns a StepIt motor clockwise: its negative scale turns it around, so that right turns the stage counter-clockwise.
 
 ### Launch Arguments
 
