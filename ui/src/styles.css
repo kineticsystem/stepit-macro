@@ -190,7 +190,7 @@ button.live.on, button.lights.on, button.engaged {
 button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
   background: var(--ok); filter: brightness(1.08);
 }
-/* The focus stack, under the live view: what it shoots, the counts, Stack. */
+/* The focus stack, under the live view: Stack, the counts, what it shoots. */
 .stack-bar {
   flex: none;
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
@@ -205,7 +205,7 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .rail-mark.top { margin-bottom: 8px; }
 .rail-mark.bottom { margin-top: 8px; }
 .rail-mark button { width: 100%; }
-.stack-progress { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.stack-progress { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; white-space: nowrap; }
 
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
 

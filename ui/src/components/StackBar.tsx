@@ -3,10 +3,11 @@ import { useCommander } from '../commander/store';
 import { useStatus } from '../ros/connection';
 import { planProblem, railStep, railText, totalShots } from '../stack/plan';
 import { planOf, useStack } from '../stack/store';
+import { LayersIcon } from './icons';
 
 /**
- * A focus stack, under the live view: what it will shoot, then the counts
- * and Stack, which shoots it. The ends themselves are at
+ * A focus stack, under the live view: Stack, which shoots it, the counts,
+ * and what it will shoot. The ends themselves are at
  * the ends of the sliders, see RailMark and StageMark: for the rail, we drive the camera away from the subject until its front is
  * sharp and mark above the slider, then close to it until its back is sharp
  * and mark below. Stack runs FocusStack, which takes the robot, and shows how
@@ -25,19 +26,9 @@ export function StackBar() {
 
   return (
     <div className="stack-bar">
-      <span className="stack-summary muted small">
-        {depth !== undefined ? `${railText(depth, stack.mmPerTurn)} deep · ` : 'Mark both ends on the rail · '}
-        {Number.isFinite(plan.stageFrom) && Number.isFinite(plan.stageTo)
-          ? `stage ${plan.stageFrom.toFixed(1)}° to ${plan.stageTo.toFixed(1)}° · `
-          : ''}
-        {totalShots(plan)} pictures
-        {step !== undefined && ` · ${railText(step, stack.mmPerTurn)} apart`}
-      </span>
-      <span className="row-spacer" />
-      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
-      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
       {stack.progress ? (
         <span className="stack-progress">
+          <LayersIcon />
           Picture {stack.progress.taken} of {stack.progress.total}
         </span>
       ) : (
@@ -47,9 +38,20 @@ export function StackBar() {
           title={problem ?? 'Shoot the stack: the robot moves'}
           onClick={() => void stack.start()}
         >
+          <LayersIcon />
           Stack
         </button>
       )}
+      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
+      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
+      <span className="stack-summary muted small">
+        {depth !== undefined ? `${railText(depth, stack.mmPerTurn)} deep · ` : 'Mark both ends on the rail · '}
+        {Number.isFinite(plan.stageFrom) && Number.isFinite(plan.stageTo)
+          ? `stage ${plan.stageFrom.toFixed(1)}° to ${plan.stageTo.toFixed(1)}° · `
+          : ''}
+        {totalShots(plan)} pictures
+        {step !== undefined && ` · ${railText(step, stack.mmPerTurn)} apart`}
+      </span>
     </div>
   );
 }
