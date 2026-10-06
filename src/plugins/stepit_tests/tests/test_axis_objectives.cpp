@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// End to end test of the MoveRailBy objective: the XML shipped by
-// stepit_objectives, against a fake robot, with the rail's ratio set as the
-// commander's parameter, as rig.yaml sets it.
+// End to end tests of MoveRailBy and RotateStageBy: the XML shipped by
+// stepit_objectives, against a fake robot, with the ratios of the axes set as
+// the commander's parameters, as rig.yaml sets them.
 
 #include <cmath>
 #include <memory>
@@ -50,9 +50,11 @@ const std::vector<double> kJointPositions{ 0.5, 1.0, 0.0, -1.0, 2.0 };
 
 /// 2 mm per turn: 1 mm is half a turn, pi radians.
 constexpr double kMmPerTurn = 2.0;
+/// 90 degrees per turn: 45 degrees is half a turn, pi radians.
+constexpr double kDegPerTurn = 90.0;
 }  // namespace
 
-class MoveRailByObjective : public testing::Test
+class AxisObjectives : public testing::Test
 {
 protected:
   void SetUp() override
@@ -81,7 +83,7 @@ protected:
   {
     rclcpp::NodeOptions options;
     options.parameter_overrides(parameters);
-    node_ = std::make_shared<rclcpp::Node>("stepit_tests_move_rail_by", options);
+    node_ = std::make_shared<rclcpp::Node>("stepit_tests_axis_objectives", options);
     BT::RosNodeParams params;
     params.nh = node_;
     params.server_timeout = std::chrono::milliseconds{ 2000 };
@@ -89,6 +91,7 @@ protected:
     stepit_behaviors::registerNodes(factory_, params);
     factory_.registerBehaviorTreeFromFile(treePath("objectives", "ensure_controllers.xml").string());
     factory_.registerBehaviorTreeFromFile(treePath("objectives", "move_rail_by.xml").string());
+    factory_.registerBehaviorTreeFromFile(treePath("objectives", "rotate_stage_by.xml").string());
   }
 
   rclcpp::Node::SharedPtr node_;
@@ -97,7 +100,7 @@ protected:
   BT::BehaviorTreeFactory factory_;
 };
 
-TEST_F(MoveRailByObjective, MovesTheRailByMillimetres)
+TEST_F(AxisObjectives, MovesTheRailByMillimetres)
 {
   load({ rclcpp::Parameter("mm_per_turn.joint2", kMmPerTurn) });
   ASSERT_EQ(runObjective(factory_, "MoveRailBy", "{mm: 3.0}"), BT::NodeStatus::SUCCESS);
@@ -108,7 +111,7 @@ TEST_F(MoveRailByObjective, MovesTheRailByMillimetres)
   EXPECT_NEAR(robot_->positions()[1], 1.0 + 3.0 * M_PI, 0.01);
 }
 
-TEST_F(MoveRailByObjective, ANegativeDistanceMovesTheOtherWay)
+TEST_F(AxisObjectives, ANegativeDistanceMovesTheOtherWay)
 {
   load({ rclcpp::Parameter("mm_per_turn.joint2", kMmPerTurn) });
   ASSERT_EQ(runObjective(factory_, "MoveRailBy", "{mm: -1}"), BT::NodeStatus::SUCCESS);
@@ -116,7 +119,7 @@ TEST_F(MoveRailByObjective, ANegativeDistanceMovesTheOtherWay)
   EXPECT_NEAR(robot_->positions()[1], 1.0 - M_PI, 0.01);
 }
 
-TEST_F(MoveRailByObjective, TheOtherJointsStayInPlace)
+TEST_F(AxisObjectives, TheOtherJointsStayInPlace)
 {
   load({ rclcpp::Parameter("mm_per_turn.joint2", kMmPerTurn) });
   ASSERT_EQ(runObjective(factory_, "MoveRailBy", "{mm: 3.0}"), BT::NodeStatus::SUCCESS);
@@ -129,10 +132,28 @@ TEST_F(MoveRailByObjective, TheOtherJointsStayInPlace)
 }
 
 // Without the measured ratio, nothing moves.
-TEST_F(MoveRailByObjective, NeedsTheRatioOfTheRail)
+TEST_F(AxisObjectives, NeedsTheRatioOfTheRail)
 {
   load({});
   EXPECT_NE(runObjective(factory_, "MoveRailBy", "{mm: 3.0}"), BT::NodeStatus::SUCCESS);
+  EXPECT_TRUE(robot_->positionCommands().empty());
+}
+
+TEST_F(AxisObjectives, TurnsTheStageByDegrees)
+{
+  load({ rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn) });
+  ASSERT_EQ(runObjective(factory_, "RotateStageBy", "{deg: -45}"), BT::NodeStatus::SUCCESS);
+
+  const auto command = robot_->positionCommands().at(0);
+  EXPECT_NEAR(command[0], 0.5 - M_PI, 1e-9);
+  EXPECT_DOUBLE_EQ(command[1], 1.0);
+  EXPECT_NEAR(robot_->positions()[0], 0.5 - M_PI, 0.01);
+}
+
+TEST_F(AxisObjectives, NeedsTheRatioOfTheStage)
+{
+  load({ rclcpp::Parameter("mm_per_turn.joint2", kMmPerTurn) });
+  EXPECT_NE(runObjective(factory_, "RotateStageBy", "{deg: 10}"), BT::NodeStatus::SUCCESS);
   EXPECT_TRUE(robot_->positionCommands().empty());
 }
 

@@ -433,9 +433,11 @@ yet. To measure on the rig:
   198 mm of travel for 124.347 turns, measured on 2026-10-06:
   `mm_per_turn.joint2` in `rig.yaml`, which `MoveRailBy` uses. The motor
   counts away from the subject.
-- **The stage, degrees per motor turn**, its gear ratio. Mark the stage, turn
-  its motor a whole number of turns until the mark comes back, and count. Then
-  `FocusStack` can take its angles in degrees of the stage.
+- **The stage, degrees per motor turn: done.** 4.5 degrees per turn, an 80:1
+  worm gear: a revolution took 80.098 turns, measured on 2026-10-06, the 0.098
+  being the error of lining up the mark by eye, and the backlash.
+  `deg_per_turn.joint1` in `rig.yaml`, which `RotateStageBy` and `FocusStack`
+  use. Counter-clockwise is negative.
 - **The backlash of each axis**, which `overshoot.joint1` and
   `overshoot.joint2` in `rig.yaml` must exceed: they are a twentieth and a
   tenth of a turn today, a guess. With the live view at full magnification on

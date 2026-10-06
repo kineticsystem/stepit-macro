@@ -76,7 +76,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **The shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo.
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
-- **The focus stack**, which **Stack** shows and hides. A **Mark** button at each end of the rail's slider marks where the camera is: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; each button shows its mark, in millimetres. A bar under the toolbar holds the number of shots, the angles of the stage, in turns of its motor, and how many, with the depth between the marks and the step between shots; **Start stack** runs [`FocusStack`](docs/FocusStack.md) and counts the pictures as they come.
+- **The focus stack**, which **Stack** shows and hides. A **Mark** button at each end of the rail's slider marks where the camera is: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; each button shows its mark, in millimetres. A bar under the toolbar holds the number of shots, the angles of the stage, in degrees, and how many, with the depth between the marks and the step between shots; **Start stack** runs [`FocusStack`](docs/FocusStack.md) and counts the pictures as they come.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 
 **Only the robot's tasks go through the commander**: a shot, handing the robot to the user, marking and shooting a stack. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
@@ -295,6 +295,7 @@ the objective, i.e. after the `target_tree` of the command:
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
 | [`MoveRailBy`](docs/MoveRailBy.md) | Moves the rail by a distance in millimetres, with its measured 1.592 mm per turn of the motor. |
+| [`RotateStageBy`](docs/RotateStageBy.md) | Turns the rotary stage by an angle in degrees, with its 4.5 degrees per turn of the motor, an 80:1 gear. |
 | [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. |
 | [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
 
@@ -319,8 +320,9 @@ Some behaviors read parameters of their own from the commander's section of
 `rig.yaml`, which the plugin declares on the commander's node when it loads:
 the overshoot of each motor against backlash, `overshoot.<joint>`, which
 `CommandJointPositions` uses when given an approach; the millimetres a linear
-axis travels per turn of its motor, `mm_per_turn.<joint>`, which
-`MillimetresToRadians` converts with; and `state_file`, where
+axis travels per turn of its motor, `mm_per_turn.<joint>`, and the degrees a
+rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
+`DegreesToRadians` convert with; and `state_file`, where
 `SaveValues` and `LoadValues` keep what the objectives remember, e.g. the marks
 of a stack. The commander itself knows nothing about them.
 

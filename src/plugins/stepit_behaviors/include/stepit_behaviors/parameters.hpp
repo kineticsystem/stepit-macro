@@ -39,6 +39,8 @@ namespace stepit_behaviors
  *           joint2: 0.5
  *         mm_per_turn:
  *           joint2: 1.592
+ *         deg_per_turn:
+ *           joint1: 4.5
  *         state_file: ~/ws/state/stack.yaml
  *
  * The commander knows nothing about them: registerNodes declares them on its
@@ -51,6 +53,9 @@ double overshootParameter(rclcpp::Node& node, const std::string& joint);
 
 /// @brief How far a linear axis travels per turn of its motor, `mm_per_turn.<joint>`, in mm, if set.
 std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint);
+
+/// @brief How far a rotary axis turns per turn of its motor, `deg_per_turn.<joint>`, in degrees, if set.
+std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string& joint);
 
 /// @brief The YAML file where SaveValues and LoadValues keep their values, `state_file`, with `~` expanded.
 std::string stateFileParameter(rclcpp::Node& node);

@@ -85,6 +85,12 @@ def test_the_rail_has_its_measured_millimetres_per_turn():
     assert commander["mm_per_turn"]["joint2"] == 1.592
 
 
+def test_the_stage_turns_on_an_80_to_1_gear():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    assert commander["deg_per_turn"]["joint1"] == 360 / 80
+
+
 def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
     _, parameters = rig.split_config(load_config())
     commander = parameters["stepit_server"]["ros__parameters"]

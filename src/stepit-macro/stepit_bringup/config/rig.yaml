@@ -93,6 +93,12 @@ stepit_server:
     # subject: toward the subject is negative.
     mm_per_turn:
       joint2: 1.592
+    # How far a rotary axis turns per turn of its motor, in degrees, for the
+    # objectives that take degrees, e.g. RotateStageBy and FocusStack. The
+    # stage: 80.098 turns for a revolution, measured on 2026-10-06, an 80:1
+    # worm gear. Counter-clockwise is negative.
+    deg_per_turn:
+      joint1: 4.5
     # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
     # not configuration, in the repo's state folder, which git ignores.
     state_file: ~/ws/state/stack.yaml

@@ -5,14 +5,14 @@
 | Parameter | Description |
 |---|---|
 | `shots` | How many shots from the near end of the rail to the far one, both included, e.g. `10`. |
-| `stage_from` | The first angle of the stage, in radians of its motor, from where the stage is, e.g. `-1.0`. |
-| `stage_to` | The last angle, e.g. `1.0`. Equal to `stage_from` for a single stack, without turning. |
+| `stage_from` | The first angle of the stage, in degrees, from where the stage is, e.g. `-17`. |
+| `stage_to` | The last angle, e.g. `17`. Equal to `stage_from` for a single stack, without turning. |
 | `angles` | How many angles from the first to the last, both included, e.g. `35`. |
 
 ```bash
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
-  "{target_tree: FocusStack, payload: '{shots: 10, stage_from: -1.0, stage_to: 1.0, angles: 35}'}"
+  "{target_tree: FocusStack, payload: '{shots: 10, stage_from: -17, stage_to: 17, angles: 35}'}"
 ```
 
 ```
@@ -20,6 +20,7 @@ FocusStack
 ├── SubTree EnsureControllers       (position_controller only)
 ├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
 ├── LoadValues  near, far           (the marks, from the state file)
+├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
 ├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
 ├── CommandJointPositions           to {first}, past it and back
 ├── Steps  stage_from to stage_to, `angles` values
@@ -34,7 +35,7 @@ FocusStack
 
 Every move goes through the position controller, as in [`Stack`](Stack.md): the microcontroller plans each one on its own profile, and `CommandJointPositions` waits until the joints have arrived and stopped before the shot.
 
-**The angles are motor radians, for now.** Degrees of the stage need the gear ratio between its motor and the stage, which is not measured yet, see [`TODO.md`](../TODO.md). The same goes for millimetres of the rail; the rail needs none to run a stack, as its two ends are marked where they are.
+**The angles are degrees of the stage.** `DegreesToRadians` turns them into radians of its motor with `deg_per_turn.joint1`, 4.5 degrees per motor turn, its 80:1 gear, in the section `stepit_server` of `rig.yaml`. The rail needs no ratio to run a stack, as its two ends are marked where they are.
 
 **Every position is approached from the same side, against backlash.** Each move approaches its position going from the first position of the stack to the last: the rail from near to far, the stage from `stage_from` to `stage_to`. A joint that would arrive the other way first goes past its target, then back to it, so that its gears always end loaded the same way. That happens when the rail comes back to the near end for the next angle, and when the stage turns to its first angle against the direction of the stack. The first move also sends a joint that is already at its first position past it and back, as it may have been driven there either way. How far past is the overshoot of each motor, `overshoot.joint1` and `overshoot.joint2` in the section `stepit_server` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml): it must exceed the backlash of the axis.
 

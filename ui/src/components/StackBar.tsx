@@ -26,7 +26,7 @@ export function StackBar() {
     <div className="stack-bar">
       <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
       <NumberField label="Stage" value={stack.stageFrom} onChange={(stageFrom) => stack.setPlan({ stageFrom })} />
-      <NumberField label="to" unit="turns" value={stack.stageTo} onChange={(stageTo) => stack.setPlan({ stageTo })} />
+      <NumberField label="to" unit="°" value={stack.stageTo} onChange={(stageTo) => stack.setPlan({ stageTo })} />
       <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
       <span className="stack-summary muted small">
         {depth !== undefined ? `${railText(depth, stack.mmPerTurn)} deep · ` : 'Mark both ends on the rail · '}
@@ -67,7 +67,7 @@ function NumberField(props: { label: string; unit?: string; value: number; integ
       <input
         type="number"
         inputMode={props.integer ? 'numeric' : 'decimal'}
-        step={props.integer ? 1 : 0.05}
+        step={1}
         min={props.integer ? 1 : undefined}
         value={text}
         onChange={(e) => apply(e.target.value)}

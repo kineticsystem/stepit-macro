@@ -51,4 +51,24 @@ private:
   std::weak_ptr<rclcpp::Node> node_;
 };
 
+/**
+ * @brief Converts degrees of a rotary axis into radians of its motor.
+ *
+ * The ratio is the commander's parameter `deg_per_turn.<joint>`: how far the
+ * axis turns per turn of its motor, 360 divided by its gear ratio. A positive
+ * angle turns the motor the positive way.
+ */
+class DegreesToRadians : public BT::SyncActionNode
+{
+public:
+  DegreesToRadians(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+
+  static BT::PortsList providedPorts();
+
+  BT::NodeStatus tick() override;
+
+private:
+  std::weak_ptr<rclcpp::Node> node_;
+};
+
 }  // namespace stepit_behaviors

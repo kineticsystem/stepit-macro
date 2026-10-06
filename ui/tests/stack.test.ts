@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { payloadOf, planProblem, railStep, railText, totalShots } from '../src/stack/plan';
 
-const plan = { shots: 10, stageFrom: -0.25, stageTo: 0.25, angles: 35 };
+const plan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 
 describe('the plan of a focus stack', () => {
   it('takes a picture at every shot of every angle', () => {
     expect(totalShots(plan)).toBe(350);
   });
 
-  // The page speaks turns of the motors; FocusStack takes radians.
-  it('asks FocusStack for the stage in radians', () => {
-    expect(payloadOf(plan)).toBe('{shots: 10, stage_from: -1.570796, stage_to: 1.570796, angles: 35}');
+  // FocusStack converts the degrees itself, with the stage's ratio in rig.yaml.
+  it('asks FocusStack for the stage in degrees', () => {
+    expect(payloadOf(plan)).toBe('{shots: 10, stage_from: -17, stage_to: 17, angles: 35}');
   });
 
   it('needs both marks', () => {

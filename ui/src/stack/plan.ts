@@ -7,7 +7,7 @@ export const TURN = 2 * Math.PI;
 export interface StackPlan {
   /** Shots from the near mark to the far one, both included. */
   shots: number;
-  /** The first and the last angle of the stage, in turns of its motor, from where it is. */
+  /** The first and the last angle of the stage, in degrees, from where it is. */
   stageFrom: number;
   stageTo: number;
   /** Angles from the first to the last, both included: 1 for a single stack. */
@@ -28,10 +28,9 @@ export function planProblem(plan: StackPlan & { near?: number; far?: number }): 
   return undefined;
 }
 
-/** The payload of FocusStack, in radians. */
+/** The payload of FocusStack: the rig turns the degrees into radians of the stage's motor. */
 export function payloadOf(plan: StackPlan): string {
-  const radians = (turns: number) => Number((turns * TURN).toFixed(6));
-  return `{shots: ${plan.shots}, stage_from: ${radians(plan.stageFrom)}, stage_to: ${radians(plan.stageTo)}, angles: ${plan.angles}}`;
+  return `{shots: ${plan.shots}, stage_from: ${plan.stageFrom}, stage_to: ${plan.stageTo}, angles: ${plan.angles}}`;
 }
 
 /** The distance between two shots of the rail, in turns of its motor, if there are two. */

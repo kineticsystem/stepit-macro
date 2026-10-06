@@ -58,8 +58,11 @@ const std::vector<double> kJointPositions{ 0.5, 1.0, 0.0, -1.0, 2.0 };
 constexpr double kStageOvershoot = 0.1;
 constexpr double kRailOvershoot = 0.2;
 
-/// 3 shots from 1.0 to 2.0 on the rail, at 2 angles of the stage, 0.5 either side of where it is.
-constexpr auto kPayload = "{shots: 3, stage_from: -0.5, stage_to: 0.5, angles: 2}";
+/// 4 pi degrees of the stage per turn of its motor: 1 degree is 0.5 radians.
+constexpr double kDegPerTurn = 4.0 * M_PI;
+
+/// 3 shots from 1.0 to 2.0 on the rail, at 2 angles of the stage, 1 degree, 0.5 rad, either side of where it is.
+constexpr auto kPayload = "{shots: 3, stage_from: -1, stage_to: 1, angles: 2}";
 
 /// The stage and the rail of each command, rounded, to compare them.
 std::vector<std::pair<double, double>> stageAndRail(const std::vector<std::vector<double>>& commands)
@@ -91,7 +94,8 @@ protected:
     rclcpp::NodeOptions options;
     options.parameter_overrides({ rclcpp::Parameter("state_file", state_file_.string()),
                                   rclcpp::Parameter("overshoot.joint1", kStageOvershoot),
-                                  rclcpp::Parameter("overshoot.joint2", kRailOvershoot) });
+                                  rclcpp::Parameter("overshoot.joint2", kRailOvershoot),
+                                  rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn) });
     node_ = std::make_shared<rclcpp::Node>("stepit_tests_focus_stack", options);
 
     robot_ = std::make_unique<FakeRobot>(kJointStateTopic, kActionName, kJointNames, kJointPositions);

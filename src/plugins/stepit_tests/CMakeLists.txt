@@ -196,10 +196,10 @@ if(BUILD_TESTING)
     ${stepit_camera_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
-  # MoveRailBy, and so MillimetresToRadians, against a fake robot.
-  ament_add_gtest(test_move_rail_by_objective tests/test_move_rail_by_objective.cpp)
-  target_include_directories(test_move_rail_by_objective PRIVATE tests)
-  target_link_libraries(test_move_rail_by_objective
+  # MoveRailBy and RotateStageBy, and so the conversions of axis_units, against a fake robot.
+  ament_add_gtest(test_axis_objectives tests/test_axis_objectives.cpp)
+  target_include_directories(test_axis_objectives PRIVATE tests)
+  target_link_libraries(test_axis_objectives
     ament_index_cpp::ament_index_cpp
     stepit_behaviors::stepit_behaviors
     stepit_server::stepit_server

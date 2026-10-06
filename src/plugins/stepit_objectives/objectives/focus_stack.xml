@@ -9,11 +9,12 @@
 
     ros2 action send_goal /commander/execute_objective \
       btcpp_ros2_interfaces/action/ExecuteTree \
-      "{target_tree: FocusStack, payload: '{shots: 10, stage_from: -1.0, stage_to: 1.0, angles: 35}'}"
+      "{target_tree: FocusStack, payload: '{shots: 10, stage_from: -17, stage_to: 17, angles: 35}'}"
 
-  The angles are in radians of the stage's motor, from where the stage is when
-  the stack starts: degrees of the stage need its gear ratio, not measured yet.
-  When the stack is done, every joint goes back to where it started.
+  The angles are in degrees of the stage, from where it is when the stack
+  starts: deg_per_turn.joint1, in the commander's section of rig.yaml, turns
+  them into radians of its motor. When the stack is done, every joint goes
+  back to where it started.
 
   Backlash: every move approaches its position going from the first position
   of the stack to the last, the rail from near to far and the stage from
@@ -33,15 +34,19 @@
                          topic_name="/joint_states" joint_names="joint1;joint2;joint3;joint4;joint5" positions="{home}"/>
       <LoadValues _description="The near end of the rail, from MarkNear." key="near" values="{near}"/>
       <LoadValues _description="The far end of the rail, from MarkFar." key="far" values="{far}"/>
+      <DegreesToRadians _description="The first angle, in radians of the stage's motor." joint="joint1"
+                        degrees="{@stage_from}" radians="{first_angle}"/>
+      <DegreesToRadians _description="The last angle, in radians of the stage's motor." joint="joint1"
+                        degrees="{@stage_to}" radians="{last_angle}"/>
 
       <!-- The first and the last position of the stack: every move approaches
            its position going from the one toward the other. -->
       <SetJoints _description="The stage at its first angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
-                 joints="joint1" values="{@stage_from}" relative="true" output="{first}"/>
+                 joints="joint1" values="{first_angle}" relative="true" output="{first}"/>
       <SetJoints _description="The first position: the rail at the near end." input="{first}" joint_names="joint1;joint2;joint3;joint4;joint5"
                  joints="joint2" values="{near}" output="{first}"/>
       <SetJoints _description="The stage at its last angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
-                 joints="joint1" values="{@stage_to}" relative="true" output="{last}"/>
+                 joints="joint1" values="{last_angle}" relative="true" output="{last}"/>
       <SetJoints _description="The last position: the rail at the far end." input="{last}" joint_names="joint1;joint2;joint3;joint4;joint5"
                  joints="joint2" values="{far}" output="{last}"/>
 
@@ -53,7 +58,7 @@
                              joint_names="joint1;joint2;joint3;joint4;joint5" positions="{first}"
                              approach_from="{first}" approach_to="{last}" overshoot_in_place="true"/>
 
-      <Steps _description="The angles of the stage." start="{@stage_from}" end="{@stage_to}" count="{@angles}" value="{angle}" index="{angle_index}">
+      <Steps _description="The angles of the stage." start="{first_angle}" end="{last_angle}" count="{@angles}" value="{angle}" index="{angle_index}">
         <Sequence>
           <SetJoints _description="Every joint where it started, the stage at this angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
                      joints="joint1" values="{angle}" relative="true" output="{pose}"/>
@@ -89,8 +94,8 @@
   <TreeNodesModel>
     <SubTree ID="FocusStack">
       <input_port name="shots">how many shots from the near end of the rail to the far one, both included, e.g. 10</input_port>
-      <input_port name="stage_from">the first angle of the stage, in radians of its motor, from where it is, e.g. -1.0</input_port>
-      <input_port name="stage_to">the last angle of the stage, in radians of its motor, from where it is, e.g. 1.0</input_port>
+      <input_port name="stage_from">the first angle of the stage, in degrees, from where it is, e.g. -17</input_port>
+      <input_port name="stage_to">the last angle of the stage, in degrees, from where it is, e.g. 17</input_port>
       <input_port name="angles">how many angles from the first to the last, both included, e.g. 35</input_port>
     </SubTree>
   </TreeNodesModel>

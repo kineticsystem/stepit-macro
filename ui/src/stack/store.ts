@@ -4,9 +4,9 @@
 // FocusStack reads them there. The page only shows where the rail was when it
 // marked, read from the joint states, and keeps the plan of this browser.
 //
-// The plan is in turns of the motors, which the page shows everywhere; the
-// payload of FocusStack is in radians. Degrees of the stage need its gear
-// ratio, not measured yet (TODO.md 14).
+// The rail shows in millimetres, with the commander's mm_per_turn.joint2; the
+// stage's angles are in degrees, which FocusStack converts itself, with
+// deg_per_turn.joint1.
 
 import { create } from 'zustand';
 import { camera } from '../camera/store';

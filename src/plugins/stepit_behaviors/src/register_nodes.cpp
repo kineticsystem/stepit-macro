@@ -20,11 +20,11 @@
 
 #include "stepit_behaviors/register_nodes.hpp"
 
+#include "stepit_behaviors/axis_units.hpp"
 #include "stepit_behaviors/command_joint_positions.hpp"
 #include "stepit_behaviors/follow_joint_trajectory.hpp"
 #include "stepit_behaviors/get_active_controllers.hpp"
 #include "stepit_behaviors/get_joint_positions.hpp"
-#include "stepit_behaviors/millimetres_to_radians.hpp"
 #include "stepit_behaviors/is_controller_active.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
 #include "stepit_behaviors/parameters.hpp"
@@ -59,6 +59,7 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<SwitchController>("SwitchController", params);
   factory.registerNodeType<SetJoints>("SetJoints");
   factory.registerNodeType<MillimetresToRadians>("MillimetresToRadians", params);
+  factory.registerNodeType<DegreesToRadians>("DegreesToRadians", params);
   factory.registerNodeType<SaveValues>("SaveValues", params);
   factory.registerNodeType<LoadValues>("LoadValues", params);
   factory.registerNodeType<ExpectPicture>("ExpectPicture", params);

@@ -28,6 +28,7 @@ namespace
 {
 constexpr auto kOvershootPrefix = "overshoot.";
 constexpr auto kMmPerTurnPrefix = "mm_per_turn.";
+constexpr auto kDegPerTurnPrefix = "deg_per_turn.";
 constexpr auto kStateFile = "state_file";
 
 /// @brief A number of a parameter, whether the YAML wrote it as an integer or a double.
@@ -52,7 +53,8 @@ void declareParameters(rclcpp::Node& node)
   // are both accepted.
   for (const auto& [name, value] : node.get_node_parameters_interface()->get_parameter_overrides())
   {
-    const bool per_joint = name.rfind(kOvershootPrefix, 0) == 0 || name.rfind(kMmPerTurnPrefix, 0) == 0;
+    const bool per_joint = name.rfind(kOvershootPrefix, 0) == 0 || name.rfind(kMmPerTurnPrefix, 0) == 0 ||
+                           name.rfind(kDegPerTurnPrefix, 0) == 0;
     if (per_joint && !node.has_parameter(name))
     {
       node.declare_parameter(name, value);
@@ -70,14 +72,26 @@ double overshootParameter(rclcpp::Node& node, const std::string& joint)
   return node.has_parameter(name) ? asNumber(node.get_parameter(name).get_parameter_value()) : 0.0;
 }
 
-std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint)
+namespace
 {
-  const auto name = kMmPerTurnPrefix + joint;
+std::optional<double> optionalNumber(rclcpp::Node& node, const std::string& name)
+{
   if (!node.has_parameter(name))
   {
     return std::nullopt;
   }
   return asNumber(node.get_parameter(name).get_parameter_value());
+}
+}  // namespace
+
+std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint)
+{
+  return optionalNumber(node, kMmPerTurnPrefix + joint);
+}
+
+std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string& joint)
+{
+  return optionalNumber(node, kDegPerTurnPrefix + joint);
 }
 
 std::string stateFileParameter(rclcpp::Node& node)
