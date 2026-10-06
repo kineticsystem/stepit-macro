@@ -253,7 +253,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()` | — | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
-| `useStack` | the marks this page set, in turns; the plan; `marking`, `progress`; `mark()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | — | `useCommander`, `useCamera` (its pictures, counted) |
+| `useStack` | the marks this page set, in turns; the plan; `mmPerTurn`, read from the commander's `mm_per_turn.joint2`; `marking`, `progress`; `mark()`, `start()`. The plan and the marks are kept in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), which the tests import | `followStack`: reads `mmPerTurn` on every connection | `useCommander`, `useCamera` (its pictures, counted) |
 | `useSettings` | the preferences of the browser, in `localStorage`, `showStack` among them | — | — |
 
 ```mermaid
@@ -485,7 +485,8 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Take a shot, Live view, Lights, Manual drive, Stack, Stop: one small component per button. | every store |
-| [`StackBar`](../src/components/StackBar.tsx) | Centre, under the toolbar | Set near, Set far, the plan of the stack, Start stack and its count of pictures. | `useStack`, `useCommander` |
+| [`StackBar`](../src/components/StackBar.tsx) | Centre, under the toolbar | The plan of the stack, the depth and step in mm, Start stack and its count of pictures. | `useStack`, `useCommander` |
+| [`RailMark`](../src/components/RailMark.tsx) | Above and below the rail's slider | Mark: MarkNear above, the camera away from the subject; MarkFar below, the camera close to it; the position marked, in mm. | `useStack`, `useCommander` |
 | [`LiveView`](../src/components/LiveView.tsx) | Centre | The live view, or the last photo; the messages of the shot and of the lights. | `useCamera`, `useShot`, `useLights`, `useSettings` |
 | [`Slider`](../src/components/Slider.tsx) | Edges | A vertical stick for a thumb. Props only: no store. | — |
 | [`icons`](../src/components/icons.tsx) | Shared | Line icons in the text colour. | — |

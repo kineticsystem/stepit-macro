@@ -1,6 +1,6 @@
 # MarkNear
 
-[`mark_near.xml`](../src/plugins/stepit_objectives/objectives/mark_near.xml) remembers where the rail is as the near end of a focus stack. We drive the camera with the gamepad or the sliders until the closest part of the subject that must be sharp is in focus, then run it. [`MarkFar`](MarkFar.md) marks the other end, and [`FocusStack`](FocusStack.md) shoots from the one to the other.
+[`mark_near.xml`](../src/plugins/stepit_objectives/objectives/mark_near.xml) remembers where the rail is as the near end of a focus stack. We drive the camera with the gamepad or the sliders until the closest part of the subject that must be sharp is in focus, then run it: the camera is then at its farthest from the subject. In StepIt UI, it is the **Mark** button above the rail's slider, on the side the slider moves the camera away. [`MarkFar`](MarkFar.md) marks the other end, and [`FocusStack`](FocusStack.md) shoots from the one to the other.
 
 It takes no parameters.
 

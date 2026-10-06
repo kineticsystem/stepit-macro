@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { payloadOf, planProblem, railStep, totalShots } from '../src/stack/plan';
+import { payloadOf, planProblem, railStep, railText, totalShots } from '../src/stack/plan';
 
 const plan = { shots: 10, stageFrom: -0.25, stageTo: 0.25, angles: 35 };
 
@@ -27,5 +27,11 @@ describe('the plan of a focus stack', () => {
     expect(railStep(1, 2, 5)).toBeCloseTo(0.25);
     expect(railStep(2, 1, 5)).toBeCloseTo(0.25);
     expect(railStep(1, 2, 1)).toBeUndefined();
+  });
+
+  // 1.592 mm per turn, measured on the rig.
+  it('shows the rail in millimetres once its ratio is known, in turns before', () => {
+    expect(railText(10, 1.592)).toBe('15.92 mm');
+    expect(railText(10)).toBe('10.000 turns');
   });
 });

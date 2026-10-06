@@ -198,11 +198,13 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
-.stack-mark { display: inline-flex; align-items: center; gap: 6px; }
-.stack-divider { align-self: stretch; width: 1px; background: var(--border); }
 .stack-field { display: inline-flex; align-items: center; gap: 6px; }
 .stack-field input { width: 64px; }
 .stack-summary { white-space: nowrap; }
+.rail-mark { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.rail-mark.top { margin-bottom: 8px; }
+.rail-mark.bottom { margin-top: 8px; }
+.rail-mark button { width: 100%; }
 .stack-progress { color: var(--accent); font-weight: 600; white-space: nowrap; }
 
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }

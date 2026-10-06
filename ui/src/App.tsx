@@ -3,6 +3,7 @@ import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
+import { RailMark } from './components/RailMark';
 import { SettingsMenu } from './components/SettingsMenu';
 import { StackBar } from './components/StackBar';
 import { Slider } from './components/Slider';
@@ -11,6 +12,7 @@ import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
 import { followMotion, SLIDERS, useMotion } from './motion/store';
 import { useSettings } from './settings';
+import { followStack } from './stack/store';
 
 /**
  * The whole rig on one page, for a tablet held in both hands: a slider at each
@@ -21,7 +23,7 @@ import { useSettings } from './settings';
 export function App() {
   const showStack = useSettings((s) => s.showStack);
   useEffect(() => {
-    const stops = [followCommander(), followCamera(), followLights(), followMotion()];
+    const stops = [followCommander(), followCamera(), followLights(), followMotion(), followStack()];
     return () => stops.forEach((stop) => stop());
   }, []);
 
@@ -47,12 +49,18 @@ export function App() {
   );
 }
 
-/** The slider of a joint, at one edge of the page. */
+/**
+ * The slider of a joint, at one edge of the page; the rail's carries the
+ * marks of the stack at its ends while the stack bar is shown.
+ */
 function SideSlider({ index }: { index: number }) {
   const { enabled, axes, setAxis } = useMotion();
+  const showStack = useSettings((s) => s.showStack);
   const slider = SLIDERS[index];
+  const marks = showStack && slider.joint === 'joint2';
   return (
     <aside className="side-slider">
+      {marks && <RailMark end="near" />}
       <Slider
         label={slider.label}
         maxTurnsPerSecond={slider.maxTurnsPerSecond}
@@ -60,6 +68,7 @@ function SideSlider({ index }: { index: number }) {
         disabled={!enabled}
         onChange={(value) => setAxis(slider.axis, value)}
       />
+      {marks && <RailMark end="far" />}
     </aside>
   );
 }

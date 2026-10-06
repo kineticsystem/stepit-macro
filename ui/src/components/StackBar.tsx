@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useCommander } from '../commander/store';
 import { useStatus } from '../ros/connection';
-import { planProblem, railStep, totalShots } from '../stack/plan';
-import { useStack, type End } from '../stack/store';
+import { planProblem, railStep, railText, totalShots } from '../stack/plan';
+import { useStack } from '../stack/store';
 
 /**
- * A focus stack, under the toolbar, beside the live view that the marks are
- * set by: the two ends of the rail, the plan, and Start.
- *
- * We drive the rail, with the gamepad or the sliders, until the closest part
- * of the subject that must be sharp is in focus, and press Set near; then the
- * farthest, and Set far. Marking moves nothing and leaves manual drive on.
- * Start runs FocusStack, which takes the robot, and shows how many pictures
- * came; Stop, in the toolbar, ends it.
+ * A focus stack, under the toolbar: the plan, the depth between the two
+ * marks, and Start. The marks themselves are at the ends of the rail's slider,
+ * see RailMark: we drive the camera away from the subject until its front is
+ * sharp and mark above the slider, then close to it until its back is sharp
+ * and mark below. Start runs FocusStack, which takes the robot, and shows how
+ * many pictures came; Stop, in the toolbar, ends it.
  */
 export function StackBar() {
   const stack = useStack();
@@ -20,20 +18,20 @@ export function StackBar() {
   const connected = useStatus() === 'connected';
   const idle = connected && !busy;
   const problem = planProblem(stack);
-  const step = stack.near !== undefined && stack.far !== undefined ? railStep(stack.near, stack.far, stack.shots) : undefined;
+  const marked = stack.near !== undefined && stack.far !== undefined;
+  const depth = marked ? Math.abs(stack.far! - stack.near!) : undefined;
+  const step = marked ? railStep(stack.near!, stack.far!, stack.shots) : undefined;
 
   return (
     <div className="stack-bar">
-      <MarkButton end="near" />
-      <MarkButton end="far" />
-      <span className="stack-divider" />
       <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
       <NumberField label="Stage" value={stack.stageFrom} onChange={(stageFrom) => stack.setPlan({ stageFrom })} />
       <NumberField label="to" unit="turns" value={stack.stageTo} onChange={(stageTo) => stack.setPlan({ stageTo })} />
       <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
       <span className="stack-summary muted small">
+        {depth !== undefined ? `${railText(depth, stack.mmPerTurn)} deep · ` : 'Mark both ends on the rail · '}
         {totalShots(stack)} pictures
-        {step !== undefined && ` · ${step.toFixed(3)} turns apart`}
+        {step !== undefined && ` · ${railText(step, stack.mmPerTurn)} apart`}
       </span>
       <span className="row-spacer" />
       {stack.progress ? (
@@ -51,27 +49,6 @@ export function StackBar() {
         </button>
       )}
     </div>
-  );
-}
-
-/** Set near or Set far, with where the rail was when this page marked it. */
-function MarkButton({ end }: { end: End }) {
-  const { marking, mark } = useStack();
-  const position = useStack((s) => s[end]);
-  const busy = useCommander((s) => s.busy);
-  const connected = useStatus() === 'connected';
-  const name = end === 'near' ? 'near' : 'far';
-  return (
-    <span className="stack-mark">
-      <button
-        disabled={!connected || busy || marking !== undefined}
-        title={`The rail is at the ${name} end of the subject: remember it`}
-        onClick={() => void mark(end)}
-      >
-        {marking === end ? 'Marking…' : `Set ${name}`}
-      </button>
-      <span className="mono small">{position === undefined ? '—' : `${position.toFixed(3)} turns`}</span>
-    </span>
   );
 }
 

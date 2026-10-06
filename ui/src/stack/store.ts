@@ -11,7 +11,7 @@
 import { create } from 'zustand';
 import { camera } from '../camera/store';
 import { useCommander } from '../commander/store';
-import { ros } from '../ros/connection';
+import { onConnected, ros } from '../ros/connection';
 import type { RunResult } from '../commander/commander';
 import { DEFAULT_PLAN, payloadOf, totalShots, TURN, type StackPlan } from './plan';
 
@@ -27,6 +27,8 @@ interface StackState extends StackPlan {
   far?: number;
   /** The end being marked. */
   marking?: End;
+  /** How far the rail travels per turn of its motor, in mm: mm_per_turn.joint2 of the commander, if set. */
+  mmPerTurn?: number;
   /** While FocusStack runs from this page: the pictures taken so far, of how many. */
   progress?: { taken: number; total: number };
 
@@ -118,3 +120,29 @@ export const useStack = create<StackState>((set, get) => ({
     }
   },
 }));
+
+interface ParameterValue {
+  type: number;
+  integer_value: number;
+  double_value: number;
+}
+
+/** The rail's mm_per_turn, from the commander's parameters, which rig.yaml sets. */
+async function readMmPerTurn() {
+  try {
+    const response = await ros().callService<{ values: ParameterValue[] }>(
+      '/stepit_server/get_parameters', 'rcl_interfaces/srv/GetParameters', { names: [`mm_per_turn.${RAIL}`] });
+    const value = response.values[0];
+    // 2 is an integer, 3 a double; 0 is a parameter that is not set.
+    const mm = value?.type === 3 ? value.double_value : value?.type === 2 ? value.integer_value : undefined;
+    useStack.setState({ mmPerTurn: mm || undefined });
+  } catch {
+    // No commander yet: the next connection asks again, and the rail shows turns meanwhile.
+  }
+}
+
+/** Reads the rail's ratio now and on every connection. Returns a function that stops it. */
+export function followStack(): () => void {
+  void readMmPerTurn();
+  return onConnected(() => void readMmPerTurn());
+}

@@ -1,6 +1,6 @@
 # MarkFar
 
-[`mark_far.xml`](../src/plugins/stepit_objectives/objectives/mark_far.xml) remembers where the rail is as the far end of a focus stack: the camera's position at which the farthest part of the subject that must be sharp is in focus. It works as [`MarkNear`](MarkNear.md), which marks the other end, and saves the position as `far` in the same state file.
+[`mark_far.xml`](../src/plugins/stepit_objectives/objectives/mark_far.xml) remembers where the rail is as the far end of a focus stack: the camera's position at which the farthest part of the subject that must be sharp is in focus, the closest to the subject. In StepIt UI, it is the **Mark** button below the rail's slider. It works as [`MarkNear`](MarkNear.md), which marks the other end, and saves the position as `far` in the same state file.
 
 It takes no parameters.
 
