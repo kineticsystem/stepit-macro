@@ -38,7 +38,8 @@ namespace stepit_behaviors
  * names another; it holds one list per name, e.g. `near: [12.4]`, and keeps the
  * other names. It is written to a temporary file first, then renamed, so that
  * a crash never leaves it half written. It is state, not configuration: it
- * belongs outside git.
+ * belongs outside git. The values also become the commander's parameter
+ * `state.<key>`, which the pages of the rig read, see publishState.
  */
 class SaveValues : public BT::SyncActionNode
 {

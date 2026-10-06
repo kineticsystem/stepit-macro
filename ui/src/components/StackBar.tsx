@@ -32,8 +32,9 @@ export function StackBar() {
         <LayersIcon />
         Stack
       </button>
-      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
-      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
+      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => void stack.setPlan({ shots })} />
+      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => void stack.setPlan({ angles })} />
+      {stack.error && <span className="error small">{stack.error}</span>}
       {stack.progress && (
         <progress
           className="stack-progress"

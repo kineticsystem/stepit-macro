@@ -21,7 +21,6 @@
 #include "stepit_behaviors/values_file.hpp"
 
 #include <filesystem>
-#include <fstream>
 #include <vector>
 
 #include <yaml-cpp/yaml.h>
@@ -94,34 +93,7 @@ BT::NodeStatus SaveValues::tick()
 
   try
   {
-    YAML::Node document = std::filesystem::exists(path) ? YAML::LoadFile(path.string()) : YAML::Node();
-    if (!document.IsMap())
-    {
-      document = YAML::Node(YAML::NodeType::Map);
-    }
-    YAML::Node list(YAML::NodeType::Sequence);
-    list.SetStyle(YAML::EmitterStyle::Flow);
-    for (const double value : values)
-    {
-      list.push_back(value);
-    }
-    document[key] = list;
-
-    if (path.has_parent_path())
-    {
-      std::filesystem::create_directories(path.parent_path());
-    }
-    auto temporary = path;
-    temporary += ".tmp";
-    {
-      std::ofstream out(temporary);
-      out << document << '\n';
-      if (!out)
-      {
-        throw std::runtime_error("cannot write " + temporary.string());
-      }
-    }
-    std::filesystem::rename(temporary, path);
+    writeStateValues(path, key, values);
   }
   catch (const std::exception& error)
   {
@@ -130,6 +102,10 @@ BT::NodeStatus SaveValues::tick()
   }
 
   RCLCPP_INFO(logger, "%s: saved %s in %s", name().c_str(), key.c_str(), path.c_str());
+  if (const auto node = node_.lock())
+  {
+    publishState(*node, key, values);
+  }
   return BT::NodeStatus::SUCCESS;
 }
 

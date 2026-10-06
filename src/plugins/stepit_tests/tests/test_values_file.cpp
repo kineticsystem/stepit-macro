@@ -128,4 +128,60 @@ TEST_F(ValuesFile, IsPlainYaml)
   EXPECT_EQ(text, "near: [12.5]\n");
 }
 
+// The pages of the rig read what was saved as the commander's parameters, so
+// that a mark set on one page shows on every page.
+TEST_F(ValuesFile, WhatIsSavedIsShownAsAParameter)
+{
+  ASSERT_EQ(save("near", { 12.5 }), BT::NodeStatus::SUCCESS);
+  EXPECT_EQ(node_->get_parameter("state.near").as_double_array(), (std::vector<double>{ 12.5 }));
+
+  ASSERT_EQ(save("near", { 13.0 }), BT::NodeStatus::SUCCESS);
+  EXPECT_EQ(node_->get_parameter("state.near").as_double_array(), (std::vector<double>{ 13.0 }));
+}
+
+// After a restart of the commander, the parameters show what the file holds.
+TEST_F(ValuesFile, ACommanderStartingShowsWhatTheFileHolds)
+{
+  ASSERT_EQ(save("near", { 12.5 }), BT::NodeStatus::SUCCESS);
+  ASSERT_EQ(save("far", { 15.0 }), BT::NodeStatus::SUCCESS);
+
+  rclcpp::NodeOptions options;
+  options.parameter_overrides({ rclcpp::Parameter("state_file", file_.string()) });
+  const auto restarted = std::make_shared<rclcpp::Node>("stepit_tests_values_restarted", options);
+  BT::BehaviorTreeFactory factory;
+  stepit_behaviors::registerNodes(factory, BT::RosNodeParams{ restarted });
+
+  EXPECT_EQ(restarted->get_parameter("state.near").as_double_array(), (std::vector<double>{ 12.5 }));
+  EXPECT_EQ(restarted->get_parameter("state.far").as_double_array(), (std::vector<double>{ 15.0 }));
+}
+
+// A page sets the number of shots: it is saved in the file, as a mark is.
+TEST_F(ValuesFile, WhatAPageSetsIsSavedInTheFile)
+{
+  // Declared by the first save.
+  ASSERT_EQ(save("near", { 12.5 }), BT::NodeStatus::SUCCESS);
+
+  ASSERT_TRUE(node_->set_parameter(rclcpp::Parameter("state.near", std::vector<double>{ 14.0 })).successful);
+  EXPECT_EQ(load("near"), (std::vector<double>{ 14.0 }));
+}
+
+// The counts of a stack exist from the start, with rig.yaml's defaults, for a
+// page to set.
+TEST_F(ValuesFile, TheCountsOfAStackStartFromTheConfiguration)
+{
+  rclcpp::NodeOptions options;
+  options.parameter_overrides({ rclcpp::Parameter("state_file", file_.string()),
+                                rclcpp::Parameter("focus_stack.shots", 10),
+                                rclcpp::Parameter("focus_stack.angles", 35) });
+  const auto commander = std::make_shared<rclcpp::Node>("stepit_tests_values_counts", options);
+  BT::BehaviorTreeFactory factory;
+  stepit_behaviors::registerNodes(factory, BT::RosNodeParams{ commander });
+
+  EXPECT_EQ(commander->get_parameter("state.shots").as_double_array(), (std::vector<double>{ 10.0 }));
+  EXPECT_EQ(commander->get_parameter("state.angles").as_double_array(), (std::vector<double>{ 35.0 }));
+
+  ASSERT_TRUE(commander->set_parameter(rclcpp::Parameter("state.shots", std::vector<double>{ 40.0 })).successful);
+  EXPECT_EQ(load("shots"), (std::vector<double>{ 40.0 }));
+}
+
 }  // namespace stepit_behaviors::test
