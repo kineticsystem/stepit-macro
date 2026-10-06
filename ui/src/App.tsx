@@ -4,6 +4,7 @@ import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
 import { RailMark } from './components/RailMark';
+import { StageLimit } from './components/StageLimit';
 import { SettingsMenu } from './components/SettingsMenu';
 import { StackBar } from './components/StackBar';
 import { Slider } from './components/Slider';
@@ -50,17 +51,20 @@ export function App() {
 }
 
 /**
- * The slider of a joint, at one edge of the page; the rail's carries the
- * marks of the stack at its ends while the stack bar is shown.
+ * The slider of a joint, at one edge of the page. While the stack bar is
+ * shown, the rail's carries the marks of the stack at its ends, and the
+ * stage's the angles it turns between.
  */
 function SideSlider({ index }: { index: number }) {
   const { enabled, axes, setAxis } = useMotion();
   const showStack = useSettings((s) => s.showStack);
   const slider = SLIDERS[index];
   const marks = showStack && slider.joint === 'joint2';
+  const limits = showStack && slider.joint === 'joint1';
   return (
     <aside className="side-slider">
       {marks && <RailMark end="near" />}
+      {limits && <StageLimit side="top" />}
       <Slider
         label={slider.label}
         maxTurnsPerSecond={slider.maxTurnsPerSecond}
@@ -69,6 +73,7 @@ function SideSlider({ index }: { index: number }) {
         onChange={(value) => setAxis(slider.axis, value)}
       />
       {marks && <RailMark end="far" />}
+      {limits && <StageLimit side="bottom" />}
     </aside>
   );
 }
