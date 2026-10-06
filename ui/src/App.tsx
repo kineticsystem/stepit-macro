@@ -19,7 +19,7 @@ import { followStack } from './stack/store';
  * The whole rig on one page, for a tablet held in both hands: a slider at each
  * edge, under each thumb, the rotary stage on the left and the rail on the
  * right; the live view in the middle, with the commands above it, and the
- * focus stack under them, which the Stack button shows.
+ * focus stack under it, which the Stack button of the toolbar shows.
  */
 export function App() {
   const showStack = useSettings((s) => s.showStack);
@@ -41,8 +41,8 @@ export function App() {
         <SideSlider index={0} />
         <div className="centre">
           <Toolbar />
-          {showStack && <StackBar />}
           <LiveView />
+          {showStack && <StackBar />}
         </div>
         <SideSlider index={1} />
       </main>

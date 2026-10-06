@@ -70,7 +70,7 @@ function ShotButton() {
   return (
     <button className="primary" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
       <ShutterIcon />
-      {shooting ? 'Shooting…' : 'Take a shot'}
+      {shooting ? 'Shooting…' : 'Test shot'}
     </button>
   );
 }

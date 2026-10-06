@@ -190,12 +190,12 @@ button.live.on, button.lights.on, button.engaged {
 button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), button.engaged:hover:not(:disabled) {
   background: var(--ok); filter: brightness(1.08);
 }
-/* The focus stack, under the toolbar: the marks, the plan, Start. */
+/* The focus stack, under the live view: what it shoots, the counts, Stack. */
 .stack-bar {
   flex: none;
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   background: var(--panel);
 }
 .stack-field { display: inline-flex; align-items: center; gap: 6px; }

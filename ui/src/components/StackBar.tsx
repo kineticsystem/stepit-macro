@@ -5,11 +5,11 @@ import { planProblem, railStep, railText, totalShots } from '../stack/plan';
 import { planOf, useStack } from '../stack/store';
 
 /**
- * A focus stack, under the toolbar: the counts, the depth between the two
- * marks of the rail, the stage's turn, and Start. The ends themselves are at
+ * A focus stack, under the live view: what it will shoot, then the counts
+ * and Stack, which shoots it. The ends themselves are at
  * the ends of the sliders, see RailMark and StageMark: for the rail, we drive the camera away from the subject until its front is
  * sharp and mark above the slider, then close to it until its back is sharp
- * and mark below. Start runs FocusStack, which takes the robot, and shows how
+ * and mark below. Stack runs FocusStack, which takes the robot, and shows how
  * many pictures came; Stop, in the toolbar, ends it.
  */
 export function StackBar() {
@@ -25,8 +25,6 @@ export function StackBar() {
 
   return (
     <div className="stack-bar">
-      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
-      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
       <span className="stack-summary muted small">
         {depth !== undefined ? `${railText(depth, stack.mmPerTurn)} deep · ` : 'Mark both ends on the rail · '}
         {Number.isFinite(plan.stageFrom) && Number.isFinite(plan.stageTo)
@@ -36,6 +34,8 @@ export function StackBar() {
         {step !== undefined && ` · ${railText(step, stack.mmPerTurn)} apart`}
       </span>
       <span className="row-spacer" />
+      <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => stack.setPlan({ shots })} />
+      <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => stack.setPlan({ angles })} />
       {stack.progress ? (
         <span className="stack-progress">
           Picture {stack.progress.taken} of {stack.progress.total}
@@ -47,7 +47,7 @@ export function StackBar() {
           title={problem ?? 'Shoot the stack: the robot moves'}
           onClick={() => void stack.start()}
         >
-          Start stack
+          Stack
         </button>
       )}
     </div>
