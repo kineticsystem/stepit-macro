@@ -31,6 +31,7 @@
 #include <stepit_behaviors/register_nodes.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include "fake/fake_camera.hpp"
 #include "fake/fake_freezer.hpp"
 #include "objective.hpp"
 
@@ -51,6 +52,8 @@ protected:
       rclcpp::init(0, nullptr);
     }
     node_ = std::make_shared<rclcpp::Node>("stepit_tests_take_shot");
+    // The camera, whose folder of pictures the objective sets first.
+    camera_ = std::make_unique<FakeCamera>();
 
     BT::RosNodeParams params;
     params.nh = node_;
@@ -64,15 +67,18 @@ protected:
   void TearDown() override
   {
     freezer_.reset();
+    camera_.reset();
     node_.reset();
   }
 
   void startFreezer()
   {
     freezer_ = std::make_unique<FakeFreezer>(std::set<std::string>{ "test_shot", "timed_light" }, "test_shot");
+    freezer_->onShot([this]() { camera_->release(); });
   }
 
   rclcpp::Node::SharedPtr node_;
+  std::unique_ptr<FakeCamera> camera_;
   std::unique_ptr<FakeFreezer> freezer_;
   BT::BehaviorTreeFactory factory_;
 };
@@ -82,6 +88,15 @@ TEST_F(TakeShotObjective, WithoutASequenceItFiresTheDefaultOne)
   startFreezer();
   ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::SUCCESS);
   EXPECT_EQ(freezer_->fired(), (std::vector<std::string>{ "test_shot" }));
+}
+
+// A test shot goes apart from the stacks, into the folder tests.
+TEST_F(TakeShotObjective, ThePictureGoesIntoTheFolderTests)
+{
+  startFreezer();
+  ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::SUCCESS);
+  EXPECT_EQ(camera_->folders(), (std::vector<std::string>{ "tests" }));
+  EXPECT_EQ(camera_->pictures(), (std::vector<std::string>{ "tests/IMG_1.CR2" }));
 }
 
 TEST_F(TakeShotObjective, ItFiresTheSequenceOfThePayload)

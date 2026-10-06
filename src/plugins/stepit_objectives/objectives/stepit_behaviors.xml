@@ -31,6 +31,10 @@
             <input_port name="duration" type="double">time to reach the target, in seconds (default 5.0)</input_port>
             <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">joints to move</input_port>
         </Action>
+        <Action ID="CurrentTime">
+            <output_port name="time" type="std::string">the local time, formatted</output_port>
+            <input_port name="format" type="std::string" default="%Y-%m-%d_%H-%M-%S">the format of strftime</input_port>
+        </Action>
         <Action ID="DegreesToRadians">
             <output_port name="radians" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the same, in radians of the motor, always a list</output_port>
             <input_port name="degrees" type="BT::AnyTypeAllowed">an angle of the axis, in degrees: a number, or a list</input_port>
@@ -87,6 +91,12 @@
             <input_port name="joints" type="BT::AnyTypeAllowed">the joints to set: a name, or a list of names</input_port>
             <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">the joints of input, in its order</input_port>
             <input_port name="input" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the positions of every joint, in the order of joint_names</input_port>
+        </Action>
+        <Action ID="SetPictureFolder">
+            <input_port name="folder" type="std::string" default="">the folder under the camera's download_directory, e.g. tests</input_port>
+            <input_port name="index" type="int" default="-1">the angle of a stack, from 0: its folder inside [folder]</input_port>
+            <input_port name="degrees" type="BT::AnyTypeAllowed" default="">the angle in degrees, for the name of its folder</input_port>
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
         </Action>
         <Action ID="Shoot">
             <input_port name="sequence" type="std::string" default="">the sequence to fire, as named in the Freezer's parameters; empty for its default_sequence</input_port>

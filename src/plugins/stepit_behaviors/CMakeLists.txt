@@ -16,6 +16,7 @@ find_package(behaviortree_ros2 REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
 find_package(freezer_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -45,6 +46,7 @@ add_library(stepit_behaviors SHARED
   src/nodes_model.cpp
   src/offset_vector.cpp
   src/parameters.cpp
+  src/picture_folder.cpp
   src/cubic_trajectory.cpp
   src/expect_picture.cpp
   src/ports.cpp
@@ -69,6 +71,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   ${control_msgs_TARGETS}
   ${controller_manager_msgs_TARGETS}
   ${freezer_msgs_TARGETS}
+  ${rcl_interfaces_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${stepit_camera_msgs_TARGETS}
@@ -117,6 +120,7 @@ ament_export_dependencies(
   control_msgs
   controller_manager_msgs
   freezer_msgs
+  rcl_interfaces
   rclcpp
   rclcpp_action
   sensor_msgs

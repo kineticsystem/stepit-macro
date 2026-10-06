@@ -24,6 +24,10 @@
 
   A shot whose picture does not come is fired again once; then the stack
   stops, rather than leave a gap.
+
+  The pictures of a stack go into a folder of their own under the camera's
+  pictures folder, named after when it started, with one folder per angle:
+  2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on.
 -->
 <root BTCPP_format="4" main_tree_to_execute="FocusStack">
 
@@ -34,6 +38,7 @@
                          topic_name="/joint_states" joint_names="joint1;joint2;joint3;joint4;joint5" positions="{home}"/>
       <LoadValues _description="The near end of the rail, from MarkNear." key="near" values="{near}"/>
       <LoadValues _description="The far end of the rail, from MarkFar." key="far" values="{far}"/>
+      <CurrentTime _description="The name of the stack's folder of pictures: when it started." time="{stack_folder}"/>
       <DegreesToRadians _description="The first angle, in radians of the stage's motor." joint="joint1"
                         degrees="{@stage_from}" radians="{first_angle}"/>
       <DegreesToRadians _description="The last angle, in radians of the stage's motor." joint="joint1"
@@ -58,10 +63,16 @@
                              joint_names="joint1;joint2;joint3;joint4;joint5" positions="{first}"
                              approach_from="{first}" approach_to="{last}" overshoot_in_place="true"/>
 
-      <Steps _description="The angles of the stage." start="{first_angle}" end="{last_angle}" count="{@angles}" value="{angle}" index="{angle_index}">
+      <Steps _description="The angles of the stage, in degrees." start="{@stage_from}" end="{@stage_to}" count="{@angles}" value="{angle_degrees}" index="{angle_index}">
         <Sequence>
+          <DegreesToRadians _description="This angle, in radians of the stage's motor." joint="joint1"
+                            degrees="{angle_degrees}" radians="{angle}"/>
           <SetJoints _description="Every joint where it started, the stage at this angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
                      joints="joint1" values="{angle}" relative="true" output="{pose}"/>
+          <!-- One folder of pictures per angle, inside the stack's: the
+               pictures of one rail's stack, to be stacked together. -->
+          <SetPictureFolder _description="The pictures of this angle go into a folder of their own."
+                            folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}"/>
           <Steps _description="The shots of the rail, from the near end to the far one." start="{near}" end="{far}" count="{@shots}" value="{rail}" index="{shot}">
             <Sequence>
               <SetJoints _description="The rail at this shot." input="{pose}" joint_names="joint1;joint2;joint3;joint4;joint5"
@@ -83,6 +94,7 @@
         </Sequence>
       </Steps>
 
+      <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
       <CommandJointPositions _description="Every joint back to where it started."
                              topic_name="/position_controller/commands"
                              controller_joints="joint1;joint2;joint3;joint4;joint5"

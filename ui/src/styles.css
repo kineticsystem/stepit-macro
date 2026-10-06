@@ -211,7 +211,15 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
   border: 1px dashed var(--border); border-radius: 8px;
   color: var(--muted); white-space: nowrap;
 }
-.stack-progress { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+/* The pictures a running stack has taken: a bar in the space the bar leaves. */
+.stack-progress {
+  flex: 1; min-width: 120px; height: 10px;
+  appearance: none; border: 0; border-radius: 5px; overflow: hidden;
+  background: var(--panel-2);
+}
+.stack-progress::-webkit-progress-bar { background: var(--panel-2); border-radius: 5px; }
+.stack-progress::-webkit-progress-value { background: var(--accent); border-radius: 5px; transition: width 0.3s; }
+.stack-progress::-moz-progress-bar { background: var(--accent); border-radius: 5px; }
 
 .dot-warning { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
 

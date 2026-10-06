@@ -20,16 +20,20 @@ FocusStack
 ├── SubTree EnsureControllers       (position_controller only)
 ├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
 ├── LoadValues  near, far           (the marks, from the state file)
+├── CurrentTime                     -> {stack_folder}, e.g. 2026-10-06_15-20-04
 ├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
 ├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
 ├── CommandJointPositions           to {first}, past it and back
-├── Steps  stage_from to stage_to, `angles` values
+├── Steps  stage_from to stage_to, `angles` values, in degrees
+│   ├── DegreesToRadians            this angle
+│   ├── SetPictureFolder            {stack_folder}/angle_01_-17.0deg, and so on
 │   └── Steps  near to far, `shots` values
 │       ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
 │       ├── Sleep                   500 ms, for the vibrations to die down
 │       └── RetryUntilSuccessful    2 attempts
 │           └── ExpectPicture       (fails if no picture comes within 15 s)
 │               └── Shoot           (the Freezer's default sequence: the camera and the lights)
+├── SetPictureFolder                "", the pictures folder itself again
 └── CommandJointPositions           back to {home}
 ```
 
@@ -40,6 +44,15 @@ Every move goes through the position controller, as in [`Stack`](Stack.md): the 
 **Every position is approached from the same side, against backlash.** Each move approaches its position going from the first position of the stack to the last: the rail from near to far, the stage from `stage_from` to `stage_to`. A joint that would arrive the other way first goes past its target, then back to it, so that its gears always end loaded the same way. That happens when the rail comes back to the near end for the next angle, and when the stage turns to its first angle against the direction of the stack. The first move also sends a joint that is already at its first position past it and back, as it may have been driven there either way. How far past is the overshoot of each motor, `overshoot.joint1` and `overshoot.joint2` in the section `stepit_server` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml): it must exceed the backlash of the axis.
 
 **A shot without a picture is fired again, once.** The Freezer fires the camera through a wire, and cannot tell whether the shutter opened: the camera sometimes ignores the release. `ExpectPicture` waits for StepIt Camera to report the picture on `/camera/picture`; when none comes, the shot is fired again, and after a second miss the stack stops, rather than leave a gap. The log names the shot.
+
+**Each stack has its folder of pictures, with one folder per angle.** Under the camera's pictures folder, the folder `pictures` of the repo, the stack's folder is named after when it started, and holds one folder per angle, numbered from 1, with its angle in degrees: the pictures of one rail's stack, to stack together.
+
+```
+pictures/2026-10-06_15-20-04/angle_01_-17.0deg/IMG_5460.CR2 ... IMG_5469.CR2
+pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
+```
+
+`SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again. A stack that stops halfway leaves the folder set: the next stack, or a test shot, sets its own.
 
 **The marks are counts of motor steps.** The controller of the motors counts from 0 when it powers up, so marks saved before it restarts point somewhere else after: mark both ends again for every subject.
 

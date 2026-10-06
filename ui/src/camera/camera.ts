@@ -26,6 +26,12 @@ export interface Picture {
   name: string;
   /** Where the driver saved it. */
   path: string;
+  /**
+   * The same file under the driver's download_directory, e.g.
+   * 2026-10-06_15-20-04/angle_01_-17.0deg/IMG_0042.CR2: the pictures of a
+   * stack are in folders of their own. Empty from a driver older than it.
+   */
+  relativePath: string;
 }
 
 interface TriggerResponse {
@@ -44,6 +50,7 @@ interface SetParametersResponse {
 interface PictureMessage {
   name: string;
   path: string;
+  relative_path?: string;
 }
 
 /** ParameterType of rcl_interfaces: the settings are string parameters. */
@@ -90,18 +97,19 @@ export class Camera {
     // Reliable, not rosbridge's default, best effort: a lost message is a
     // lost test shot.
     return this.ros.subscribe<PictureMessage>(`${this.node}/picture`, 'stepit_camera_msgs/msg/Picture', (message) =>
-      listener({ name: message.name, path: message.path }),
+      listener({ name: message.name, path: message.path, relativePath: message.relative_path ?? '' }),
     { reliability: 'reliable', durability: 'volatile', history: 'keep_last', depth: 2 });
   }
 
   /**
    * The address of a saved picture on the camera's web server, which serves
    * the driver's download_directory under /pictures, to any page: it allows
-   * every origin.
+   * every origin. The picture is at its relative path, in its folder; from a
+   * driver that does not say it, at its file name.
    */
-  static pictureUrl(path: string, webUrl: string): string {
-    const name = path.slice(path.lastIndexOf('/') + 1);
-    return `${webUrl}/pictures/${encodeURIComponent(name)}`;
+  static pictureUrl(picture: Pick<Picture, 'path' | 'relativePath'>, webUrl: string): string {
+    const relative = picture.relativePath || picture.path.slice(picture.path.lastIndexOf('/') + 1);
+    return `${webUrl}/pictures/${relative.split('/').map(encodeURIComponent).join('/')}`;
   }
 
   /** The address of the live view on web_video_server, for an <img>. */
