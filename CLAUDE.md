@@ -107,7 +107,7 @@ tests go in `stepit_macro_tests`. A new program needs a launch file, an entry in
 | Package | Rule |
 |---|---|
 | `stepit_bringup` | `rig.launch.py` and `config/rig.yaml`: the only place the rig starts and configures the modules. Installed as links (`--symlink-install`): the launch file finds the repo from its source. |
-| `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ActivateTeleop`, which the commander runs in place of the running one. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
+| `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ToggleTeleop`, which the commander runs in place of the running one: `ActivateTeleop`, or the trajectory controller back when the gamepad already drives the robot. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
 | `stepit_macro_tests` | All tests of `src/stepit-macro`, `rig.yaml` included. |
 
 **Nothing is wired up by hand.** An objective is an XML file dropped into

@@ -165,7 +165,7 @@ void GamepadTeleop::activateTeleop()
     switch_started_.reset();
     if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
     {
-      RCLCPP_INFO(get_logger(), "%s succeeded: the gamepad drives the robot", objective_.c_str());
+      RCLCPP_INFO(get_logger(), "%s succeeded", objective_.c_str());
     }
     else
     {

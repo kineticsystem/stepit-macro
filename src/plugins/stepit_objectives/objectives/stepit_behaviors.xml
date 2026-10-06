@@ -42,6 +42,10 @@
             <input_port name="joint_names" type="std::vector&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::allocator&lt;std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; &gt; &gt;">joints to read</input_port>
             <input_port name="topic_name" type="std::string" default="/joint_states">topic the joint states are published on</input_port>
         </Action>
+        <Action ID="IsControllerActive">
+            <input_port name="controller" type="std::string">the controller to check, e.g. velocity_controller</input_port>
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
+        </Action>
         <Action ID="OffsetVector">
             <output_port name="output" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers, offset</output_port>
             <input_port name="offset" type="BT::AnyTypeAllowed">a number added to every element, or a list with one per element</input_port>

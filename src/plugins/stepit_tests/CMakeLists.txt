@@ -156,6 +156,17 @@ if(BUILD_TESTING)
     rclcpp::rclcpp
     ${controller_manager_msgs_TARGETS})
 
+  # The ToggleTeleop objective, and so IsControllerActive.
+  ament_add_gtest(test_toggle_teleop_objective
+    tests/test_toggle_teleop_objective.cpp)
+  target_include_directories(test_toggle_teleop_objective PRIVATE tests)
+  target_link_libraries(test_toggle_teleop_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    ${controller_manager_msgs_TARGETS})
+
   # The TakeShot objective, against a fake Freezer node.
   ament_add_gtest(test_take_shot_objective
     tests/test_take_shot_objective.cpp)

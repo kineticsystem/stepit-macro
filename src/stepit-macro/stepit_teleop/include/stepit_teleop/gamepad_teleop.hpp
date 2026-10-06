@@ -60,11 +60,13 @@ std::vector<double> toVelocities(const std::vector<float>& axes, const std::vect
  * controller, in its order. The commands only move the robot while the
  * velocity controller is active.
  *
- * The stop button makes it active. It sends zero velocities, then asks the
- * commander for the ActivateTeleop objective, which stops every other
- * controller driving the robot and activates the velocity controller. The
- * commander preempts: the objective replaces whichever objective is running,
- * which is halted.
+ * The stop button sends zero velocities, then asks the commander for the
+ * objective of the parameter `objective`, ActivateTeleop by default, which
+ * stops every other controller driving the robot and activates the velocity
+ * controller. The rig's gamepad runs ToggleTeleop instead, which also hands
+ * the robot back when the gamepad already drives it: the node does not know
+ * which, the objective decides. The commander preempts: the objective
+ * replaces whichever objective is running, which is halted.
  *
  * If /joy goes silent, e.g. because the gamepad was unplugged with a stick
  * held, the node sends zero velocities once.

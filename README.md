@@ -288,7 +288,8 @@ the objective, i.e. after the `target_tree` of the command:
 | [`OffsetJointsDirectlyBy`](docs/OffsetJointsDirectlyBy.md) | Like `OffsetJointsBy`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
 | [`MoveJointsDirectlyTo`](docs/MoveJointsDirectlyTo.md) | Like `MoveJointsTo`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
 | [`ActivateController`](docs/ActivateController.md) | Stops the controller driving the robot and activates another one. |
-| [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. The gamepad's stop button runs it. |
+| [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. **Manual drive** in StepIt UI runs it. |
+| [`ToggleTeleop`](docs/ToggleTeleop.md) | Runs `ActivateTeleop`, or, when the gamepad already drives the robot, hands it back to the trajectory controller. The gamepad's stop button runs it. |
 | [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
@@ -403,9 +404,9 @@ The behaviors and objectives run inside the commander, as a plugin. The rig's pr
 
 ### The Gamepad
 
-A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velocity of the joints, through the robot's velocity controller, and its button 1 stops whatever moves the robot and hands it to the gamepad. It runs from the package [`stepit_teleop`](src/stepit-macro/stepit_teleop).
+A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velocity of the joints, through the robot's velocity controller, and its button 1 stops whatever moves the robot and hands it to the gamepad, or, pressed again, hands it back. It runs from the package [`stepit_teleop`](src/stepit-macro/stepit_teleop).
 
-It belongs to StepIt Macro, not to StepIt Motors, because it needs the commander: the stop button runs the objective [`ActivateTeleop`](docs/ActivateTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
+It belongs to StepIt Macro, not to StepIt Motors, because it needs the commander: the stop button runs the objective [`ToggleTeleop`](docs/ToggleTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
 
 ### The Workspaces
 
@@ -430,7 +431,7 @@ The packages of `src/stepit-macro`:
 | Package | Role |
 |---|---|
 | `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad, the sliders of StepIt UI, the editor and StepIt UI, with the configuration of `config/rig.yaml`. |
-| `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ActivateTeleop`. |
+| `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ToggleTeleop`. |
 | `stepit_macro_tests` | Tests of the packages above, e.g. the gamepad against a fake commander, and `rig.yaml`. |
 
 A new program goes into `src/stepit-macro` as a package with a launch file, and into `MODULES` in [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), with its section in `rig.yaml`.

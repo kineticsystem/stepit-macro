@@ -23,14 +23,15 @@
 
 gamepad_teleop:
   ros__parameters:
-    # The button that stops whatever moves the robot and hands it to the
-    # gamepad: it runs the objective below, which the commander runs in place
-    # of the running one.
+    # The button, 1 on the gamepad, that stops whatever moves the robot and
+    # hands it to the gamepad, or, pressed again, hands it back: it runs the
+    # objective below, which the commander runs in place of the running one.
     stop_button: 0
 
-    # The objective that hands the robot to the gamepad, from
-    # stepit_objectives: it activates the controller below.
-    objective: ActivateTeleop
+    # The objective of the button, from stepit_objectives: it activates the
+    # controller below, or, when that one is already active, the trajectory
+    # controller, as Manual drive in StepIt UI does when switched off.
+    objective: ToggleTeleop
 
     # The controller the sticks command, a JointGroupVelocityController: the
     # one the objective above activates.
