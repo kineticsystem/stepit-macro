@@ -4,6 +4,8 @@
 [![Format](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml)
 [![Linters](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml)
 
+<img src="docs/images/stepit-macro.jpg" width="50%">
+
 An automated macro photography system for 3D focus stacking.
 
 A camera is mounted on a motorized linear rail, which sits on a rotary stage.
