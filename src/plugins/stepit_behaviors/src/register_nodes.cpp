@@ -31,6 +31,7 @@
 #include "stepit_behaviors/picture_folder.hpp"
 #include "stepit_behaviors/report_progress.hpp"
 #include "stepit_behaviors/shoot.hpp"
+#include "stepit_behaviors/stack_done.hpp"
 #include "stepit_behaviors/cubic_trajectory.hpp"
 #include "stepit_behaviors/expect_picture.hpp"
 #include "stepit_behaviors/set_joints.hpp"
@@ -77,6 +78,7 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<SetPictureFolder>("SetPictureFolder", camera_params);
   factory.registerNodeType<CurrentTime>("CurrentTime");
   factory.registerNodeType<ReportProgress>("ReportProgress", params);
+  factory.registerNodeType<StackDone>("StackDone", params);
 }
 
 }  // namespace stepit_behaviors

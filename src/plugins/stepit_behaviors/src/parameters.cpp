@@ -40,6 +40,7 @@ constexpr auto kDegPerTurnPrefix = "deg_per_turn.";
 /// What the rig configures for its pages, e.g. StepIt UI, which read it from the commander.
 constexpr auto kFocusStackPrefix = "focus_stack.";
 constexpr auto kStateFile = "state_file";
+constexpr auto kPicturesFolder = "pictures_folder";
 constexpr auto kStatePrefix = "state.";
 
 /// @brief A number of a parameter, whether the YAML wrote it as an integer or a double.
@@ -74,6 +75,10 @@ void declareParameters(rclcpp::Node& node)
   if (!node.has_parameter(kStateFile))
   {
     node.declare_parameter<std::string>(kStateFile, kDefaultStateFile);
+  }
+  if (!node.has_parameter(kPicturesFolder))
+  {
+    node.declare_parameter<std::string>(kPicturesFolder, kDefaultPicturesFolder);
   }
 
   // What the state file holds from before, e.g. the marks of a stack: the
@@ -207,6 +212,19 @@ std::optional<double> optionalNumber(rclcpp::Node& node, const std::string& name
   }
   return asNumber(node.get_parameter(name).get_parameter_value());
 }
+
+/// @brief A path with a leading `~/` replaced by the home folder.
+std::string expandHome(std::string path)
+{
+  if (path.rfind("~/", 0) == 0)
+  {
+    if (const char* home = std::getenv("HOME"))
+    {
+      path = std::string(home) + path.substr(1);
+    }
+  }
+  return path;
+}
 }  // namespace
 
 std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& joint)
@@ -221,15 +239,13 @@ std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string&
 
 std::string stateFileParameter(rclcpp::Node& node)
 {
-  auto path = node.has_parameter(kStateFile) ? node.get_parameter(kStateFile).as_string() : kDefaultStateFile;
-  if (path.rfind("~/", 0) == 0)
-  {
-    if (const char* home = std::getenv("HOME"))
-    {
-      path = std::string(home) + path.substr(1);
-    }
-  }
-  return path;
+  return expandHome(node.has_parameter(kStateFile) ? node.get_parameter(kStateFile).as_string() : kDefaultStateFile);
+}
+
+std::string picturesFolderParameter(rclcpp::Node& node)
+{
+  return expandHome(node.has_parameter(kPicturesFolder) ? node.get_parameter(kPicturesFolder).as_string() :
+                                                          kDefaultPicturesFolder);
 }
 
 }  // namespace stepit_behaviors

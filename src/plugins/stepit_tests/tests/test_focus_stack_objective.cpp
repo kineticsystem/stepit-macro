@@ -26,6 +26,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -39,6 +40,7 @@
 #include <behaviortree_cpp/bt_factory.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32_multi_array.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <stepit_behaviors/register_nodes.hpp>
 
 #include "fake/fake_camera.hpp"
@@ -96,10 +98,10 @@ protected:
 
     // The commander's section of rig.yaml.
     rclcpp::NodeOptions options;
-    options.parameter_overrides({ rclcpp::Parameter("state_file", state_file_.string()),
-                                  rclcpp::Parameter("overshoot.joint1", kStageOvershoot),
-                                  rclcpp::Parameter("overshoot.joint2", kRailOvershoot),
-                                  rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn) });
+    options.parameter_overrides(
+        { rclcpp::Parameter("state_file", state_file_.string()), rclcpp::Parameter("overshoot.joint1", kStageOvershoot),
+          rclcpp::Parameter("overshoot.joint2", kRailOvershoot), rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn),
+          rclcpp::Parameter("pictures_folder", pictures().string()) });
     node_ = std::make_shared<rclcpp::Node>("stepit_tests_focus_stack", options);
 
     robot_ = std::make_unique<FakeRobot>(kJointStateTopic, kActionName, kJointNames, kJointPositions);
@@ -109,6 +111,7 @@ protected:
                                                         { "position_controller", "inactive", true },
                                                         { "joint_state_broadcaster", "active", false } });
     camera_ = std::make_unique<FakeCamera>();
+    camera_->saveTo(pictures());
     freezer_ = std::make_unique<FakeFreezer>(std::set<std::string>{ "test_shot" }, "test_shot",
                                              std::chrono::milliseconds{ 20 });
     freezer_->onShot([this]() { camera_->release(); });
@@ -140,6 +143,43 @@ protected:
   {
     std::filesystem::create_directories(state_file_.parent_path());
     std::ofstream(state_file_) << "near: [" << near << "]\nfar: [" << far << "]\n";
+  }
+
+  /// @brief The camera's folder of pictures, next to the state file.
+  std::filesystem::path pictures() const
+  {
+    return state_file_.parent_path() / "pictures";
+  }
+
+  /// @brief The text of a file, empty if there is none.
+  static std::string read(const std::filesystem::path& path)
+  {
+    std::ifstream in(path);
+    return { std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>() };
+  }
+
+  /// @brief Runs FocusStack, and returns its status and what it announced on /focus_stack/stack_done.
+  std::pair<BT::NodeStatus, std::vector<std::string>> runAndListen()
+  {
+    std::mutex mutex;
+    std::vector<std::string> stacks;
+    const auto subscription =
+        node_->create_subscription<std_msgs::msg::String>("/focus_stack/stack_done",
+                                                          rclcpp::QoS{ 10 }.reliable().transient_local(),
+                                                          [&](const std_msgs::msg::String& message) {
+                                                            const std::lock_guard<std::mutex> lock{ mutex };
+                                                            stacks.push_back(message.data);
+                                                          });
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(node_);
+    std::thread spinner{ [&]() { executor.spin(); } };
+
+    const auto status = runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 90 });
+    std::this_thread::sleep_for(std::chrono::milliseconds{ 300 });
+    executor.cancel();
+    spinner.join();
+    const std::lock_guard<std::mutex> lock{ mutex };
+    return { status, stacks };
   }
 
   /// @brief The values LoadValues reads under `key`, or nothing.
@@ -247,6 +287,60 @@ TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
   for (int i = 0; i <= 6; ++i)
   {
     EXPECT_EQ(reports[static_cast<std::size_t>(i)], (std::vector<int>{ i, 6 }));
+  }
+}
+
+// Once the last picture of an angle is saved, its folder is announced: its
+// pictures are complete.
+TEST_F(FocusStackObjective, EachAngleIsAnnouncedOnceItsPicturesAreSaved)
+{
+  mark(1.0, 2.0);
+  const auto [status, stacks] = runAndListen();
+  ASSERT_EQ(status, BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  EXPECT_EQ(stacks, (std::vector<std::string>{ folders[0], folders[1] }));
+}
+
+// The folder of a finished angle says so itself, with stack.json, also to
+// whoever reads the pictures later.
+TEST_F(FocusStackObjective, EachFinishedAngleHasAStackFile)
+{
+  mark(1.0, 2.0);
+  ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 }), BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  const auto first = read(pictures() / folders[0] / "stack.json");
+  EXPECT_NE(first.find("\"folder\": \"" + folders[0] + "\""), std::string::npos) << first;
+  EXPECT_NE(first.find("\"shots\": 3,"), std::string::npos) << first;
+  EXPECT_NE(first.find("\"angle\": 1,"), std::string::npos) << first;
+  EXPECT_NE(first.find("\"degrees\": -1,"), std::string::npos) << first;
+  EXPECT_NE(first.find("\"files\": [\n    \"IMG_1.CR2\",\n    \"IMG_2.CR2\",\n    \"IMG_3.CR2\"\n  ]"),
+            std::string::npos)
+      << first;
+  const auto second = read(pictures() / folders[1] / "stack.json");
+  EXPECT_NE(second.find("\"angle\": 2,"), std::string::npos) << second;
+  EXPECT_NE(second.find("\"IMG_6.CR2\""), std::string::npos) << second;
+}
+
+// A stack that stops halfway is not complete: nothing is announced, and its
+// folder has no stack.json.
+TEST_F(FocusStackObjective, AStackThatStopsAnnouncesNothing)
+{
+  mark(1.0, 2.0);
+  camera_->ignore(2);
+  const auto [status, stacks] = runAndListen();
+  EXPECT_EQ(status, BT::NodeStatus::FAILURE);
+
+  EXPECT_TRUE(stacks.empty());
+  if (std::filesystem::exists(pictures()))
+  {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(pictures()))
+    {
+      EXPECT_NE(entry.path().filename(), "stack.json") << entry.path();
+    }
   }
 }
 

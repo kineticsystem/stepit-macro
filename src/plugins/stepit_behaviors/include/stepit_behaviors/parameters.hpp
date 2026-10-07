@@ -46,6 +46,7 @@ namespace stepit_behaviors
  *         focus_stack:
  *           turn: 17.0
  *         state_file: ~/ws/state/stack.yaml
+ *         pictures_folder: ~/ws/pictures
  *
  * The commander knows nothing about them: registerNodes declares them on its
  * node, so that they show in `ros2 param list` and can be read, by the
@@ -72,6 +73,14 @@ std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string&
 std::string stateFileParameter(rclcpp::Node& node);
 
 /**
+ * @brief The camera's folder of pictures, `pictures_folder`, with `~`
+ * expanded: the camera's download_directory, as seen by the commander, which
+ * runs on the same computer. StackDone writes into the folders of the stacks
+ * there.
+ */
+std::string picturesFolderParameter(rclcpp::Node& node);
+
+/**
  * @brief Save numbers under a name in a YAML file, keeping the other names:
  * to a temporary file first, then renamed, so that a crash never leaves it
  * half written. Throws on failure.
@@ -88,5 +97,8 @@ void publishState(rclcpp::Node& node, const std::string& key, const std::vector<
 
 /// @brief The default of `state_file`.
 inline constexpr auto kDefaultStateFile = "~/.ros/stepit_state.yaml";
+
+/// @brief The default of `pictures_folder`: the camera's own default download_directory.
+inline constexpr auto kDefaultPicturesFolder = "~/ws/pictures";
 
 }  // namespace stepit_behaviors
