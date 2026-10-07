@@ -15,7 +15,10 @@
 - [Running the Rig](#running-the-rig)
   - [Open the Pages](#open-the-pages)
   - [Start the Rig with the Pi](#start-the-rig-with-the-pi)
+  - [Where the Rig Keeps Its Files](#where-the-rig-keeps-its-files)
+  - [Update the Rig](#update-the-rig)
 - [Logging in with an SSH Key](#logging-in-with-an-ssh-key)
+  - [Rebooting the Pi from the PC](#rebooting-the-pi-from-the-pc)
 - [Troubleshooting](#troubleshooting)
 
 ## Introduction
@@ -33,7 +36,7 @@ ssh <user>@stepit.local
 ## Prerequisites
 
 - A Raspberry Pi 5 with **8 GB** of memory, which the build needs, and **Raspberry Pi OS Lite (64-bit)**, reachable on the network as `stepit.local`. Lite has no desktop, which is what we want: a desktop grabs the camera as soon as it is plugged in, and the camera driver then cannot open it.
-- The official 27 W power supply, and an active cooler: a long build throttles a Pi 5 without one.
+- The official Raspberry Pi **27 W** power supply, 5.1 V at 5 A, and an active cooler: a long build throttles a Pi 5 without one. The Pi asks the supply what it can give, over USB-PD: with a supply of 3 A, e.g. the 15 W one of the Pi 4, it caps its USB ports at 600 mA for all of them together, which the Teensy, the Nano, the gamepad and the camera exceed, and they drop out. See [Check the System](#check-the-system).
 - About 15 GB free on the SD card or, better, on an NVMe SSD: the image is about 3 GB, and the build writes a lot.
 - StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano), connected to the Pi's USB ports.
 
@@ -51,6 +54,14 @@ df -h /
 ```
 
 `uname -m` must print `aarch64`, and `free -h` about 7.9 Gi of memory. If it prints `armv7l`, the system is the 32-bit one, on which ROS 2 does not run: install Raspberry Pi OS Lite (64-bit) again. `getconf PAGESIZE` prints `16384` on a Pi 5: see [Troubleshooting](#troubleshooting) if a program crashes on the Pi and not on a PC.
+
+Check that the Pi sees the 27 W supply:
+
+```
+od -An -tu4 --endian=big /proc/device-tree/chosen/power/max_current
+```
+
+It must print `5000`, in mA: the USB ports then get 1.6 A. `3000` is a supply of 3 A, or one that does not answer USB-PD: see [Troubleshooting](#troubleshooting).
 
 ### Install Docker and Git
 
@@ -103,13 +114,6 @@ The repositories are public, so the Pi needs no GitHub key. `.gitmodules` lists 
 git config --global url.https://github.com/.insteadOf git@github.com:
 git clone --recurse-submodules https://github.com/kineticsystem/stepit-macro.git
 cd stepit-macro
-```
-
-Later, to update the rig to the latest commit of `main`, with its modules, then build it again:
-
-```
-git pull && git submodule update --init --recursive
-./docker/dock.sh build
 ```
 
 ### Give the Rig the Camera and the Gamepad
@@ -215,6 +219,44 @@ Once started with `./docker/dock.sh start`, the rig starts again by itself whene
 
 **A device plugged in after the rig started.** The motors, the camera and the gamepad are found when they appear. The Freezer is opened only when the rig starts: if its Arduino Nano is not ready at boot, plug it in again and restart the rig, with `./docker/dock.sh stop` and `./docker/dock.sh start`.
 
+### Where the Rig Keeps Its Files
+
+Everything the rig writes is in the repo, `~/stepit-macro` on the Pi, outside git:
+
+| Folder | What it holds |
+|---|---|
+| `pictures/tests` | The pictures of **Test shot**. |
+| `pictures/<date>_<time>/angle_<NN>_<degrees>deg` | The pictures of a stack: one folder per stack, named after when it started, e.g. `2026-10-06_15-20-04`, with one folder per angle of the stage, e.g. `angle_01_-17.0deg`, the pictures to stack together. |
+| `pictures` | Any other picture, e.g. one taken with the camera's own button. |
+| `state/stack.yaml` | The marks of the rail and the counts of the stack, which every page shows. The marks are counts of motor steps, which start again from 0 when the motors' controller powers up: mark both ends again after the Pi has been off. |
+
+Follow the pictures as they come, from a PC:
+
+```
+ssh stepit 'ls -lt ~/stepit-macro/pictures/*/ | head'
+```
+
+The measurements of the rig, e.g. the millimetres of the rail per motor turn and the overshoot against backlash, are in the section `stepit_server` of `rig.yaml`, in git, see [Configuring the Rig](../README.md#configuring-the-rig).
+
+### Update the Rig
+
+To update the rig to the latest commit of `main`, with its modules, set the Pi's own changes to `rig.yaml` aside, pull, and put them back:
+
+```
+git stash push -m "the Pi's ports" -- src/stepit-macro/stepit_bringup/config/rig.yaml
+git pull && git submodule update --init --recursive
+git stash pop
+```
+
+Then build the rig again, and start it:
+
+```
+./docker/dock.sh build
+./docker/dock.sh stop && ./docker/dock.sh start
+```
+
+`git stash pop` merges the Pi's changes into a `rig.yaml` that changed upstream, unless the same lines changed: git then says so, and the file shows both versions to choose from.
+
 ## Logging in with an SSH Key
 
 A key lets a PC log in to the Pi without its password: we type the password once, to install the key. Scripts and tools on the PC, e.g. a coding assistant checking the rig, can then run commands on the Pi. Run these commands on the PC, in a terminal, replacing `<user>` with the user name on the Pi.
@@ -253,6 +295,21 @@ ssh stepit hostname
 
 To withdraw the access, delete the line of the key, which ends with `stepit-macro PC`, from `~/.ssh/authorized_keys` on the Pi, and the files `~/.ssh/id_stepit` and `~/.ssh/id_stepit.pub` on the PC.
 
+### Rebooting the Pi from the PC
+
+`sudo` asks for the Pi's password, which a script cannot type. To let the PC reboot the Pi, and nothing else, without it, run this once on the Pi:
+
+```
+echo "$USER ALL=(root) NOPASSWD: /usr/sbin/reboot" | sudo tee /etc/sudoers.d/010-reboot
+sudo chmod 0440 /etc/sudoers.d/010-reboot && sudo visudo -c
+```
+
+`visudo -c` must end with `parsed OK`. The PC then reboots the Pi with:
+
+```
+ssh stepit sudo -n /usr/sbin/reboot
+```
+
 ## Troubleshooting
 
 **A program crashes on the Pi but not on a PC.** Raspberry Pi OS runs the Pi 5 with memory pages of 16 KB, and a few arm64 programs only work with 4 KB pages. Switch to the standard kernel, with 4 KB pages, and reboot:
@@ -270,7 +327,11 @@ sudo reboot
 
 **The log says the connection to a board failed.** Another program holds its port, e.g. a rig still running on a PC that shares the board, or ModemManager: see [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer). The Nano resets when its port opens: one failed attempt followed by `Connection established` is normal.
 
-**The gamepad does nothing, and the log says `Couldn't open joystick /dev/input/js0`.** The container's user is not in the Pi's group `input`: start the rig with `./docker/dock.sh start`, which adds it, not with a plain `docker compose up`. Check it with `docker exec stepit-macro id`, which lists the number of `input`, 996. If `/dev/input/js0` does not exist, the gamepad is not plugged in, or is not in D mode: the switch at its back must be on **D**, and `lsusb` shows `046d:c216 ... [DirectInput Mode]`. Once the log no longer complains, press the stop button, button 1: the sticks drive the joints after `ActivateTeleop succeeded`.
+**The gamepad does nothing, and the log says `Couldn't open joystick /dev/input/js0`.** The container's user is not in the Pi's group `input`: start the rig with `./docker/dock.sh start`, which adds it, not with a plain `docker compose up`. Check it with `docker exec stepit-macro id`, which lists the number of `input`, 996. If `/dev/input/js0` does not exist, the gamepad is not plugged in, or is not in D mode: the switch at its back must be on **D**, and `lsusb` shows `046d:c216 ... [DirectInput Mode]`. Once the log no longer complains, press the stop button, button 1: the sticks drive the joints after `ToggleTeleop succeeded`, and pressing it again hands the robot back.
+
+**USB devices drop out, or the kernel says `error -71` and `unable to enumerate USB device`.** The ports run out of current: the Pi caps them at 600 mA when it does not see a 5 A supply. Check the supply as in [Check the System](#check-the-system): with the official 27 W supply, plugged straight into the Pi, it prints `5000`. A supply of 3 A cannot power the four devices: use the 27 W one, or a powered USB hub. Do not raise the cap with `usb_max_current_enable` on a 3 A supply: the Pi then browns out under load.
+
+**The Freezer does not connect after the Pi boots, and the log says `Cannot connect to the Freezer controller`.** The Arduino Nano is sometimes refused when the Pi powers up with it plugged in: `ls /dev/serial/by-id/` lists the Teensy only, and the kernel logged `error -71` for its port. Unplug the Nano and plug it in again, then restart the rig, which opens the Freezer only when it starts: `./docker/dock.sh stop && ./docker/dock.sh start`. A short cable that carries data helps.
 
 **The camera driver keeps waiting for a camera that is on and connected.** Its USB device is not writable by the container's user: install the rule of [Give the Rig the Camera and the Gamepad](#give-the-rig-the-camera-and-the-gamepad), then unplug the camera and plug it in again.
 
