@@ -21,6 +21,8 @@ import { DEFAULT_PLAN, payloadOf, type StackPlan } from './plan';
 
 /** The commander, whose parameters hold the stack. */
 const COMMANDER = '/stepit_server';
+/** How long a new mark shows, in milliseconds. */
+const FLASH_MS = 700;
 /** Where FocusStack says how far it is, [taken, total], latched. */
 const PROGRESS_TOPIC = '/focus_stack/progress';
 
@@ -36,6 +38,8 @@ interface StackState {
   stageConfig: { from: number; to: number };
   /** The rail end being marked. */
   marking?: End;
+  /** The rail end just marked, for a moment: every mark shows, even when it was marked already. */
+  flashed?: End;
   /** Why the rig refused a count, if it did. */
   error?: string;
   /** How far the running stack is, as the rig says, whichever page started it. */
@@ -43,6 +47,8 @@ interface StackState {
 
   setPlan(change: Partial<Pick<StackState, 'shots' | 'angles'>>): Promise<void>;
   mark(end: End): Promise<RunResult>;
+  /** Moves the rail back to a mark, to check the focus there, then manual drive again. */
+  goToMark(end: End): Promise<RunResult>;
   start(): Promise<RunResult>;
 }
 
@@ -87,11 +93,19 @@ export const useStack = create<StackState>((set, get) => ({
     try {
       const result = await useCommander.getState().run(end === 'near' ? 'MarkNear' : 'MarkFar');
       // The rig saved it: /parameter_events says so, and so does reading it again.
-      if (result.ok) await readStack();
+      if (result.ok) {
+        await readStack();
+        set({ flashed: end });
+        setTimeout(() => set((s) => (s.flashed === end ? { flashed: undefined } : {})), FLASH_MS);
+      }
       return result;
     } finally {
       set({ marking: undefined });
     }
+  },
+
+  goToMark(end) {
+    return useCommander.getState().run('MoveRailToMark', `{mark: ${end}}`);
   },
 
   async start() {

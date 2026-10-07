@@ -39,7 +39,7 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | On and off. On, it runs the objective `ActivateTeleop`, and the sliders drive the joints; the button is green. Pressed again, it releases the sliders and runs `ActivateController` with `joint_trajectory_controller`, the controller the rig starts with. | the commander |
 | **Settings** | Under the gear, on three tabs: the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens; the theme; the servers. | the camera's driver |
-| **Mark** | Above and below the rail's slider: the ends of a stack, the camera away from the subject above, close to it below. Runs `MarkNear` or `MarkFar`, which save where the rail is in the rig's state file; reads **Marked** once marked, on every page. | the commander |
+| **Mark** | Above and below the rail's slider: the ends of a stack, the camera away from the subject above, close to it below. **Hold** for 0.6 s, the button filling as it lasts, to run `MarkNear` or `MarkFar`, which save where the rail is in the rig's state file: a thumb brushing it at the end of a drag marks nothing. Green, **Marked**, once marked, on every page, with a flash at every new mark. Once both ends are marked, a **tap** runs `MoveRailToMark`, back to that end to check the focus, then manual drive again. A start of the rig forgets the marks. | the commander |
 | Stage's ends | Above and below the stage's slider, shown only: the angles a stack turns the stage to and from, `focus_stack` of `rig.yaml`. | the commander's parameters |
 | **Stack** | Under the live view, with **Shots** and **Angles**, which the rig keeps in its state file: runs `FocusStack`. While it runs, a progress bar fills as its pictures come, on every page, and each picture takes the place of the live view. | the commander, `/focus_stack/progress` |
 | **Stop** | At the end of the toolbar, always in the same place: stops every task, whoever started it, and lets the sliders go. Red while a task runs, or while the page does not know yet whether one does. | the commander |
@@ -157,6 +157,7 @@ The files stay on the rig, in the folder `pictures` of the repo: the page neithe
 | `joy.test.ts` | The sliders as a gamepad: what is sent, and how often. |
 | `axis.test.ts` | A slider as an axis. |
 | `stack.test.ts` | The plan of a stack: the pictures it takes, the payload of `FocusStack`, what stops it from running, the defaults. |
+| `hold.test.ts` | A press as a tap or a hold: early release, long press, abandoned, repeated keydown. |
 | `stackParameters.test.ts` | The stack as the rig keeps it, in the commander's parameters: the marks, the counts, rig.yaml's angles. |
 | `lights.test.ts` | The lights as outputs of the Freezer board. |
 

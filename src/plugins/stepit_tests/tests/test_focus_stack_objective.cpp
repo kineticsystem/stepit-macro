@@ -118,7 +118,8 @@ protected:
     params.server_timeout = std::chrono::milliseconds{ 2000 };
     params.wait_for_server_timeout = std::chrono::milliseconds{ 2000 };
     stepit_behaviors::registerNodes(factory_, params);
-    for (const auto* file : { "ensure_controllers.xml", "mark_near.xml", "mark_far.xml", "focus_stack.xml" })
+    for (const auto* file : { "ensure_controllers.xml", "activate_teleop.xml", "mark_near.xml", "mark_far.xml",
+                              "focus_stack.xml", "move_rail_to_mark.xml" })
     {
       factory_.registerBehaviorTreeFromFile(treePath("objectives", file).string());
     }
@@ -323,6 +324,34 @@ TEST_F(FocusStackObjective, NeedsBothMarks)
 
   EXPECT_TRUE(robot_->positionCommands().empty());
   EXPECT_TRUE(freezer_->fired().empty());
+}
+
+// Back to a mark, to check the focus there: the rail approaches it as a stack
+// does, from the near mark toward the far one, then manual drive again.
+TEST_F(FocusStackObjective, TheRailGoesBackToAMarkAsAStackApproachesIt)
+{
+  mark(1.0, 2.0);
+
+  // From 1.0 to the far mark, 2.0, with the approach: straight.
+  ASSERT_EQ(runObjective(factory_, "MoveRailToMark", "{mark: far}"), BT::NodeStatus::SUCCESS);
+  // Back to the near mark, against the approach: past it, then to it.
+  ASSERT_EQ(runObjective(factory_, "MoveRailToMark", "{mark: near}"), BT::NodeStatus::SUCCESS);
+
+  const std::vector<std::pair<double, double>> expected{
+    { 0.5, 2.0 },
+    { 0.5, 1.0 - kRailOvershoot },
+    { 0.5, 1.0 },
+  };
+  EXPECT_EQ(stageAndRail(robot_->positionCommands()), expected);
+  EXPECT_EQ(manager_->stateOf("velocity_controller"), "active");
+}
+
+TEST_F(FocusStackObjective, GoingToAMarkNeedsBothMarks)
+{
+  std::filesystem::create_directories(state_file_.parent_path());
+  std::ofstream(state_file_) << "near: [1.0]\n";
+  EXPECT_EQ(runObjective(factory_, "MoveRailToMark", "{mark: near}"), BT::NodeStatus::FAILURE);
+  EXPECT_TRUE(robot_->positionCommands().empty());
 }
 
 }  // namespace stepit_tests

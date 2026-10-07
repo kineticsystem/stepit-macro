@@ -112,6 +112,11 @@ stepit_server:
     # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
     # not configuration, in the repo's state folder, which git ignores.
     state_file: ~/ws/state/stack.yaml
+    # What a start of the rig forgets, which rig.launch.py removes from
+    # state_file before anything starts: the marks of the rail are counts of
+    # motor steps, meaningless once the motors' controller powers up again.
+    # The commander never sees this: the launch file takes it out.
+    state_cleared_on_start: [near, far]
 
 # The camera, and its web server, which serves the pictures from the same
 # folder. The repo is mounted at ~/ws: the pictures land in its `pictures`

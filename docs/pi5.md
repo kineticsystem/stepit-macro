@@ -228,7 +228,7 @@ Everything the rig writes is in the repo, `~/stepit-macro` on the Pi, outside gi
 | `pictures/tests` | The pictures of **Test shot**. |
 | `pictures/<date>_<time>/angle_<NN>_<degrees>deg` | The pictures of a stack: one folder per stack, named after when it started, e.g. `2026-10-06_15-20-04`, with one folder per angle of the stage, e.g. `angle_01_-17.0deg`, the pictures to stack together. |
 | `pictures` | Any other picture, e.g. one taken with the camera's own button. |
-| `state/stack.yaml` | The marks of the rail and the counts of the stack, which every page shows. The marks are counts of motor steps, which start again from 0 when the motors' controller powers up: mark both ends again after the Pi has been off. |
+| `state/stack.yaml` | The marks of the rail and the counts of the stack, which every page shows. The marks are counts of motor steps, which start again from 0 when the motors' controller powers up: every start of the rig, at boot too, forgets them, and we mark both ends again. |
 
 Follow the pictures as they come, from a PC:
 

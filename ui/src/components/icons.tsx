@@ -104,3 +104,11 @@ export function RailIcon() {
     </svg>
   );
 }
+
+export function CheckIcon() {
+  return (
+    <svg {...common}>
+      <path d="M3 8.5 6.5 12 13 4.5" />
+    </svg>
+  );
+}

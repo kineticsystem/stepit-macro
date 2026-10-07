@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: MoveRailToMark
+
+  Moves the rail back to a mark of the stack, near or far, to check the focus
+  there, then hands the robot back to manual drive, so that we can adjust the
+  camera and mark again. StepIt UI runs it when a marked Mark button is tapped.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: MoveRailToMark, payload: '{mark: near}'}"
+
+  The rail approaches the mark going from the near mark toward the far one, as
+  every move of FocusStack does: a move the other way first goes past the mark
+  by the rail's overshoot, against backlash, so that the camera stands where
+  the stack will put it. The other joints stay where they are.
+-->
+<root BTCPP_format="4" main_tree_to_execute="MoveRailToMark">
+
+  <BehaviorTree ID="MoveRailToMark" _description="Moves the rail back to a mark of the stack, then hands the robot back to manual drive.">
+    <Sequence>
+      <LoadValues _description="The mark to go to." key="{@mark}" values="{mark}"/>
+      <LoadValues _description="The near end of the rail, the start of the approach." key="near" values="{near}"/>
+      <LoadValues _description="The far end of the rail, the end of the approach." key="far" values="{far}"/>
+      <SubTree ID="EnsureControllers" controllers="position_controller"/>
+      <CommandJointPositions _description="Moves the rail to the mark, approaching it as a stack does; the other joints stay."
+                             topic_name="/position_controller/commands"
+                             controller_joints="joint1;joint2;joint3;joint4;joint5"
+                             joint_names="joint2" positions="{mark}"
+                             approach_from="{near}" approach_to="{far}"/>
+      <SubTree ID="ActivateTeleop" _description="Manual drive again, to adjust and mark again."/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, for editors: what each entry is, with an example. -->
+  <TreeNodesModel>
+    <SubTree ID="MoveRailToMark">
+      <input_port name="mark">the mark to go to, as MarkNear and MarkFar saved it: near or far, e.g. near</input_port>
+    </SubTree>
+  </TreeNodesModel>
+
+</root>
