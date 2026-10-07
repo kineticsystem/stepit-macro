@@ -12,7 +12,9 @@ import { LayersIcon } from './icons';
  * the ends of the sliders, see RailMark and StageMark: for the rail, we drive the camera away from the subject until its front is
  * sharp and mark above the slider, then close to it until its back is sharp
  * and mark below. Stack runs FocusStack, which takes the robot, and shows how
- * many pictures came; Stop, in the toolbar, ends it.
+ * many pictures came; Stop, in the toolbar, ends it. With one angle, the
+ * stage stays where it is, and Turn is off. Why Stack is off is in the top
+ * bar, see TaskStatus.
  */
 export function StackBar() {
   const stack = useStack();
@@ -38,9 +40,12 @@ export function StackBar() {
         Stack
       </button>
       <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => void stack.setPlan({ shots })} />
-      <NumberField label="Turn ±" unit="°" value={stack.turn} min={0} onChange={(turn) => void stack.setPlan({ turn })} />
+      <NumberField label="Turn ±" unit="°" value={stack.turn} min={0} disabled={stack.angles === 1}
+        title={stack.angles === 1 ? 'One angle: the stage stays where it is' : undefined}
+        onChange={(turn) => void stack.setPlan({ turn })} />
       <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => void stack.setPlan({ angles })} />
       {step !== undefined && <span className="muted stack-step">{`${step.toFixed(1)}° apart`}</span>}
+      {stack.angles === 1 && <span className="muted stack-step">one angle</span>}
       {stack.error && <span className="error small">{stack.error}</span>}
       {progress && (
         <progress
@@ -57,7 +62,8 @@ export function StackBar() {
 
 /** A number, applied when it is valid: an empty or partial entry leaves the plan as it was. */
 function NumberField(props: {
-  label: string; unit?: string; value: number; integer?: boolean; min?: number; onChange(value: number): void;
+  label: string; unit?: string; value: number; integer?: boolean; min?: number; disabled?: boolean; title?: string;
+  onChange(value: number): void;
 }) {
   const [text, setText] = useState(String(props.value));
   useEffect(() => setText(String(props.value)), [props.value]);
@@ -68,7 +74,7 @@ function NumberField(props: {
     if (valid && (props.min === undefined || value >= props.min)) props.onChange(value);
   };
   return (
-    <label className="stack-field">
+    <label className="stack-field" title={props.title}>
       <span className="setting-label">{props.label}</span>
       <input
         type="number"
@@ -76,6 +82,7 @@ function NumberField(props: {
         step={1}
         min={props.min ?? (props.integer ? 1 : undefined)}
         value={text}
+        disabled={props.disabled}
         onChange={(e) => apply(e.target.value)}
       />
       {props.unit && <span className="muted">{props.unit}</span>}

@@ -201,6 +201,7 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
   background: var(--panel);
 }
 .stack-field { display: inline-flex; align-items: center; gap: 6px; }
+.stack-field input:disabled { opacity: 0.45; cursor: not-allowed; }
 .stack-field input { width: 64px; }
 .rail-mark { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .rail-mark.top { margin-bottom: 8px; }
