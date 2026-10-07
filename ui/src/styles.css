@@ -286,8 +286,6 @@ button.hold.flash { animation: mark-flash 700ms ease-out; }
   padding: 10px 8px;
   background: var(--panel);
 }
-.side-slider:first-child { border-right: 1px solid var(--border); }
-.side-slider:last-child { border-left: 1px solid var(--border); }
 .slider { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .slider-track {
   position: relative; flex: 1; min-height: 200px; width: 72px;
