@@ -78,6 +78,8 @@ button:hover:not(:disabled) { background: var(--hover); }
 button:disabled { opacity: 0.45; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+/* Test shot and Stack, one above the other: the same width, that of "Test shot". */
+button.main-action { width: 8em; justify-content: center; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent); outline-offset: -1px;
 }

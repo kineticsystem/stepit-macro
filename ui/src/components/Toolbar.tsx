@@ -43,16 +43,16 @@ function LiveViewButton() {
   );
 }
 
-/** A shot, fired by StepIt Freezer through the objective TakeShot. */
+/** A shot, fired by StepIt Freezer through the objective TakeShot: disabled until its picture has come. */
 function ShotButton() {
   const { state, takeShot } = useShot();
   const busy = useCommander((s) => s.busy);
   const connected = useStatus() === 'connected';
   const shooting = state === 'shooting' || state === 'waiting';
   return (
-    <button className="primary" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
+    <button className="primary main-action" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
       <ShutterIcon />
-      {shooting ? 'Shooting…' : 'Test shot'}
+      Test shot
     </button>
   );
 }
