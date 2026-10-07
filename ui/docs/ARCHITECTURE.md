@@ -249,7 +249,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 
 | Store | Holds | Kept up to date by | Uses |
 |---|---|---|---|
-| `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `objective` (the one running, whoever sent it, from the commander's latched `/stepit_server/objective`), `failure`; `run()`, `stop()` | `followCommander`: the status topic of the action, and the objective's | — |
+| `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `objective` (the one running, whoever sent it, from the commander's latched `/stepit_server/objective`), `failure`; `run()`, `stop()` | `followCommander`: the status topic of the action, and the objective's; `objectiveRuns()` combines them: the status wins once it came, the objective tells until then, e.g. after a restart, when the commander has published no status yet | — |
 | `useCamera` | the settings, the ones `changing` and `refused`, `streaming`, the errors; `refresh()`, `change()`, `setStreaming()` | `followCamera`: reads the settings every 3 s, unless a task runs; starts the live view again after a reconnection | `useCommander` (`busy`), `useSettings` |
 | `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()`, `show()` | `followPictures`: shows every picture on `/camera/picture`, whoever fired it | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ACTION, cancelAll, EXECUTE_TREE, followObjective, followObjectives, runObjective } from '../src/commander/commander';
+import {
+  ACTION, cancelAll, EXECUTE_TREE, followObjective, followObjectives, objectiveRuns, runObjective,
+} from '../src/commander/commander';
 import { Rosbridge } from '../src/ros/rosbridge';
 import { FakeSocket } from './fakeSocket';
 
@@ -81,3 +83,25 @@ describe('the commander over rosbridge', () => {
     expect(objective.mock.calls).toEqual([['FocusStack'], ['']]);
   });
 });
+
+describe('whether an objective runs', () => {
+  it('is not known until the commander said, which counts as running for Stop', () => {
+    expect(objectiveRuns(undefined, undefined)).toEqual({ busy: false, known: false });
+  });
+
+  it('knows from the latched objective alone, as after a restart, before any goal', () => {
+    expect(objectiveRuns(undefined, '')).toEqual({ busy: false, known: true });
+    expect(objectiveRuns(undefined, 'FocusStack')).toEqual({ busy: true, known: true });
+  });
+
+  it('knows from the status of the action alone', () => {
+    expect(objectiveRuns(false, undefined)).toEqual({ busy: false, known: true });
+    expect(objectiveRuns(true, undefined)).toEqual({ busy: true, known: true });
+  });
+
+  it('believes the status once it came: the objective keeps the name of a tree that threw', () => {
+    expect(objectiveRuns(true, '')).toEqual({ busy: true, known: true });
+    expect(objectiveRuns(false, 'FocusStack')).toEqual({ busy: false, known: true });
+  });
+});
+
