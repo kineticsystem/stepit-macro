@@ -21,9 +21,6 @@ export interface StackPlan {
  */
 export const DEFAULT_PLAN: StackPlan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 
-/** An end of the stage's turn: from, below its slider, and to, above. */
-export type StageEnd = 'from' | 'to';
-
 /** How many pictures a plan takes. */
 export const totalShots = (plan: StackPlan) => plan.shots * plan.angles;
 
@@ -32,11 +29,20 @@ export function planProblem(plan: StackPlan & { near?: number; far?: number }): 
   if (plan.near === undefined || plan.far === undefined) return 'Mark the near and the far end first';
   if (!Number.isInteger(plan.shots) || plan.shots < 1) return 'Shots must be a whole number, at least 1';
   if (!Number.isInteger(plan.angles) || plan.angles < 1) return 'Angles must be a whole number, at least 1';
-  if (!Number.isFinite(plan.stageFrom) || !Number.isFinite(plan.stageTo)) return 'The stage needs two angles';
+  if (!Number.isFinite(plan.stageFrom) || !Number.isFinite(plan.stageTo)) return 'The stage needs a turn';
+  if (plan.stageFrom > plan.stageTo) return 'The turn must not be negative';
   return undefined;
 }
 
 /** The payload of FocusStack: the rig turns the degrees into radians of the stage's motor. */
 export function payloadOf(plan: StackPlan): string {
   return `{shots: ${plan.shots}, stage_from: ${plan.stageFrom}, stage_to: ${plan.stageTo}, angles: ${plan.angles}}`;
+}
+
+/** The stage's angles from how far it turns either way: -turn to turn. */
+export const stageRange = (turn: number) => ({ stageFrom: -turn, stageTo: turn });
+
+/** The angle between two stacks, in degrees, if there are two. */
+export function angleStep(turn: number, angles: number): number | undefined {
+  return angles > 1 ? (2 * turn) / (angles - 1) : undefined;
 }

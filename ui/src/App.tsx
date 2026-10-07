@@ -4,7 +4,6 @@ import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
 import { RailMark } from './components/RailMark';
-import { StageEnd } from './components/StageEnd';
 import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
 import { StackBar } from './components/StackBar';
@@ -51,19 +50,16 @@ export function App() {
 }
 
 /**
- * The slider of a joint, at one edge of the page. Each carries the ends of
- * the stack at its own ends: where the rail
- * goes between, and the angles the stage turns between.
+ * The slider of a joint, at one edge of the page. The rail's carries the
+ * marks of the stack at its ends.
  */
 function SideSlider({ index }: { index: number }) {
   const { enabled, axes, setAxis } = useMotion();
   const slider = SLIDERS[index];
   const marks = slider.joint === 'joint2';
-  const limits = slider.joint === 'joint1';
   return (
     <aside className="side-slider">
       {marks && <RailMark end="near" />}
-      {limits && <StageEnd end="to" />}
       <Slider
         label={slider.label}
         icon={slider.joint === 'joint1' ? <RotateIcon /> : <RailIcon />}
@@ -72,7 +68,6 @@ function SideSlider({ index }: { index: number }) {
         onChange={(value) => setAxis(slider.axis, value)}
       />
       {marks && <RailMark end="far" />}
-      {limits && <StageEnd end="from" />}
     </aside>
   );
 }

@@ -1,14 +1,13 @@
-// A focus stack: the ends of the rail and of the stage, the counts, and the
+// A focus stack: the ends of the rail, the stage's turn, the counts, and the
 // run. The rig keeps all of it, never this browser, so that every page shows
-// the same: the commander's parameters hold rig.yaml's configuration,
-// focus_stack.*, and what was saved in the rig's state file, state.*.
+// the same: the commander's parameters state.* show the rig's state file.
 //
 // The rail's ends are marked by the rig, the objectives MarkNear and MarkFar,
-// which save them in the state file, where FocusStack reads them. The counts
-// of shots and angles a page sets go there too, through the parameters. The
-// stage's ends are rig.yaml's angles, in degrees from where the stage is when
-// the stack starts. The page reads them all on every connection, and follows
-// them on /parameter_events.
+// which save them in the state file, where FocusStack reads them; a rig start
+// forgets them. The counts and the stage's turn either way, which a page sets,
+// go there too, through the parameters, and stay: rig.yaml's focus_stack.*
+// until a page sets them. The page reads them all on every connection, and
+// follows them on /parameter_events.
 
 import { create } from 'zustand';
 import { useCamera } from '../camera/store';
@@ -16,8 +15,8 @@ import { useCommander } from '../commander/store';
 import { onConnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
 import type { RunResult } from '../commander/commander';
-import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue } from './parameters';
-import { DEFAULT_PLAN, payloadOf, type StackPlan } from './plan';
+import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue, type PlanKey } from './parameters';
+import { DEFAULT_PLAN, payloadOf, stageRange, type StackPlan } from './plan';
 
 /** The commander, whose parameters hold the stack. */
 const COMMANDER = '/stepit_server';
@@ -34,8 +33,8 @@ interface StackState {
   /** The marks of the rail, where the rig saved them; undefined until marked. */
   near?: number;
   far?: number;
-  /** The stage's angles of rig.yaml, in degrees from where it is when the stack starts. */
-  stageConfig: { from: number; to: number };
+  /** How far the stage turns either way, in degrees from where it is when the stack starts. */
+  turn: number;
   /** The rail end being marked. */
   marking?: End;
   /** The rail end just marked, for a moment: every mark shows, even when it was marked already. */
@@ -45,7 +44,7 @@ interface StackState {
   /** How far the running stack is, as the rig says, whichever page started it. */
   progress?: { taken: number; total: number };
 
-  setPlan(change: Partial<Pick<StackState, 'shots' | 'angles'>>): Promise<void>;
+  setPlan(change: Partial<Pick<StackState, PlanKey>>): Promise<void>;
   mark(end: End): Promise<RunResult>;
   /** Moves the rail back to a mark, to check the focus there, then manual drive again. */
   goToMark(end: End): Promise<RunResult>;
@@ -57,8 +56,7 @@ export function planOf(state: StackState): StackPlan & { near?: number; far?: nu
   return {
     shots: state.shots,
     angles: state.angles,
-    stageFrom: state.stageConfig.from,
-    stageTo: state.stageConfig.to,
+    ...stageRange(state.turn),
     near: state.near,
     far: state.far,
   };
@@ -66,18 +64,17 @@ export function planOf(state: StackState): StackPlan & { near?: number; far?: nu
 
 /** Takes what the parameters say of the stack. */
 function apply(parameters: Parameter[]) {
-  const { stageConfig, ...rest } = stackOf(parameters);
-  useStack.setState((s) => ({ ...rest, ...(stageConfig && { stageConfig: { ...s.stageConfig, ...stageConfig } }) }));
+  useStack.setState(stackOf(parameters));
 }
 
 export const useStack = create<StackState>((set, get) => ({
   shots: DEFAULT_PLAN.shots,
   angles: DEFAULT_PLAN.angles,
-  stageConfig: { from: DEFAULT_PLAN.stageFrom, to: DEFAULT_PLAN.stageTo },
+  turn: DEFAULT_PLAN.stageTo,
 
   async setPlan(change) {
     set({ ...change, error: undefined });
-    const parameters = Object.entries(change).map(([key, value]) => countParameter(key as 'shots' | 'angles', value));
+    const parameters = Object.entries(change).map(([key, value]) => countParameter(key as PlanKey, value));
     try {
       const { results } = await ros().callService<{ results: { successful: boolean; reason: string }[] }>(
         `${COMMANDER}/set_parameters`, 'rcl_interfaces/srv/SetParameters', { parameters });
@@ -116,12 +113,22 @@ export const useStack = create<StackState>((set, get) => ({
   },
 }));
 
-/** Reads the stack from the commander's parameters. */
+/**
+ * Reads the stack from the commander's parameters. Only those that exist: the
+ * commander answers nothing at all to a request naming one it lacks, e.g. a
+ * mark a rig start has forgotten. A missing mark is unmarked.
+ */
 async function readStack() {
   try {
-    const { values } = await ros().callService<{ values: ParameterValue[] }>(
-      `${COMMANDER}/get_parameters`, 'rcl_interfaces/srv/GetParameters', { names: STACK_PARAMETERS });
-    apply(STACK_PARAMETERS.map((name, i) => ({ name, value: values[i] })));
+    const { result } = await ros().callService<{ result: { names: string[] } }>(
+      `${COMMANDER}/list_parameters`, 'rcl_interfaces/srv/ListParameters', { prefixes: ['state'], depth: 0 });
+    const names = STACK_PARAMETERS.filter((name) => result.names.includes(name));
+    const { values } = names.length
+      ? await ros().callService<{ values: ParameterValue[] }>(
+        `${COMMANDER}/get_parameters`, 'rcl_interfaces/srv/GetParameters', { names })
+      : { values: [] };
+    useStack.setState({ near: undefined, far: undefined });
+    apply(names.map((name, i) => ({ name, value: values[i] })));
   } catch {
     // No commander yet: the next connection asks again, with the defaults meanwhile.
   }

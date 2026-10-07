@@ -44,7 +44,7 @@ namespace stepit_behaviors
  *         deg_per_turn:
  *           joint1: 4.5
  *         focus_stack:
- *           stage_from: -17.0
+ *           turn: 17.0
  *         state_file: ~/ws/state/stack.yaml
  *
  * The commander knows nothing about them: registerNodes declares them on its
@@ -53,8 +53,9 @@ namespace stepit_behaviors
  * alone, the defaults of its stack. It also shows what the state file holds
  * as `state.<key>`, see publishState, and writes into the file every
  * `state.<key>` a page sets, e.g. the number of shots a page typed:
- * `state.shots` and `state.angles` exist from the start, with the defaults
- * `focus_stack.shots` and `focus_stack.angles`.
+ * `state.turn`, `state.shots` and `state.angles` exist from the start, with
+ * the defaults `focus_stack.turn`, `focus_stack.shots` and
+ * `focus_stack.angles`.
  */
 void declareParameters(rclcpp::Node& node);
 

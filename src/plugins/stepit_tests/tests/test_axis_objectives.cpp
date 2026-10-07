@@ -160,9 +160,8 @@ TEST_F(AxisObjectives, NeedsTheRatioOfTheStage)
 // StepIt UI reads the defaults of its stack from the commander's parameters.
 TEST_F(AxisObjectives, TheDefaultsOfTheStackAreDeclaredForThePages)
 {
-  load({ rclcpp::Parameter("focus_stack.stage_from", -17.0), rclcpp::Parameter("focus_stack.stage_to", 17.0) });
-  EXPECT_DOUBLE_EQ(node_->get_parameter("focus_stack.stage_from").as_double(), -17.0);
-  EXPECT_DOUBLE_EQ(node_->get_parameter("focus_stack.stage_to").as_double(), 17.0);
+  load({ rclcpp::Parameter("focus_stack.turn", 17.0) });
+  EXPECT_DOUBLE_EQ(node_->get_parameter("focus_stack.turn").as_double(), 17.0);
 }
 
 }  // namespace stepit_tests
