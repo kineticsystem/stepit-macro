@@ -55,6 +55,10 @@ services:
     container_name: stepit-macro
     hostname: stepit-macro
     init: true
+    # The rig starts with the computer, e.g. when the Pi is switched on, once
+    # it has been started with dock.sh: Docker starts it again at boot, until
+    # dock.sh stop stops it.
+    restart: unless-stopped
     # ros2 launch shuts its nodes down cleanly on SIGINT, as on Ctrl+C.
     stop_signal: SIGINT
     # No core dumps: a node that aborts while the rig stops, e.g. the commander

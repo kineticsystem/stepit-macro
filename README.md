@@ -163,6 +163,8 @@ Start the whole rig in the background:
 ./docker/dock.sh start
 ```
 
+From then on, the rig starts again by itself with the computer, e.g. when the Raspberry Pi is switched on, until `./docker/dock.sh stop` stops it: its container has the restart policy `unless-stopped`.
+
 The rig runs on fake hardware by default: the fake motors and the fake Freezer controller; the camera driver waits for a camera. To drive the real robot and the real Freezer board, set them in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig).
 
 StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. The pictures the camera takes are saved in `pictures`, at the root of this repo.
