@@ -40,7 +40,7 @@ export function StackBar() {
       <NumberField label="Shots" value={stack.shots} integer onChange={(shots) => void stack.setPlan({ shots })} />
       <NumberField label="Turn ±" unit="°" value={stack.turn} min={0} onChange={(turn) => void stack.setPlan({ turn })} />
       <NumberField label="Angles" value={stack.angles} integer onChange={(angles) => void stack.setPlan({ angles })} />
-      {step !== undefined && <span className="muted small stack-step">{`${step.toFixed(1)}° apart`}</span>}
+      {step !== undefined && <span className="muted stack-step">{`${step.toFixed(1)}° apart`}</span>}
       {stack.error && <span className="error small">{stack.error}</span>}
       {progress && (
         <progress
@@ -78,7 +78,7 @@ function NumberField(props: {
         value={text}
         onChange={(e) => apply(e.target.value)}
       />
-      {props.unit && <span className="muted small">{props.unit}</span>}
+      {props.unit && <span className="muted">{props.unit}</span>}
     </label>
   );
 }
