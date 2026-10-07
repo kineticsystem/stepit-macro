@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { angleStep, DEFAULT_PLAN, payloadOf, planProblem, stageRange, totalShots } from '../src/stack/plan';
+import { angleStep, DEFAULT_PLAN, payloadOf, planProblem, stageOf, stageRange, totalShots } from '../src/stack/plan';
 
 const plan = { shots: 10, stageFrom: -17, stageTo: 17, angles: 35 };
 
@@ -30,6 +30,11 @@ describe('the plan of a focus stack', () => {
   // One turn either way, as the page sets it: -17 to 17.
   it('turns the stage as far either way', () => {
     expect(stageRange(17)).toEqual({ stageFrom: -17, stageTo: 17 });
+    expect(stageOf(17, 35)).toEqual({ stageFrom: -17, stageTo: 17 });
+    // One angle: a single stack where the stage stands, not at -17.
+    expect(stageOf(17, 1)).toEqual({ stageFrom: -0, stageTo: 0 });
+    expect(planProblem({ ...plan, angles: 1, ...stageOf(17, 1), near: 1, far: 2 })).toBeUndefined();
+    expect(planProblem({ ...plan, angles: 0, ...stageOf(0, 0), near: 1, far: 2 })).toMatch(/at least 1/);
     expect(planProblem({ ...plan, ...stageRange(-1), near: 1, far: 2 })).toMatch(/negative/);
   });
 

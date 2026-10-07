@@ -42,6 +42,9 @@ export function payloadOf(plan: StackPlan): string {
 /** The stage's angles from how far it turns either way: -turn to turn. */
 export const stageRange = (turn: number) => ({ stageFrom: -turn, stageTo: turn });
 
+/** The stage's angles of a stack: one angle is where the stage stands, whatever the turn. */
+export const stageOf = (turn: number, angles: number) => stageRange(angles === 1 ? 0 : turn);
+
 /** The angle between two stacks, in degrees, if there are two. */
 export function angleStep(turn: number, angles: number): number | undefined {
   return angles > 1 ? (2 * turn) / (angles - 1) : undefined;

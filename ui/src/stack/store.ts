@@ -16,7 +16,7 @@ import { onConnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
 import type { RunResult } from '../commander/commander';
 import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue, type PlanKey } from './parameters';
-import { DEFAULT_PLAN, payloadOf, stageRange, type StackPlan } from './plan';
+import { DEFAULT_PLAN, payloadOf, type StackPlan, stageOf } from './plan';
 
 /** The commander, whose parameters hold the stack. */
 const COMMANDER = '/stepit_server';
@@ -56,7 +56,7 @@ export function planOf(state: StackState): StackPlan & { near?: number; far?: nu
   return {
     shots: state.shots,
     angles: state.angles,
-    ...stageRange(state.turn),
+    ...stageOf(state.turn, state.angles),
     near: state.near,
     far: state.far,
   };
