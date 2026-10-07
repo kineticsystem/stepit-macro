@@ -51,6 +51,7 @@ add_library(stepit_behaviors SHARED
   src/expect_picture.cpp
   src/ports.cpp
   src/shoot.cpp
+  src/stack_done.cpp
   src/register_nodes.cpp
   src/report_progress.cpp
   src/set_joints.cpp

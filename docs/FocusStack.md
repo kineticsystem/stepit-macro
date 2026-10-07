@@ -35,6 +35,7 @@ FocusStack
 │           └── ExpectPicture       (fails if no picture comes within 15 s)
 │               └── Shoot           (the Freezer's default sequence: the camera and the lights)
 │           └── ReportProgress      one more picture
+│   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
 ├── SetPictureFolder                "", the pictures folder itself again
 └── CommandJointPositions           back to {home}
 ```
@@ -55,6 +56,26 @@ pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 ```
 
 `SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again. A stack that stops halfway leaves the folder set: the next stack, or a test shot, sets its own.
+
+**Each finished angle is announced, for a stacking program.** Once the last picture of an angle is saved, `StackDone` writes `stack.json` into the angle's folder and publishes the folder, relative to the pictures folder, e.g. `2026-10-06_15-20-04/angle_01_-17.0deg`, on `/focus_stack/stack_done` (`std_msgs/String`), latched. A stacking program on another computer listens through the commander's rosbridge, port 9090, copies that folder and merges it while the rig shoots the next angle. The camera reports a picture only once it is saved, and `ExpectPicture` waits for that report, so every picture of the angle is on disk when `StackDone` runs.
+
+`stack.json` makes the folder say for itself that it is complete, for a program that was not listening, e.g. a computer switched off during the stack: it finds the finished stacks by it. It is written to a temporary file, then renamed, so it is either whole or absent:
+
+```json
+{
+  "folder": "2026-10-06_15-20-04/angle_01_-17.0deg",
+  "shots": 10,
+  "angle": 1,
+  "degrees": -17,
+  "finished": "2026-10-06T15:24:31",
+  "files": [
+    "IMG_5460.CR2",
+    "IMG_5461.CR2"
+  ]
+}
+```
+
+`files` lists every file of the folder: one per shot, or two with RAW+JPEG. The commander finds the folder through `pictures_folder` in the section `stepit_server` of `rig.yaml`, which is the camera's `download_directory` through a YAML anchor: the commander and the camera run in the same container. An angle that stops halfway is never announced and gets no `stack.json`. When the file cannot be written, `StackDone` logs why and still announces the stack: the shooting goes on.
 
 **Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `[done, total]`, on `/focus_stack/progress` (`std_msgs/Int32MultiArray`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
 

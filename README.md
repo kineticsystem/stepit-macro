@@ -314,7 +314,8 @@ The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
 on a subscription (`CommandJointPositions`), a latched publisher
-(`ReportProgress`, a stack's progress for every page), a parameter of another
+(`ReportProgress`, a stack's progress for every page, and `StackDone`, each
+finished stack for a stacking program), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 (`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
 `MillimetresToRadians`, `DegreesToRadians`) and a file (`SaveValues`,
@@ -329,7 +330,9 @@ axis travels per turn of its motor, `mm_per_turn.<joint>`, and the degrees a
 rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
 `DegreesToRadians` convert with; `focus_stack.*`, the defaults of a stack,
 which StepIt UI reads; and `state_file`, where `SaveValues` and `LoadValues`
-keep what the objectives remember, e.g. the marks of a stack. The plugin shows
+keep what the objectives remember, e.g. the marks of a stack; and
+`pictures_folder`, the camera's folder of pictures, where `StackDone` writes
+`stack.json` into each finished stack. The plugin shows
 that file as the parameters `state.*`, and writes into it what a page sets
 there, e.g. the number of shots. `rig.launch.py` removes from it, at every
 start of the rig, what `state_cleared_on_start` lists: the marks. The commander itself knows nothing about them.

@@ -21,6 +21,8 @@
 #pragma once
 
 #include <atomic>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -38,7 +40,9 @@ namespace stepit_tests
  * reports a picture on /camera/picture, as the real driver does once it has
  * downloaded it, in the folder its parameter `folder` names, which a node sets
  * through /camera/set_parameters. It records every folder it is given, and can
- * ignore the next releases, as the real camera sometimes does.
+ * ignore the next releases, as the real camera sometimes does. Given a
+ * pictures folder with saveTo, it also saves each picture there, as an empty
+ * file, before reporting it, as the real driver saves the download.
  */
 class FakeCamera
 {
@@ -92,12 +96,24 @@ public:
     picture.name = "IMG_" + std::to_string(++taken_) + ".CR2";
     const auto folder = node_->get_parameter("folder").as_string();
     picture.relative_path = folder.empty() ? picture.name : folder + "/" + picture.name;
-    picture.path = "/tmp/" + picture.relative_path;
     {
       const std::lock_guard<std::mutex> lock{ mutex_ };
+      picture.path = ((save_to_.empty() ? std::filesystem::path("/tmp") : save_to_) / picture.relative_path).string();
+      if (!save_to_.empty())
+      {
+        std::filesystem::create_directories(std::filesystem::path(picture.path).parent_path());
+        std::ofstream{ picture.path };
+      }
       pictures_.push_back(picture.relative_path);
     }
     publisher_->publish(picture);
+  }
+
+  /// @brief Save every picture under `folder`, the camera's download_directory, as an empty file.
+  void saveTo(const std::filesystem::path& folder)
+  {
+    const std::lock_guard<std::mutex> lock{ mutex_ };
+    save_to_ = folder;
   }
 
   /// @brief Ignore the next `count` releases, taking no picture.
@@ -136,6 +152,7 @@ private:
   std::atomic<int> taken_{ 0 };
 
   mutable std::mutex mutex_;
+  std::filesystem::path save_to_;
   std::vector<std::string> folders_;
   std::vector<std::string> pictures_;
 };

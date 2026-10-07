@@ -141,6 +141,13 @@ def test_the_camera_and_its_web_server_share_the_pictures_folder():
     assert camera["download_directory"] == web_server["download_directory"]
 
 
+def test_the_commander_writes_into_the_cameras_pictures_folder():
+    _, parameters = rig.split_config(load_config())
+    commander = parameters["stepit_server"]["ros__parameters"]
+    camera = parameters["camera"]["ros__parameters"]
+    assert commander["pictures_folder"] == camera["download_directory"]
+
+
 def test_an_unknown_module_is_refused():
     with pytest.raises(RuntimeError, match="unknown modules in `launch`: robto"):
         rig.split_config({"launch": {"robto": {"use_dummy": False}}})

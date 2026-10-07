@@ -115,6 +115,10 @@ stepit_server:
     # motor steps, meaningless once the motors' controller powers up again.
     # The commander never sees this: the launch file takes it out.
     state_cleared_on_start: [near, far]
+    # The camera's folder of pictures, where StackDone writes stack.json into
+    # the folder of each finished stack: the camera's download_directory below,
+    # through its anchor.
+    pictures_folder: &pictures ~/ws/pictures
 
 # The camera, and its web server, which serves the pictures from the same
 # folder. The repo is mounted at ~/ws: the pictures land in its `pictures`
@@ -122,7 +126,7 @@ stepit_server:
 # parameters, e.g. the settings applied to the camera when it connects.
 camera:
   ros__parameters:
-    download_directory: &pictures ~/ws/pictures
+    download_directory: *pictures
     # The pictures go to the camera's memory only, and are deleted once
     # downloaded: a stack of hundreds of RAW pictures would fill the card,
     # and a camera whose card is full ignores the shots.
