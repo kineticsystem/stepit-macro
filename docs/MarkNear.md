@@ -1,6 +1,6 @@
 # MarkNear
 
-[`mark_near.xml`](../src/plugins/stepit_objectives/objectives/mark_near.xml) remembers where the rail is as the near end of a focus stack. We drive the camera with the gamepad or the sliders until the closest part of the subject that must be sharp is in focus, then run it: the camera is then at its farthest from the subject. In StepIt UI, it is the **Mark** button above the rail's slider, on the side the slider moves the camera away. [`MarkFar`](MarkFar.md) marks the other end, and [`FocusStack`](FocusStack.md) shoots from the one to the other.
+[`mark_near.xml`](../src/plugins/stepit_objectives/objectives/mark_near.xml) remembers where the rail is as the near end of a focus stack. We drive the camera with the gamepad or the sliders until the closest part of the subject that must be sharp is in focus, then run it: the camera is then at its farthest from the subject. In StepIt UI, it is the **Mark** button above the rail's slider, on the side the slider moves the camera away, held for 0.6 s. [`MarkFar`](MarkFar.md) marks the other end, and [`FocusStack`](FocusStack.md) shoots from the one to the other.
 
 It takes no parameters.
 
@@ -20,4 +20,4 @@ MarkNear
 
 **The mark is saved in the state file**, the parameter `state_file` in the section `stepit_server` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml), `~/ws/state/stack.yaml`: the folder `state` of the repo, which git ignores. It holds one list per name, e.g. `near: [12.4]`, with the far mark if there is one.
 
-**A mark is a count of motor steps** since the controller of the motors powered up. It survives a restart of the rig, but not one of the controller: mark both ends again for every subject.
+**A mark is a count of motor steps** since the controller of the motors powered up, which means nothing once it powers up again, as it does when the Pi is switched on. So a start of the rig forgets the marks: `rig.launch.py` removes them from the state file before anything starts, as `state_cleared_on_start` in the section `stepit_server` of `rig.yaml` says. Mark both ends again for every subject.

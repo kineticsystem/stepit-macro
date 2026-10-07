@@ -99,19 +99,22 @@ stepit_server:
     # worm gear. Counter-clockwise is negative.
     deg_per_turn:
       joint1: 4.5
-    # The angles a focus stack turns the stage between, in degrees from where
-    # the stage is when the stack starts. StepIt UI shows them at the ends of
-    # the stage's slider, and sends them to FocusStack. The shots of the rail
-    # and the angles are the defaults of StepIt UI's fields: what a page sets
-    # goes into state_file, with the marks.
+    # The defaults of a focus stack in StepIt UI: how far the stage turns either
+    # way, in degrees from where it is when the stack starts, e.g. 17 for -17
+    # to 17; the shots of the rail; the angles of the stage. What a page sets
+    # goes into state_file, and stays across restarts.
     focus_stack:
-      stage_from: -17.0
-      stage_to: 17.0
+      turn: 17.0
       shots: 10
       angles: 35
     # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
     # not configuration, in the repo's state folder, which git ignores.
     state_file: ~/ws/state/stack.yaml
+    # What a start of the rig forgets, which rig.launch.py removes from
+    # state_file before anything starts: the marks of the rail are counts of
+    # motor steps, meaningless once the motors' controller powers up again.
+    # The commander never sees this: the launch file takes it out.
+    state_cleared_on_start: [near, far]
 
 # The camera, and its web server, which serves the pictures from the same
 # folder. The repo is mounted at ~/ws: the pictures land in its `pictures`

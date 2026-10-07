@@ -97,9 +97,9 @@ void declareParameters(rclcpp::Node& node)
     RCLCPP_WARN(node.get_logger(), "Cannot read the state file %s: %s", path.c_str(), error.what());
   }
 
-  // What a page sets and the stack needs: the counts, from rig.yaml's
-  // defaults until a page sets them.
-  for (const auto* key : { "shots", "angles" })
+  // What a page sets and the stack needs: the stage's turn either way and the
+  // counts, from rig.yaml's defaults until a page sets them.
+  for (const auto* key : { "turn", "shots", "angles" })
   {
     const auto config = std::string(kFocusStackPrefix) + key;
     if (!node.has_parameter(kStatePrefix + std::string(key)) && node.has_parameter(config))

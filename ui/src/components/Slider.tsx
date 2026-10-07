@@ -61,9 +61,7 @@ export function Slider(props: {
         onPointerCancel={up}
         onLostPointerCapture={up}
       >
-        <span className="slider-end">+</span>
         <span className="slider-centre" />
-        <span className="slider-end">−</span>
         <span
           className="slider-knob"
           style={{ top: `calc(50% - ${props.value} * (50% - ${KNOB / 2}px))` }}

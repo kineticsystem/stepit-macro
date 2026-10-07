@@ -4,6 +4,8 @@
 [![Format](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-format.yml)
 [![Linters](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml/badge.svg)](https://github.com/kineticsystem/stepit-macro/actions/workflows/ci-ros-lint.yml)
 
+<img src="docs/images/stepit-macro.jpg" width="80%">
+
 An automated macro photography system for 3D focus stacking.
 
 A camera is mounted on a motorized linear rail, which sits on a rotary stage.
@@ -71,7 +73,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **Test shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo: a test shot in `pictures/tests`, a stack in a folder named after when it started, with one folder per angle, e.g. `pictures/2026-10-06_15-20-04/angle_01_-17.0deg`.
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
-- **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button reads **Marked** once its end is. The ends of the stage's slider show, without setting them, the angles the stage turns between, from where it is when the stack starts: `focus_stack.stage_to` of `rig.yaml` above, 17°, and `stage_from` below, −17°. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), and the number of shots and of angles; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
+- **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is, when **held** for 0.6 s, so that a thumb brushing it at the end of a drag marks nothing: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button turns green, **Marked**, and flashes at every new mark. Once both ends are marked, a **tap** goes back to one, [`MoveRailToMark`](docs/MoveRailToMark.md), to check the focus there. A start of the rig forgets the marks: they are counts of motor steps. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), the number of shots, how far the stage turns either way, **Turn ±**, e.g. 17° for −17° to 17°, from where it is when the stack starts, and the number of angles, with the angle between two of them; the rig keeps these in its state file, `focus_stack` of `rig.yaml` being their defaults, so that they can change with no restart; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 
 **Every page shows the same, whichever device opened it, and when.** What runs comes from the commander, which publishes the name of the running objective, latched; the marks and the counts of a stack from the rig's state file, through the commander's parameters; the progress of a stack from `/focus_stack/progress`, latched; and every picture the camera takes shows on every page, whoever fired it. Only the live view is a page's own: it streams to the page that turned it on.
@@ -295,7 +297,8 @@ the objective, i.e. after the `target_tree` of the command:
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
 | [`MoveRailBy`](docs/MoveRailBy.md) | Moves the rail by a distance in millimetres, with its measured 1.592 mm per turn of the motor. |
 | [`RotateStageBy`](docs/RotateStageBy.md) | Turns the rotary stage by an angle in degrees, with its 4.5 degrees per turn of the motor, an 80:1 gear. |
-| [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. |
+| [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. A start of the rig forgets them. |
+| [`MoveRailToMark`](docs/MoveRailToMark.md) | Moves the rail back to a mark, approaching it as a stack does, to check the focus there, then manual drive again. |
 | [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
 
 Run one from a terminal in the container, opened with `./docker/dock.sh shell`, e.g. to turn `joint1` and `joint3` by one turn clockwise:
@@ -328,7 +331,8 @@ rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
 which StepIt UI reads; and `state_file`, where `SaveValues` and `LoadValues`
 keep what the objectives remember, e.g. the marks of a stack. The plugin shows
 that file as the parameters `state.*`, and writes into it what a page sets
-there, e.g. the number of shots. The commander itself knows nothing about them.
+there, e.g. the number of shots. `rig.launch.py` removes from it, at every
+start of the rig, what `state_cleared_on_start` lists: the marks. The commander itself knows nothing about them.
 
 Building a trajectory and following it are separate behaviors, and
 `FollowJointTrajectory` sends whatever trajectory it is given to the controller.

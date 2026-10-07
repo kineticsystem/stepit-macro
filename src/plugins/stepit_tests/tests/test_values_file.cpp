@@ -171,7 +171,7 @@ TEST_F(ValuesFile, TheCountsOfAStackStartFromTheConfiguration)
 {
   rclcpp::NodeOptions options;
   options.parameter_overrides({ rclcpp::Parameter("state_file", file_.string()),
-                                rclcpp::Parameter("focus_stack.shots", 10),
+                                rclcpp::Parameter("focus_stack.turn", 17.0), rclcpp::Parameter("focus_stack.shots", 10),
                                 rclcpp::Parameter("focus_stack.angles", 35) });
   const auto commander = std::make_shared<rclcpp::Node>("stepit_tests_values_counts", options);
   BT::BehaviorTreeFactory factory;
@@ -179,6 +179,7 @@ TEST_F(ValuesFile, TheCountsOfAStackStartFromTheConfiguration)
 
   EXPECT_EQ(commander->get_parameter("state.shots").as_double_array(), (std::vector<double>{ 10.0 }));
   EXPECT_EQ(commander->get_parameter("state.angles").as_double_array(), (std::vector<double>{ 35.0 }));
+  EXPECT_EQ(commander->get_parameter("state.turn").as_double_array(), (std::vector<double>{ 17.0 }));
 
   ASSERT_TRUE(commander->set_parameter(rclcpp::Parameter("state.shots", std::vector<double>{ 40.0 })).successful);
   EXPECT_EQ(load("shots"), (std::vector<double>{ 40.0 }));
