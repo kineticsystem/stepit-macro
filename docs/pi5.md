@@ -209,13 +209,11 @@ Give the Pi a fixed address in the router's DHCP settings, so that the tablet al
 
 ### Start the Rig with the Pi
 
-The rig does not start again when the Pi reboots. After the first start, ask Docker to restart it:
+Once started with `./docker/dock.sh start`, the rig starts again by itself whenever the Pi is switched on or rebooted: its container has the restart policy `unless-stopped`, in [`docker-compose.yml`](../docker/docker-compose.yml), and the Docker service starts with the Pi. StepIt UI is then on port 8070 about a minute after the Pi boots.
 
-```
-docker update --restart unless-stopped stepit-macro
-```
+**`./docker/dock.sh stop` keeps it stopped.** A container stopped by hand stays stopped across reboots, until the next `./docker/dock.sh start`.
 
-Docker then starts the rig with the Pi, until we stop it with `./docker/dock.sh stop`. The setting lasts until the container is recreated, e.g. by `./docker/dock.sh clean`: run the command again after that.
+**A device plugged in after the rig started.** The motors, the camera and the gamepad are found when they appear. The Freezer is opened only when the rig starts: if its Arduino Nano is not ready at boot, plug it in again and restart the rig, with `./docker/dock.sh stop` and `./docker/dock.sh start`.
 
 ## Logging in with an SSH Key
 
