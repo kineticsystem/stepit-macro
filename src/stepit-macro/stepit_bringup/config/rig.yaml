@@ -123,6 +123,10 @@ stepit_server:
 camera:
   ros__parameters:
     download_directory: &pictures ~/ws/pictures
+    # The pictures go to the camera's memory only, and are deleted once
+    # downloaded: a stack of hundreds of RAW pictures would fill the card,
+    # and a camera whose card is full ignores the shots.
+    keep_on_camera: false
     # iso: "400"
     # shutter_speed: "1/125"
     # aperture: "8"
