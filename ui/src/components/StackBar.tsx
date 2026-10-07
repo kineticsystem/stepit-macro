@@ -29,7 +29,7 @@ export function StackBar() {
   return (
     <div className="stack-bar">
       <button
-        className="primary"
+        className="primary main-action"
         disabled={!idle || problem !== undefined}
         title={problem ?? 'Shoot the stack: the robot moves'}
         onClick={() => void stack.start()}

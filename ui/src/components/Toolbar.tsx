@@ -50,7 +50,7 @@ function ShotButton() {
   const connected = useStatus() === 'connected';
   const shooting = state === 'shooting' || state === 'waiting';
   return (
-    <button className="primary" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
+    <button className="primary main-action" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
       <ShutterIcon />
       {shooting ? 'Shooting…' : 'Test shot'}
     </button>
