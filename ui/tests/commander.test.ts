@@ -104,4 +104,3 @@ describe('whether an objective runs', () => {
     expect(objectiveRuns(false, 'FocusStack')).toEqual({ busy: false, known: true });
   });
 });
-

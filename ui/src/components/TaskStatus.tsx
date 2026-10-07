@@ -32,4 +32,3 @@ export function TaskStatus() {
 function StackHint({ problem }: { problem?: string }) {
   return problem ? <span className="task-state" title={problem}>Stack: {problem}</span> : null;
 }
-
