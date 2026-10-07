@@ -35,8 +35,9 @@ namespace stepit_behaviors
 inline constexpr auto kStackDoneFile = "stack.json";
 
 /**
- * @brief Announces that the pictures of one rail's stack are all on disk, for
- * a stacking program on another computer to merge them as soon as they are.
+ * @brief Announces that the pictures of one rail's stack are all on disk: a
+ * folder that stops growing may only be waiting for its next shot, so the
+ * files alone cannot tell.
  *
  * Its folder is the one SetPictureFolder gave the camera, with the same
  * `folder`, `index` and `degrees`, e.g. 2026-10-06_15-20-04/angle_01_-17.0deg,
@@ -48,9 +49,8 @@ inline constexpr auto kStackDoneFile = "stack.json";
  *
  * - It writes stack.json into the folder, the shots and the angle of the stack
  *   and the files the folder holds, written to a temporary file and renamed, so
- *   that its presence says the stack is complete. A program that was not
- *   listening, e.g. a computer switched off during the stack, finds the
- *   finished stacks by it.
+ *   that its presence says the stack is complete, also to whoever reads the
+ *   pictures later, without following the topic.
  * - It publishes the folder, relative to the pictures folder, on a latched
  *   topic, /focus_stack/stack_done by default, as a std_msgs/String.
  *

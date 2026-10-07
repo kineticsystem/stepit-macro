@@ -175,7 +175,7 @@ BT::NodeStatus StackDone::tick()
   if (!publisher_)
   {
     const auto topic = getInput<std::string>("topic_name").value_or(kDefaultTopic);
-    // Latched: the last stack reaches a program that subscribes later.
+    // Latched: the last stack reaches a subscriber that comes later.
     publisher_ = node->create_publisher<std_msgs::msg::String>(topic, rclcpp::QoS{ 1 }.reliable().transient_local());
   }
   std_msgs::msg::String message;

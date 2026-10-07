@@ -57,9 +57,9 @@ pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 
 `SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again. A stack that stops halfway leaves the folder set: the next stack, or a test shot, sets its own.
 
-**Each finished angle is announced, for a stacking program.** Once the last picture of an angle is saved, `StackDone` writes `stack.json` into the angle's folder and publishes the folder, relative to the pictures folder, e.g. `2026-10-06_15-20-04/angle_01_-17.0deg`, on `/focus_stack/stack_done` (`std_msgs/String`), latched. A stacking program on another computer listens through the commander's rosbridge, port 9090, copies that folder and merges it while the rig shoots the next angle. The camera reports a picture only once it is saved, and `ExpectPicture` waits for that report, so every picture of the angle is on disk when `StackDone` runs.
+**Each finished angle says so.** A folder of pictures that stops growing may only be waiting for its next shot: the files alone cannot tell a finished angle from one in progress. Once the last picture of an angle is saved, `StackDone` publishes the folder, relative to the pictures folder, e.g. `2026-10-06_15-20-04/angle_01_-17.0deg`, on `/focus_stack/stack_done` (`std_msgs/String`), latched, as `/focus_stack/progress` is, and writes `stack.json` into the folder. The camera reports a picture only once it is saved, and `ExpectPicture` waits for that report, so every picture of the angle is on disk when `StackDone` runs.
 
-`stack.json` makes the folder say for itself that it is complete, for a program that was not listening, e.g. a computer switched off during the stack: it finds the finished stacks by it. It is written to a temporary file, then renamed, so it is either whole or absent:
+`stack.json` makes the folder say for itself that it is complete, also to whoever reads the pictures later, without following the topic. It is written to a temporary file, then renamed, so it is either whole or absent:
 
 ```json
 {

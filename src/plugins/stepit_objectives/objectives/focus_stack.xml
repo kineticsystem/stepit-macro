@@ -33,8 +33,8 @@
   2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on.
 
   Once the last picture of an angle is saved, its folder gets stack.json, and
-  its name goes on the latched topic /focus_stack/stack_done, for a stacking
-  program to merge the pictures while the next angle is shot.
+  its name goes on the latched topic /focus_stack/stack_done: the pictures of
+  that angle are complete.
 -->
 <root BTCPP_format="4" main_tree_to_execute="FocusStack">
 
@@ -103,8 +103,7 @@
               <ReportProgress _description="One more picture of the stack." done="{pictures_done}" total="{pictures_total}"/>
             </Sequence>
           </Steps>
-          <!-- Every picture of this angle is on disk: a stacking program may
-               merge them now, while the next angle is shot. -->
+          <!-- Every picture of this angle is on disk. -->
           <StackDone _description="The stack of this angle is complete: stack.json in its folder, and /focus_stack/stack_done."
                      folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}" shots="{@shots}"/>
         </Sequence>

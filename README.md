@@ -315,7 +315,7 @@ The behaviors show every shape a behavior can take: a ROS action client
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
 on a subscription (`CommandJointPositions`), a latched publisher
 (`ReportProgress`, a stack's progress for every page, and `StackDone`, each
-finished stack for a stacking program), a parameter of another
+angle of a stack whose pictures are all saved), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 (`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
 `MillimetresToRadians`, `DegreesToRadians`) and a file (`SaveValues`,

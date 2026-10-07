@@ -290,8 +290,8 @@ TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
   }
 }
 
-// Once the last picture of an angle is saved, its folder is announced, for a
-// stacking program to merge it while the next angle is shot.
+// Once the last picture of an angle is saved, its folder is announced: its
+// pictures are complete.
 TEST_F(FocusStackObjective, EachAngleIsAnnouncedOnceItsPicturesAreSaved)
 {
   mark(1.0, 2.0);
@@ -303,8 +303,8 @@ TEST_F(FocusStackObjective, EachAngleIsAnnouncedOnceItsPicturesAreSaved)
   EXPECT_EQ(stacks, (std::vector<std::string>{ folders[0], folders[1] }));
 }
 
-// The folder of a finished angle says so itself, with stack.json: a program
-// that was not listening finds the finished stacks by it.
+// The folder of a finished angle says so itself, with stack.json, also to
+// whoever reads the pictures later.
 TEST_F(FocusStackObjective, EachFinishedAngleHasAStackFile)
 {
   mark(1.0, 2.0);

@@ -139,9 +139,9 @@ stack lives on the rig, in the state file, which the plugin shows as the command
 `state.*` (loaded when it starts, written back when a page or `SaveValues` sets one); the
 commander publishes the running objective on `/stepit_server/objective`, and the whole run, every node
 with its status, on `/stepit_server/execution`, which the editor's Execution tab follows, `FocusStack` its progress
-on `/focus_stack/progress` (`ReportProgress`), both latched; each finished angle of a stack, for a
-stacking program on another computer, on `/focus_stack/stack_done` (`StackDone`), latched, with
-`stack.json` written into its folder; and every page shows every picture on
+on `/focus_stack/progress` (`ReportProgress`), both latched; each angle of a stack whose pictures are
+all saved on `/focus_stack/stack_done` (`StackDone`), latched, with `stack.json` written into its
+folder; and every page shows every picture on
 `/camera/picture`. A new piece of shared state goes the same way, never into `localStorage`. What a
 rig start must forget, e.g. the marks, which are counts of motor steps, `rig.launch.py` removes
 from the state file before anything starts (`state_cleared_on_start` of `rig.yaml`): the rig's
