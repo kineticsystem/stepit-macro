@@ -217,7 +217,7 @@ Once started with `./docker/dock.sh start`, the rig starts again by itself whene
 
 **`./docker/dock.sh stop` keeps it stopped.** A container stopped by hand stays stopped across reboots, until the next `./docker/dock.sh start`.
 
-**A device plugged in after the rig started.** The motors, the camera and the gamepad are found when they appear. The Freezer is opened only when the rig starts: if its Arduino Nano is not ready at boot, plug it in again and restart the rig, with `./docker/dock.sh stop` and `./docker/dock.sh start`.
+**A device plugged in after the rig started.** The motors, the camera, the gamepad and the Freezer are found when they appear. The Freezer's node tries to open its Arduino Nano every 2 s while it has none, so a Nano that was not ready at boot, or was unplugged, only needs to be plugged in again.
 
 ### Where the Rig Keeps Its Files
 
@@ -331,7 +331,7 @@ sudo reboot
 
 **USB devices drop out, or the kernel says `error -71` and `unable to enumerate USB device`.** The ports run out of current: the Pi caps them at 600 mA when it does not see a 5 A supply. Check the supply as in [Check the System](#check-the-system): with the official 27 W supply, plugged straight into the Pi, it prints `5000`. A supply of 3 A cannot power the four devices: use the 27 W one, or a powered USB hub. Do not raise the cap with `usb_max_current_enable` on a 3 A supply: the Pi then browns out under load.
 
-**The Freezer does not connect after the Pi boots, and the log says `Cannot connect to the Freezer controller`.** The Arduino Nano is sometimes refused when the Pi powers up with it plugged in: `ls /dev/serial/by-id/` lists the Teensy only, and the kernel logged `error -71` for its port. Unplug the Nano and plug it in again, then restart the rig, which opens the Freezer only when it starts: `./docker/dock.sh stop && ./docker/dock.sh start`. A short cable that carries data helps.
+**The Freezer does not connect after the Pi boots, and the log says `Cannot connect to the Freezer controller`.** The Arduino Nano is sometimes refused when the Pi powers up with it plugged in: `ls /dev/serial/by-id/` lists the Teensy only, and the kernel logged `error -71` for its port. Unplug the Nano and plug it in again: the Freezer's node tries to connect every 2 s, and logs `The Freezer controller is back` within a few seconds, with no restart. A short cable that carries data helps.
 
 **The camera driver keeps waiting for a camera that is on and connected.** Its USB device is not writable by the container's user: install the rule of [Give the Rig the Camera and the Gamepad](#give-the-rig-the-camera-and-the-gamepad), then unplug the camera and plug it in again.
 
