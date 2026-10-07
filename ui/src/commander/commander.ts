@@ -73,6 +73,20 @@ export function followObjective(ros: Rosbridge, listener: (objective: string) =>
     { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
 }
 
+/**
+ * Whether an objective runs, from both sources: the status of the action, which
+ * a commander that just started has not published yet, since it publishes it
+ * only for a goal, and the latched objective, which it publishes, empty, as
+ * soon as it starts. Either is enough to know. The status, which tells every
+ * goal, wins once it came: the objective keeps the name of a tree that threw
+ * until the next one.
+ * @param status Whether a goal is active, or undefined until the status came.
+ * @param objective The objective running, "" for none, or undefined until it came.
+ */
+export function objectiveRuns(status: boolean | undefined, objective: string | undefined): { busy: boolean; known: boolean } {
+  return { busy: status ?? !!objective, known: status !== undefined || objective !== undefined };
+}
+
 function describe(status: number): string {
   return { 4: 'Succeeded', 5: 'Stopped', 6: 'Failed' }[status] ?? `Ended with status ${status}`;
 }

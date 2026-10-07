@@ -3,17 +3,22 @@
 import { create } from 'zustand';
 import { onConnected, onDisconnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
-import { cancelAll, followObjective, followObjectives, runObjective, type RunResult } from './commander';
+import { cancelAll, followObjective, followObjectives, objectiveRuns, runObjective, type RunResult } from './commander';
 
 interface CommanderState {
   /** An objective runs, sent by this page or by anyone else, e.g. the gamepad. */
   busy: boolean;
   /**
    * The page has heard from the commander whether an objective runs: false
-   * until the first status after a connection. Not knowing counts as running
-   * for Stop, so that it is never off while the robot might move.
+   * until the first status or objective after a connection, see objectiveRuns().
+   * Not knowing counts as running for Stop, so that it is never off while the
+   * robot might move.
    */
   known: boolean;
+  /** Whether a goal is active, from the status of the action: undefined until it came. */
+  goalActive?: boolean;
+  /** The objective running, from the latched topic: undefined until it came. */
+  heardObjective?: string;
   /** The objective this page runs, if any. */
   running?: string;
   /** The objective running, whoever sent it, as the commander says: "" when none. */
@@ -59,8 +64,10 @@ export function followCommander(): () => void {
   let stopFollowing = () => {};
   const follow = () => {
     stopFollowing();
-    const stopStatus = followObjectives(ros(), (busy) => useCommander.setState({ busy, known: true }));
-    const stopObjective = followObjective(ros(), (objective) => useCommander.setState({ objective }));
+    const stopStatus = followObjectives(ros(), (goalActive) =>
+      useCommander.setState((s) => ({ goalActive, ...objectiveRuns(goalActive, s.heardObjective) })));
+    const stopObjective = followObjective(ros(), (objective) =>
+      useCommander.setState((s) => ({ objective, heardObjective: objective, ...objectiveRuns(s.goalActive, objective) })));
     stopFollowing = () => {
       stopStatus();
       stopObjective();
@@ -69,7 +76,8 @@ export function followCommander(): () => void {
   follow();
   // A new connection, e.g. to another rosbridge in the settings, gets its own subscription.
   const unsubscribe = onConnected(follow);
-  const unsubscribeLost = onDisconnected(() => useCommander.setState({ known: false }));
+  const unsubscribeLost = onDisconnected(() =>
+    useCommander.setState({ goalActive: undefined, heardObjective: undefined, ...objectiveRuns(undefined, undefined) }));
   return () => {
     stopFollowing();
     unsubscribe();
