@@ -204,6 +204,8 @@ button.live.on:hover:not(:disabled), button.lights.on:hover:not(:disabled), butt
 .rail-mark.top { margin-bottom: 8px; }
 .rail-mark.bottom { margin-top: 8px; }
 .rail-mark button { width: 100%; }
+/* The room of a Mark button on the stage's slider, kept for the same height. */
+.rail-mark.mark-space { visibility: hidden; }
 /* Hold to mark: the button fills while it is held, HOLD_MS of hold.ts. */
 button.hold {
   position: relative; overflow: hidden;
