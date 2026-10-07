@@ -169,7 +169,7 @@ From then on, the rig starts again by itself with the computer, e.g. when the Ra
 
 The rig runs on fake hardware by default: the fake motors and the fake Freezer controller; the camera driver waits for a camera. To drive the real robot and the real Freezer board, set them in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig).
 
-StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. The pictures the camera takes are saved in `pictures`, at the root of this repo.
+StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. Its **Execution** tab shows every run of the commander, with the status of each node, also those started from StepIt UI or the gamepad, and a run already going when the page opens. The pictures the camera takes are saved in `pictures`, at the root of this repo.
 
 Follow the output of the rig. Stop following with `Ctrl+C`: the rig keeps running.
 

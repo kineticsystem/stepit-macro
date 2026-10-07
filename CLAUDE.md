@@ -136,7 +136,8 @@ rig runs, e.g. the marks of a focus stack, goes in the state file, in the git-ig
 **Every page shows the same.** StepIt UI keeps nothing of the rig in the browser: the state of a
 stack lives on the rig, in the state file, which the plugin shows as the commander's parameters
 `state.*` (loaded when it starts, written back when a page or `SaveValues` sets one); the
-commander publishes the running objective on `/stepit_server/objective`, `FocusStack` its progress
+commander publishes the running objective on `/stepit_server/objective`, and the whole run, every node
+with its status, on `/stepit_server/execution`, which the editor's Execution tab follows, `FocusStack` its progress
 on `/focus_stack/progress` (`ReportProgress`), both latched; and every page shows every picture on
 `/camera/picture`. A new piece of shared state goes the same way, never into `localStorage`. What a
 rig start must forget, e.g. the marks, which are counts of motor steps, `rig.launch.py` removes
