@@ -158,28 +158,38 @@ protected:
     return { std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>() };
   }
 
-  /// @brief Runs FocusStack, and returns its status and what it announced on /focus_stack/stack_done.
-  std::pair<BT::NodeStatus, std::vector<std::string>> runAndListen()
+  /// @brief What FocusStack ended with, and what it announced.
+  struct Run
+  {
+    BT::NodeStatus status;
+    std::vector<std::string> stacks;      ///< On /focus_stack/stack_done.
+    std::vector<std::string> all_stacks;  ///< On /focus_stack/all_stacks_done.
+  };
+
+  /// @brief Runs FocusStack, listening to the topics of the finished stacks.
+  Run runAndListen()
   {
     std::mutex mutex;
-    std::vector<std::string> stacks;
-    const auto subscription =
-        node_->create_subscription<std_msgs::msg::String>("/focus_stack/stack_done",
-                                                          rclcpp::QoS{ 10 }.reliable().transient_local(),
-                                                          [&](const std_msgs::msg::String& message) {
-                                                            const std::lock_guard<std::mutex> lock{ mutex };
-                                                            stacks.push_back(message.data);
-                                                          });
+    Run run;
+    const auto listen = [&](const std::string& topic, std::vector<std::string>& into) {
+      return node_->create_subscription<std_msgs::msg::String>(topic, rclcpp::QoS{ 10 }.reliable().transient_local(),
+                                                               [&mutex, &into](const std_msgs::msg::String& message) {
+                                                                 const std::lock_guard<std::mutex> lock{ mutex };
+                                                                 into.push_back(message.data);
+                                                               });
+    };
+    const auto stacks = listen("/focus_stack/stack_done", run.stacks);
+    const auto all_stacks = listen("/focus_stack/all_stacks_done", run.all_stacks);
     rclcpp::executors::SingleThreadedExecutor executor;
     executor.add_node(node_);
     std::thread spinner{ [&]() { executor.spin(); } };
 
-    const auto status = runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 90 });
+    run.status = runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 90 });
     std::this_thread::sleep_for(std::chrono::milliseconds{ 300 });
     executor.cancel();
     spinner.join();
     const std::lock_guard<std::mutex> lock{ mutex };
-    return { status, stacks };
+    return run;
   }
 
   /// @brief The values LoadValues reads under `key`, or nothing.
@@ -295,12 +305,46 @@ TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
 TEST_F(FocusStackObjective, EachAngleIsAnnouncedOnceItsPicturesAreSaved)
 {
   mark(1.0, 2.0);
-  const auto [status, stacks] = runAndListen();
-  ASSERT_EQ(status, BT::NodeStatus::SUCCESS);
+  const auto run = runAndListen();
+  ASSERT_EQ(run.status, BT::NodeStatus::SUCCESS);
 
   const auto folders = camera_->folders();
   ASSERT_EQ(folders.size(), 3u);
-  EXPECT_EQ(stacks, (std::vector<std::string>{ folders[0], folders[1] }));
+  EXPECT_EQ(run.stacks, (std::vector<std::string>{ folders[0], folders[1] }));
+}
+
+// Once the last angle is done, the stack's folder is announced: nothing more
+// comes into it.
+TEST_F(FocusStackObjective, TheStackIsAnnouncedOnceEveryAngleIsDone)
+{
+  mark(1.0, 2.0);
+  const auto run = runAndListen();
+  ASSERT_EQ(run.status, BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  const auto stack = std::filesystem::path(folders[0]).parent_path().string();
+  EXPECT_EQ(run.all_stacks, (std::vector<std::string>{ stack }));
+}
+
+// The stack's folder says so itself, with all_stacks.json, which lists the
+// folders of its angles.
+TEST_F(FocusStackObjective, TheFinishedStackHasAnAllStacksFile)
+{
+  mark(1.0, 2.0);
+  ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 }), BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  const auto stack = std::filesystem::path(folders[0]).parent_path();
+  const auto file = read(pictures() / stack / "all_stacks.json");
+  EXPECT_NE(file.find("\"folder\": \"" + stack.string() + "\""), std::string::npos) << file;
+  EXPECT_NE(file.find("\"shots\": 3,"), std::string::npos) << file;
+  EXPECT_NE(file.find("\"angles\": 2,"), std::string::npos) << file;
+  EXPECT_NE(file.find("\"stacks\": [\n    \"" + std::filesystem::path(folders[0]).filename().string() + "\",\n    \"" +
+                      std::filesystem::path(folders[1]).filename().string() + "\"\n  ]"),
+            std::string::npos)
+      << file;
 }
 
 // The folder of a finished angle says so itself, with stack.json, also to
@@ -326,20 +370,22 @@ TEST_F(FocusStackObjective, EachFinishedAngleHasAStackFile)
 }
 
 // A stack that stops halfway is not complete: nothing is announced, and its
-// folder has no stack.json.
+// folders have neither stack.json nor all_stacks.json.
 TEST_F(FocusStackObjective, AStackThatStopsAnnouncesNothing)
 {
   mark(1.0, 2.0);
-  camera_->ignore(2);
-  const auto [status, stacks] = runAndListen();
-  EXPECT_EQ(status, BT::NodeStatus::FAILURE);
+  camera_->ignore(1);
+  const auto run = runAndListen();
+  EXPECT_EQ(run.status, BT::NodeStatus::FAILURE);
 
-  EXPECT_TRUE(stacks.empty());
+  EXPECT_TRUE(run.stacks.empty());
+  EXPECT_TRUE(run.all_stacks.empty());
   if (std::filesystem::exists(pictures()))
   {
     for (const auto& entry : std::filesystem::recursive_directory_iterator(pictures()))
     {
       EXPECT_NE(entry.path().filename(), "stack.json") << entry.path();
+      EXPECT_NE(entry.path().filename(), "all_stacks.json") << entry.path();
     }
   }
 }
@@ -387,26 +433,15 @@ TEST_F(FocusStackObjective, TheOtherJointsStayInPlace)
   }
 }
 
-// The camera ignored a release, as the real one sometimes does: the shot is
-// fired again, and the stack has every picture.
-TEST_F(FocusStackObjective, AShotTheCameraIgnoredIsFiredAgain)
+// The camera ignored a release, as the real one sometimes does: the whole
+// stack stops at once, without firing the shot again, rather than leave a gap.
+TEST_F(FocusStackObjective, StopsWhenTheCameraIgnoresAShot)
 {
   mark(1.0, 2.0);
   camera_->ignore(1);
-  ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 90 }), BT::NodeStatus::SUCCESS);
-
-  EXPECT_EQ(freezer_->fired().size(), 7u);
-  EXPECT_EQ(camera_->taken(), 6);
-}
-
-// Twice in a row: the stack stops rather than leave a gap.
-TEST_F(FocusStackObjective, StopsWhenTheCameraIgnoresAShotTwice)
-{
-  mark(1.0, 2.0);
-  camera_->ignore(2);
   EXPECT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 90 }), BT::NodeStatus::FAILURE);
 
-  EXPECT_EQ(freezer_->fired().size(), 2u);
+  EXPECT_EQ(freezer_->fired().size(), 1u);
   EXPECT_EQ(camera_->taken(), 0);
 }
 

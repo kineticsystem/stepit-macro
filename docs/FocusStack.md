@@ -31,11 +31,11 @@ FocusStack
 │   └── Steps  near to far, `shots` values
 │       ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
 │       ├── Sleep                   500 ms, for the vibrations to die down
-│       └── RetryUntilSuccessful    2 attempts
-│           └── ExpectPicture       (fails if no picture comes within 15 s)
-│               └── Shoot           (the Freezer's default sequence: the camera and the lights)
-│           └── ReportProgress      one more picture
+│       ├── ExpectPicture           (fails if no picture comes within 15 s: the whole stack stops)
+│       │   └── Shoot               (the Freezer's default sequence: the camera and the lights)
+│       └── ReportProgress          one more picture
 │   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
+├── AllStacksDone                   all_stacks.json in the stack's folder, and its name on /focus_stack/all_stacks_done
 ├── SetPictureFolder                "", the pictures folder itself again
 └── CommandJointPositions           back to {home}
 ```
@@ -46,7 +46,7 @@ Every move goes through the position controller, as in [`Stack`](Stack.md): the 
 
 **Every position is approached from the same side, against backlash.** Each move approaches its position going from the first position of the stack to the last: the rail from near to far, the stage from `stage_from` to `stage_to`. A joint that would arrive the other way first goes past its target, then back to it, so that its gears always end loaded the same way. That happens when the rail comes back to the near end for the next angle, and when the stage turns to its first angle against the direction of the stack. The first move also sends a joint that is already at its first position past it and back, as it may have been driven there either way. How far past is the overshoot of each motor, `overshoot.joint1` and `overshoot.joint2` in the section `stepit_server` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml): it must exceed the backlash of the axis.
 
-**A shot without a picture is fired again, once.** The Freezer fires the camera through a wire, and cannot tell whether the shutter opened: the camera sometimes ignores the release. `ExpectPicture` waits for StepIt Camera to report the picture on `/camera/picture`; when none comes, the shot is fired again, and after a second miss the stack stops, rather than leave a gap. The log names the shot.
+**A shot without a picture stops the whole stack.** The Freezer fires the camera through a wire, and cannot tell whether the shutter opened: the camera sometimes ignores the release. `ExpectPicture` waits for StepIt Camera to report the picture on `/camera/picture`; when none comes, the stack stops at once, without firing the shot again: a missed picture is a fault to look into, not a gap to fill. The joints stay where they are, as when the stack is cancelled. The log names the shot.
 
 **Each stack has its folder of pictures, with one folder per angle.** Under the camera's pictures folder, the folder `pictures` of the repo, the stack's folder is named after when it started, and holds one folder per angle, numbered from 1, with its angle in degrees: the pictures of one rail's stack, to stack together.
 
@@ -76,6 +76,23 @@ pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 ```
 
 `files` lists every file of the folder: one per shot, or two with RAW+JPEG. The commander finds the folder through `pictures_folder` in the section `stepit_server` of `rig.yaml`, which is the camera's `download_directory` through a YAML anchor: the commander and the camera run in the same container. An angle that stops halfway is never announced and gets no `stack.json`. When the file cannot be written, `StackDone` logs why and still announces the stack: the shooting goes on.
+
+**The whole stack says so too, once every angle is done.** The stack's folder, like an angle's, cannot tell by itself whether more angles are coming. After the `StackDone` of the last angle, `AllStacksDone` publishes the stack's folder, e.g. `2026-10-06_15-20-04`, on `/focus_stack/all_stacks_done` (`std_msgs/String`), latched, and writes `all_stacks.json` into it, also written to a temporary file and renamed:
+
+```json
+{
+  "folder": "2026-10-06_15-20-04",
+  "shots": 10,
+  "angles": 35,
+  "finished": "2026-10-06T16:51:02",
+  "stacks": [
+    "angle_01_-17.0deg",
+    "angle_02_-16.0deg"
+  ]
+}
+```
+
+`stacks` lists the folders of the angles, each with its `stack.json`. A stack that stops halfway is never announced and gets no `all_stacks.json`: its finished angles keep theirs. When the file cannot be written, `AllStacksDone` logs why and still announces the stack.
 
 **Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `[done, total]`, on `/focus_stack/progress` (`std_msgs/Int32MultiArray`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
 

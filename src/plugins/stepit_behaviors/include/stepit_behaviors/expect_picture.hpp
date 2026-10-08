@@ -39,8 +39,8 @@ namespace stepit_behaviors
  * The Freezer fires the camera through a wire and cannot tell whether the
  * shutter opened: the camera may ignore the release. StepIt Camera publishes
  * every picture it downloads on /camera/picture, so the picture is the proof
- * of the shot. Wrapped in RetryUntilSuccessful, a missed shot is fired again
- * instead of leaving a gap in a stack.
+ * of the shot. Its failure is the objective's to handle: FocusStack stops
+ * rather than leave a gap in a stack.
  *
  * It listens from its first tick, before its child runs, so that a picture
  * cannot come unseen. A shot of a camera set to RAW+JPEG gives two files: set

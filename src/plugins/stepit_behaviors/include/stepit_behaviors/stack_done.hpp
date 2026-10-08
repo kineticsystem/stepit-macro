@@ -33,6 +33,7 @@ namespace stepit_behaviors
 
 /// @brief The file StackDone writes into the folder of a finished stack.
 inline constexpr auto kStackDoneFile = "stack.json";
+inline constexpr auto kAllStacksDoneFile = "all_stacks.json";
 
 /**
  * @brief Announces that the pictures of one rail's stack are all on disk: a
@@ -61,6 +62,40 @@ class StackDone : public BT::SyncActionNode
 {
 public:
   StackDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+
+  static BT::PortsList providedPorts();
+
+  BT::NodeStatus tick() override;
+
+private:
+  std::weak_ptr<rclcpp::Node> node_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+};
+
+/**
+ * @brief Announces that every stack of a focus stack is done: the angles of
+ * the stage are all shot, and nothing more comes into the stack's folder.
+ *
+ * It runs once, after the StackDone of the last angle, in the stack's folder
+ * under the camera's folder of pictures, the parameter `pictures_folder`, e.g.
+ * 2026-10-06_15-20-04. A focus stack that stops halfway never reaches it.
+ *
+ * It does two things, as StackDone does for one angle:
+ *
+ * - It writes all_stacks.json into the stack's folder: the shots and the
+ *   angles, and the folders of the angles it holds, written to a temporary file
+ *   and renamed, so that its presence says the focus stack is complete.
+ * - It publishes the stack's folder, relative to the pictures folder, on a
+ *   latched topic, /focus_stack/all_stacks_done by default, as a
+ *   std_msgs/String.
+ *
+ * It does not fail the objective when the file cannot be written: it logs why,
+ * and still publishes.
+ */
+class AllStacksDone : public BT::SyncActionNode
+{
+public:
+  AllStacksDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
 
   static BT::PortsList providedPorts();
 

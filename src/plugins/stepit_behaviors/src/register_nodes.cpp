@@ -79,6 +79,7 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<CurrentTime>("CurrentTime");
   factory.registerNodeType<ReportProgress>("ReportProgress", params);
   factory.registerNodeType<StackDone>("StackDone", params);
+  factory.registerNodeType<AllStacksDone>("AllStacksDone", params);
 }
 
 }  // namespace stepit_behaviors
