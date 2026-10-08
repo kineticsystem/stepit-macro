@@ -98,7 +98,7 @@ flowchart TB
   GP[Gamepad] -->|ToggleTeleop| CMD
   CMD -->|loads| PL[stepit_behaviors plugin]
   CMD -->|loads| XML
-  PL -->|controllers, joint states| MOT[StepIt Motors]
+  PL -->|controllers, joint states| MOTORS[StepIt Motors]
   PL -->|Shoot| FRZ[StepIt Freezer]
   PL -->|folder, pictures| CAM[StepIt Camera]
   UI -->|settings, live view| CAM
