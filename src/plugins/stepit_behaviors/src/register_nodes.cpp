@@ -78,8 +78,19 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<SetPictureFolder>("SetPictureFolder", camera_params);
   factory.registerNodeType<CurrentTime>("CurrentTime");
   factory.registerNodeType<ReportProgress>("ReportProgress", params);
-  factory.registerNodeType<StackDone>("StackDone", params);
-  factory.registerNodeType<AllStacksDone>("AllStacksDone", params);
+
+  // The topics of the finished stacks, created once, for every run: see latchedPublisher. Here,
+  // after the other nodes: the commander calls registerNodes again for every goal, and the first
+  // registration then throws, as the node is registered already, before any publisher is made.
+  LatchedPublisher stack_done;
+  LatchedPublisher all_stacks_done;
+  if (const auto node = params.nh.lock())
+  {
+    stack_done = latchedPublisher(*node, kStackDoneTopic);
+    all_stacks_done = latchedPublisher(*node, kAllStacksDoneTopic);
+  }
+  factory.registerNodeType<StackDone>("StackDone", params, stack_done);
+  factory.registerNodeType<AllStacksDone>("AllStacksDone", params, all_stacks_done);
 }
 
 }  // namespace stepit_behaviors

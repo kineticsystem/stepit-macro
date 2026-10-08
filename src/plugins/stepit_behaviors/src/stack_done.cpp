@@ -30,6 +30,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "stepit_behaviors/parameters.hpp"
@@ -40,8 +41,6 @@ namespace stepit_behaviors
 {
 namespace
 {
-constexpr auto kDefaultTopic = "/focus_stack/stack_done";
-constexpr auto kAllStacksDefaultTopic = "/focus_stack/all_stacks_done";
 
 /// @brief A text as a JSON string, quotes included.
 std::string jsonString(const std::string& text)
@@ -157,17 +156,28 @@ void writeAllStacksFile(const std::filesystem::path& folder, const std::string& 
        << ",\n  \"finished\": " << jsonString(now()) << ",\n  \"stacks\": " << jsonList(stacks) << "\n}\n";
   writeWhole(folder / kAllStacksDoneFile, json.str());
 }
+/// @brief `publisher` if it publishes on `topic`, or a new one on it.
+LatchedPublisher onTopic(LatchedPublisher publisher, rclcpp::Node& node, const std::string& topic)
+{
+  return publisher && publisher->get_topic_name() == topic ? publisher : latchedPublisher(node, topic);
+}
 }  // namespace
 
-StackDone::StackDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
-  : BT::SyncActionNode(name, config), node_(params.nh)
+LatchedPublisher latchedPublisher(rclcpp::Node& node, const std::string& topic)
+{
+  return node.create_publisher<std_msgs::msg::String>(topic, rclcpp::QoS{ 1 }.reliable().transient_local());
+}
+
+StackDone::StackDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params,
+                     LatchedPublisher publisher)
+  : BT::SyncActionNode(name, config), node_(params.nh), publisher_(std::move(publisher))
 {
 }
 
 BT::PortsList StackDone::providedPorts()
 {
   return {
-    BT::InputPort<std::string>("topic_name", kDefaultTopic, "the latched topic of the finished stacks"),
+    BT::InputPort<std::string>("topic_name", kStackDoneTopic, "the latched topic of the finished stacks"),
     BT::InputPort<std::string>("folder", "the stack's folder under the pictures folder, as given to SetPictureFolder"),
     BT::InputPort<int>("index", "the angle of the stack, from 0, as given to SetPictureFolder"),
     optionalInput("degrees", "the angle in degrees, as given to SetPictureFolder"),
@@ -206,12 +216,7 @@ BT::NodeStatus StackDone::tick()
                  error.what());
   }
 
-  if (!publisher_)
-  {
-    const auto topic = getInput<std::string>("topic_name").value_or(kDefaultTopic);
-    // Latched: the last stack reaches a subscriber that comes later.
-    publisher_ = node->create_publisher<std_msgs::msg::String>(topic, rclcpp::QoS{ 1 }.reliable().transient_local());
-  }
+  publisher_ = onTopic(publisher_, *node, getInput<std::string>("topic_name").value_or(kStackDoneTopic));
   std_msgs::msg::String message;
   message.data = relative;
   publisher_->publish(message);
@@ -219,15 +224,16 @@ BT::NodeStatus StackDone::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
-AllStacksDone::AllStacksDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
-  : BT::SyncActionNode(name, config), node_(params.nh)
+AllStacksDone::AllStacksDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params,
+                             LatchedPublisher publisher)
+  : BT::SyncActionNode(name, config), node_(params.nh), publisher_(std::move(publisher))
 {
 }
 
 BT::PortsList AllStacksDone::providedPorts()
 {
   return {
-    BT::InputPort<std::string>("topic_name", kAllStacksDefaultTopic, "the latched topic of the finished focus stacks"),
+    BT::InputPort<std::string>("topic_name", kAllStacksDoneTopic, "the latched topic of the finished focus stacks"),
     BT::InputPort<std::string>("folder", "the stack's folder under the pictures folder, as given to SetPictureFolder"),
     BT::InputPort<BT::AnyTypeAllowed>("shots", "how many shots each stack has, e.g. 10"),
     BT::InputPort<BT::AnyTypeAllowed>("angles", "how many angles, one stack each, e.g. 35"),
@@ -259,12 +265,7 @@ BT::NodeStatus AllStacksDone::tick()
                  folder->c_str(), error.what());
   }
 
-  if (!publisher_)
-  {
-    const auto topic = getInput<std::string>("topic_name").value_or(kAllStacksDefaultTopic);
-    // Latched: the last focus stack reaches a subscriber that comes later.
-    publisher_ = node->create_publisher<std_msgs::msg::String>(topic, rclcpp::QoS{ 1 }.reliable().transient_local());
-  }
+  publisher_ = onTopic(publisher_, *node, getInput<std::string>("topic_name").value_or(kAllStacksDoneTopic));
   std_msgs::msg::String message;
   message.data = *folder;
   publisher_->publish(message);

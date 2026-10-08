@@ -92,6 +92,8 @@ pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 }
 ```
 
+Both topics exist from the moment the commander loads the plugin, not from the first stack, and serve every stack after it. A subscriber that comes through rosbridge, which runs in a process of its own, takes a moment to find a new publisher: a publisher made at the first `StackDone` of a stack would publish before it is found, and that message, the first angle, would be lost. A subscriber that finds the topics already there also subscribes latched, so it gets the last message again when it reconnects.
+
 `stacks` lists the folders of the angles, each with its `stack.json`. A stack that stops halfway is never announced and gets no `all_stacks.json`: its finished angles keep theirs. When the file cannot be written, `AllStacksDone` logs why and still announces the stack.
 
 **Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `[done, total]`, on `/focus_stack/progress` (`std_msgs/Int32MultiArray`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
