@@ -218,7 +218,6 @@ of `ci-ros-lint.yml` and to the paths of the ament hooks in `.pre-commit-config.
   of its value, as YAML, after `e.g.`. Editors show it; the server ignores it. Keep it in step
   with the `{@key}` the objective reads.
 - Each objective's parameters are documented in `docs/<ObjectiveName>.md` and listed in the
-  README; update both when adding or changing an objective. `TODO.md` records deferred
-  decisions with the measurements behind them.
+  README; update both when adding or changing an objective.
 - Changing a module means committing in its own repository, then updating its pointer here
   (`git add modules/<module>`).

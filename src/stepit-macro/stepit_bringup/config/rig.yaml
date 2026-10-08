@@ -83,7 +83,7 @@ stepit_server:
     # the stack, e.g. the rail back to the near mark, first goes this far past
     # it, in radians of the motor, then back. It must exceed the backlash of
     # each axis: 1 degree of the stage, and 1 mm of the rail, with the ratios
-    # below, until the backlash is measured: see TODO.md.
+    # below, until the backlash is measured.
     overshoot:
       joint1: 1.3963  # the rotary stage: 1 degree, 1/4.5 of a turn
       joint2: 3.9467  # the rail: 1 mm, 1/1.592 of a turn

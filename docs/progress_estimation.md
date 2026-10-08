@@ -33,7 +33,8 @@ to the status of every node, by `_uid`:
 ```
 
 and the StepIt Editor shows it on the row of each running node. Today only `Steps` reports: the iterations done, out of
-all of them. `TODO.md`, item 12, lists the other behaviors that could, and how.
+all of them. Others could, e.g. `FollowJointTrajectory`, exactly, from the time of its trajectory, and
+`CommandJointPositions`, by the distance covered.
 
 What is missing is the progress of the objective as a whole, in the header of the execution view: the subject of this
 document.
