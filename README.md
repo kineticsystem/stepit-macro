@@ -299,7 +299,7 @@ the objective, i.e. after the `target_tree` of the command:
 | [`RotateStageBy`](docs/RotateStageBy.md) | Turns the rotary stage by an angle in degrees, with its 4.5 degrees per turn of the motor, an 80:1 gear. |
 | [`MarkNear`](docs/MarkNear.md), [`MarkFar`](docs/MarkFar.md) | Remember where the rail is as the near or the far end of a focus stack. They move nothing. A start of the rig forgets them. |
 | [`MoveRailToMark`](docs/MoveRailToMark.md) | Moves the rail back to a mark, approaching it as a stack does, to check the focus there, then manual drive again. |
-| [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and fires again a shot whose picture does not come. |
+| [`FocusStack`](docs/FocusStack.md) | Shoots a focus stack from the near mark to the far one at each of several angles of the rotary stage, approaching every position from the same side against backlash, and stops at once when a shot's picture does not come. |
 
 Run one from a terminal in the container, opened with `./docker/dock.sh shell`, e.g. to turn `joint1` and `joint3` by one turn clockwise:
 
@@ -314,8 +314,9 @@ The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
 `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
 on a subscription (`CommandJointPositions`), a latched publisher
-(`ReportProgress`, a stack's progress for every page, and `StackDone`, each
-angle of a stack whose pictures are all saved), a parameter of another
+(`ReportProgress`, a stack's progress for every page, `StackDone`, each
+angle of a stack whose pictures are all saved, and `AllStacksDone`, a stack
+whose angles are all done), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 (`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
 `MillimetresToRadians`, `DegreesToRadians`) and a file (`SaveValues`,
@@ -332,7 +333,8 @@ rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
 which StepIt UI reads; and `state_file`, where `SaveValues` and `LoadValues`
 keep what the objectives remember, e.g. the marks of a stack; and
 `pictures_folder`, the camera's folder of pictures, where `StackDone` writes
-`stack.json` into each finished stack. The plugin shows
+`stack.json` into each finished angle, and `AllStacksDone` `all_stacks.json`
+into each finished stack. The plugin shows
 that file as the parameters `state.*`, and writes into it what a page sets
 there, e.g. the number of shots. `rig.launch.py` removes from it, at every
 start of the rig, what `state_cleared_on_start` lists: the marks. The commander itself knows nothing about them.

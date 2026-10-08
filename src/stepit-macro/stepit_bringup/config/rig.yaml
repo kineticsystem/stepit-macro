@@ -116,6 +116,7 @@ stepit_server:
     # The commander never sees this: the launch file takes it out.
     state_cleared_on_start: [near, far]
     # The camera's folder of pictures, where StackDone writes stack.json into
+    # the folder of each finished angle, and AllStacksDone all_stacks.json into
     # the folder of each finished stack: the camera's download_directory below,
     # through its anchor.
     pictures_folder: &pictures ~/ws/pictures

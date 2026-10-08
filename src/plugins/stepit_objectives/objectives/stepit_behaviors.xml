@@ -9,6 +9,12 @@
 -->
 <root BTCPP_format="4">
     <TreeNodesModel>
+        <Action ID="AllStacksDone">
+            <input_port name="angles" type="BT::AnyTypeAllowed">how many angles, one stack each, e.g. 35</input_port>
+            <input_port name="shots" type="BT::AnyTypeAllowed">how many shots each stack has, e.g. 10</input_port>
+            <input_port name="folder" type="std::string">the stack's folder under the pictures folder, as given to SetPictureFolder</input_port>
+            <input_port name="topic_name" type="std::string" default="/focus_stack/all_stacks_done">the latched topic of the finished focus stacks</input_port>
+        </Action>
         <Action ID="CommandJointPositions">
             <input_port name="overshoot_in_place" type="bool" default="false">joints already at their target go past it too: it is unknown which way they got there</input_port>
             <input_port name="switch_service" type="std::string" default="/controller_manager/switch_controller">the switch_controller service of the controller manager</input_port>

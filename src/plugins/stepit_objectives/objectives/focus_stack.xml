@@ -22,8 +22,8 @@
   rail coming back to the near end for the next angle, first goes past by its
   overshoot, set per joint in the commander's section of rig.yaml.
 
-  A shot whose picture does not come is fired again once; then the stack
-  stops, rather than leave a gap.
+  A shot whose picture does not come stops the whole focus stack at once,
+  without firing it again: the rig stays where it is.
 
   How far it is, the pictures taken of how many, goes on the latched topic
   /focus_stack/progress, for every page to show, whichever started it.
@@ -34,7 +34,9 @@
 
   Once the last picture of an angle is saved, its folder gets stack.json, and
   its name goes on the latched topic /focus_stack/stack_done: the pictures of
-  that angle are complete.
+  that angle are complete. Once the last angle is done, the stack's folder gets
+  all_stacks.json, and its name goes on the latched topic
+  /focus_stack/all_stacks_done: every angle is complete.
 -->
 <root BTCPP_format="4" main_tree_to_execute="FocusStack">
 
@@ -94,11 +96,10 @@
                                      approach_from="{first}" approach_to="{last}"/>
               <!-- Let the vibrations of the move die down. To be measured. -->
               <Sleep msec="500"/>
-              <RetryUntilSuccessful num_attempts="2">
-                <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
-                  <Shoot _description="Fires the default sequence of the Freezer: the camera and the lights."/>
-                </ExpectPicture>
-              </RetryUntilSuccessful>
+              <!-- A shot without its picture stops the whole focus stack. -->
+              <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
+                <Shoot _description="Fires the default sequence of the Freezer: the camera and the lights."/>
+              </ExpectPicture>
               <Script code="pictures_done := angle_index * @shots + shot + 1"/>
               <ReportProgress _description="One more picture of the stack." done="{pictures_done}" total="{pictures_total}"/>
             </Sequence>
@@ -108,6 +109,9 @@
                      folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}" shots="{@shots}"/>
         </Sequence>
       </Steps>
+      <!-- Every angle is on disk. -->
+      <AllStacksDone _description="Every stack is complete: all_stacks.json in the stack's folder, and /focus_stack/all_stacks_done."
+                     folder="{stack_folder}" shots="{@shots}" angles="{@angles}"/>
 
       <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
       <CommandJointPositions _description="Every joint back to where it started."

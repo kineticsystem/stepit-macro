@@ -128,7 +128,7 @@ behavior (BehaviorTree.CPP refuses it): the objective of `Shoot` is `TakeShot`.
 **Parameters of the behaviors** (the overshoot of each motor against backlash, `overshoot.<joint>`,
 the millimetres a linear axis travels per motor turn, `mm_per_turn.<joint>`, the degrees a rotary
 axis turns per motor turn, `deg_per_turn.<joint>`, `state_file`, and `pictures_folder`, the
-camera's `download_directory` through a YAML anchor, for `StackDone`) go in the section
+camera's `download_directory` through a YAML anchor, for `StackDone` and `AllStacksDone`) go in the section
 `stepit_server` of `rig.yaml`: `registerNodes` declares them on the commander's node, which knows
 nothing about them. Configuration measured by hand goes there; what the objectives learn while the
 rig runs, e.g. the marks of a focus stack, goes in the state file, in the git-ignored folder
@@ -141,7 +141,8 @@ commander publishes the running objective on `/stepit_server/objective`, and the
 with its status, on `/stepit_server/execution`, which the editor's Execution tab follows, `FocusStack` its progress
 on `/focus_stack/progress` (`ReportProgress`), both latched; each angle of a stack whose pictures are
 all saved on `/focus_stack/stack_done` (`StackDone`), latched, with `stack.json` written into its
-folder; and every page shows every picture on
+folder; each stack whose angles are all done on `/focus_stack/all_stacks_done` (`AllStacksDone`),
+latched, with `all_stacks.json` written into its folder; and every page shows every picture on
 `/camera/picture`. A new piece of shared state goes the same way, never into `localStorage`. What a
 rig start must forget, e.g. the marks, which are counts of motor steps, `rig.launch.py` removes
 from the state file before anything starts (`state_cleared_on_start` of `rig.yaml`): the rig's
