@@ -3,7 +3,6 @@ import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
-import { PowerButton } from './components/PowerButton';
 import { RailMark } from './components/RailMark';
 import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
@@ -39,7 +38,6 @@ export function App() {
         <span className="row-spacer" />
         <ConnectionBadge />
         <SettingsMenu />
-        <PowerButton />
       </header>
       <main className="page">
         <SideSlider index={0} />

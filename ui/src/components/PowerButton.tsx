@@ -7,10 +7,12 @@ import { createHold } from './hold';
 import { PowerIcon } from './icons';
 
 /**
- * Switches the rig's computer off, in the top bar. **Hold for 3 seconds**:
- * the button fills while it is held, and letting go sooner cancels; a tap
- * only says to hold, in the top bar. Off while disconnected, and while a stack
- * runs, which power_off would refuse anyway, saying why.
+ * Switches the rig's computer off, at the bottom of the settings menu, away
+ * from the buttons a thumb uses all the time. **Hold for 3 seconds**: the
+ * button fills while it is held, and letting go sooner cancels; a tap only
+ * says to hold, in the top bar. Off while disconnected, and while a stack
+ * runs, which power_off would refuse anyway: the reason shows under it, as a
+ * tablet has no tooltip.
  */
 export function PowerButton() {
   const connected = useStatus() === 'connected';
@@ -40,21 +42,24 @@ export function PowerButton() {
   };
 
   return (
-    <button
-      className={['icon-button', 'hold', 'power', holding && 'holding'].filter(Boolean).join(' ')}
-      style={{ '--hold-ms': `${POWER_HOLD_MS}ms` } as CSSProperties}
-      disabled={problem !== undefined}
-      title={problem ?? 'Hold for 3 seconds to switch the rig off'}
-      aria-label="Switch the rig off"
-      onPointerDown={(e) => e.button === 0 && hold.press()}
-      onPointerUp={() => hold.release()}
-      onPointerCancel={() => hold.cancel()}
-      onPointerLeave={() => hold.cancel()}
-      onKeyDown={(e) => key(e, true)}
-      onKeyUp={(e) => key(e, false)}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <PowerIcon />
-    </button>
+    <div className="power-off">
+      <button
+        className={['hold', 'power', holding && 'holding'].filter(Boolean).join(' ')}
+        style={{ '--hold-ms': `${POWER_HOLD_MS}ms` } as CSSProperties}
+        disabled={problem !== undefined}
+        title={problem ?? 'Hold for 3 seconds to switch the rig off'}
+        onPointerDown={(e) => e.button === 0 && hold.press()}
+        onPointerUp={() => hold.release()}
+        onPointerCancel={() => hold.cancel()}
+        onPointerLeave={() => hold.cancel()}
+        onKeyDown={(e) => key(e, true)}
+        onKeyUp={(e) => key(e, false)}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <PowerIcon />
+        <span>Switch the rig off</span>
+      </button>
+      <p className="muted small">{problem ?? 'Hold for 3 seconds.'}</p>
+    </div>
   );
 }
