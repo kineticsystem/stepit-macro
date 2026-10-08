@@ -14,6 +14,15 @@ export function CameraIcon() {
   );
 }
 
+export function PowerIcon() {
+  return (
+    <svg {...common}>
+      <path d="M8 1.75v5.5" />
+      <path d="M4.6 4a5 5 0 1 0 6.8 0" />
+    </svg>
+  );
+}
+
 export function GearIcon() {
   return (
     <svg {...common}>

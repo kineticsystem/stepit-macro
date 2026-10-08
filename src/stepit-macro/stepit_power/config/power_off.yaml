@@ -1,0 +1,13 @@
+# The defaults of power_off, the node that switches the computer off on
+# request: see include/stepit_power/power_off.hpp. The rig overrides them in
+# the section power_off of rig.yaml.
+power_off:
+  ros__parameters:
+    # The command that switches the computer off, run without a shell:
+    # systemd-logind's PowerOff, over the system's D-Bus, not interactive.
+    command: [busctl, call, --system, org.freedesktop.login1, /org/freedesktop/login1,
+              org.freedesktop.login1.Manager, PowerOff, b, "false"]
+    # The objectives that must not be cut short: refused while one runs.
+    refuse_during: [FocusStack, Stack]
+    # Where the commander says which objective runs, latched.
+    objective_topic: /stepit_server/objective

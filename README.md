@@ -36,6 +36,7 @@ is consistent and synchronized with each capture.
   - [Tests](#tests)
 - [The Rig's Own Programs](#the-rigs-own-programs)
   - [The Gamepad](#the-gamepad)
+  - [Switching the Rig Off](#switching-the-rig-off)
   - [The Workspaces](#the-workspaces)
 - [Working on a Module](#working-on-a-module)
 - [Updating the Modules](#updating-the-modules)
@@ -75,6 +76,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
 - **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is, when **held** for 0.6 s, so that a thumb brushing it at the end of a drag marks nothing: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button turns green, **Marked**, and flashes at every new mark. Once both ends are marked, a **tap** goes back to one, [`MoveRailToMark`](docs/MoveRailToMark.md), to check the focus there. A start of the rig forgets the marks: they are counts of motor steps. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), the number of shots, how far the stage turns either way, **Turn ±**, e.g. 17° for −17° to 17°, from where it is when the stack starts, and the number of angles, with the angle between two of them; the rig keeps these in its state file, `focus_stack` of `rig.yaml` being their defaults, so that they can change with no restart; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
+- **Power off**, the ⏻ button at the right of the top bar: **held for 3 seconds**, it switches the rig's computer off, filling while it is held; letting go sooner cancels, and a tap only says to hold. It is off, and the rig refuses, while a stack is shot, `FocusStack` or `Stack`, see [Switching the Rig Off](#switching-the-rig-off).
 
 **Every page shows the same, whichever device opened it, and when.** What runs comes from the commander, which publishes the name of the running objective, latched; the marks and the counts of a stack from the rig's state file, through the commander's parameters; the progress of a stack from `/focus_stack/progress`, latched; and every picture the camera takes shows on every page, whoever fired it. Only the live view is a page's own: it streams to the page that turned it on.
 
@@ -438,6 +440,30 @@ A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velo
 
 It belongs to StepIt Macro, not to StepIt Motors, because it needs the commander: the stop button runs the objective [`ToggleTeleop`](docs/ToggleTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
 
+### Switching the Rig Off
+
+The power button of StepIt UI switches off the computer that runs the rig, e.g. the Raspberry Pi, cleanly: every service stops, the rig among them, whose ROS nodes shut down as on `Ctrl+C`. It calls the service `/power_off/power_off` (`std_srvs/Trigger`) of the node `power_off`, in the package [`stepit_power`](src/stepit-macro/stepit_power), which:
+
+- **refuses while a stack is shot,** an objective of its parameter `refuse_during`, `FocusStack` and `Stack`, as the commander publishes it on `/stepit_server/objective`: switching off would leave a session half shot. The answer says so, e.g. `FocusStack is running: stop it first`, and StepIt UI shows it in the top bar;
+- **otherwise runs its parameter `command`:** `busctl`, asking systemd-logind to power off over the computer's system D-Bus, which the container mounts, `/run/dbus`. It answers `Switching off`, or why the computer refused.
+
+logind decides who may switch the computer off, through polkit. The rig's user may not by default: its answer is `challenge`, a password. On the rig's computer, once, install the polkit rule of [`docker/polkit`](docker/polkit), which lets that user, and only for powering off:
+
+```bash
+sed "s/@USER@/$USER/" docker/polkit/50-stepit-power-off.rules \
+  | sudo tee /etc/polkit-1/rules.d/50-stepit-power-off.rules
+```
+
+Check it, without switching off: the answer must now be `yes`.
+
+```bash
+busctl call --system org.freedesktop.login1 /org/freedesktop/login1 \
+  org.freedesktop.login1.Manager CanPowerOff
+```
+
+> [!WARNING]
+> Install the rule only on the computer that is the rig. On a development computer that runs the rig in Docker, the power button would switch that computer off.
+
 ### The Workspaces
 
 The container builds three ROS workspaces, one on top of the other, each into folders of its own:
@@ -462,6 +488,7 @@ The packages of `src/stepit-macro`:
 |---|---|
 | `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad, the sliders of StepIt UI, the editor and StepIt UI, with the configuration of `config/rig.yaml`. |
 | `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ToggleTeleop`. |
+| `stepit_power` | Switching the computer off: `power_off`, the service of StepIt UI's power button, refused while a stack is shot. |
 | `stepit_macro_tests` | Tests of the packages above, e.g. the gamepad against a fake commander, and `rig.yaml`. |
 
 A new program goes into `src/stepit-macro` as a package with a launch file, and into `MODULES` in [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), with its section in `rig.yaml`.
@@ -507,7 +534,7 @@ git commit -m "Update the modules"
 The container mounts this repo at `~/ws` and the whole of `/dev`, for the serial ports, the camera and the gamepad, which can then be unplugged and plugged in again while the rig runs. Its command runs one launch file, [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), which:
 
 - reads [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), and writes its node parameters to a parameter file of their own;
-- includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py` and `stepit_teleop/teleop.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
+- includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py`, `stepit_teleop/teleop.launch.py` and `stepit_power/power.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
 - starts `ui_teleop`, the second `gamepad_teleop`, which reads the sliders of StepIt UI on `/ui/joy`;
 - starts the editor's server on the rig's objectives, and serves StepIt UI, as built in `ui/dist`.
 

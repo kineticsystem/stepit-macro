@@ -3,6 +3,7 @@ import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { LiveView } from './components/LiveView';
+import { PowerButton } from './components/PowerButton';
 import { RailMark } from './components/RailMark';
 import { RailIcon, RotateIcon } from './components/icons';
 import { SettingsMenu } from './components/SettingsMenu';
@@ -12,6 +13,7 @@ import { TaskStatus } from './components/TaskStatus';
 import { Toolbar } from './components/Toolbar';
 import { followLights } from './freezer/lights';
 import { followMotion, SLIDERS, useMotion } from './motion/store';
+import { followPower } from './power/store';
 import { followPictures } from './shot/store';
 import { followStack } from './stack/store';
 
@@ -23,7 +25,9 @@ import { followStack } from './stack/store';
  */
 export function App() {
   useEffect(() => {
-    const stops = [followCommander(), followCamera(), followLights(), followMotion(), followStack(), followPictures()];
+    const stops = [
+      followCommander(), followCamera(), followLights(), followMotion(), followStack(), followPictures(), followPower(),
+    ];
     return () => stops.forEach((stop) => stop());
   }, []);
 
@@ -35,6 +39,7 @@ export function App() {
         <span className="row-spacer" />
         <ConnectionBadge />
         <SettingsMenu />
+        <PowerButton />
       </header>
       <main className="page">
         <SideSlider index={0} />

@@ -218,7 +218,9 @@ button.hold::after {
   content: ""; position: absolute; inset: 0; width: 0;
   background: var(--accent); opacity: 0.25; pointer-events: none;
 }
-button.hold.holding::after { width: 100%; transition: width 600ms linear; }
+button.hold.holding::after { width: 100%; transition: width var(--hold-ms, 600ms) linear; }
+/* The power button fills in the colour of danger, over POWER_HOLD_MS of power.ts. */
+button.hold.power::after { background: var(--error); opacity: 0.35; }
 /* A new mark shows, even on an end marked already. */
 button.hold.flash { animation: mark-flash 700ms ease-out; }
 @keyframes mark-flash {

@@ -120,8 +120,8 @@ The source code lives in [`src`](../src), one folder per device of the rig, plus
 |---|---|---|
 | Transport | [`ros/rosbridge.ts`](../src/ros/rosbridge.ts) | The rosbridge protocol. Nothing of the rig. |
 | Connection | [`ros/connection.ts`](../src/ros/connection.ts), [`settings.ts`](../src/settings.ts) | The one connection of the page, its status, and where the servers are. |
-| Interfaces and logic | [`commander/commander.ts`](../src/commander/commander.ts), [`camera/camera.ts`](../src/camera/camera.ts), [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts), [`camera/format.ts`](../src/camera/format.ts), [`freezer/outputs.ts`](../src/freezer/outputs.ts), [`shot/pictures.ts`](../src/shot/pictures.ts), [`motion/axis.ts`](../src/motion/axis.ts), [`motion/joy.ts`](../src/motion/joy.ts) | The ROS interface of one module, given a `Rosbridge`, or pure computation. No React, no store, no global. |
-| State | [`commander/store.ts`](../src/commander/store.ts), [`camera/store.ts`](../src/camera/store.ts), [`shot/store.ts`](../src/shot/store.ts), [`freezer/lights.ts`](../src/freezer/lights.ts), [`motion/store.ts`](../src/motion/store.ts) | One zustand store per device: what the page shows, and the actions the views call. |
+| Interfaces and logic | [`commander/commander.ts`](../src/commander/commander.ts), [`camera/camera.ts`](../src/camera/camera.ts), [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts), [`camera/format.ts`](../src/camera/format.ts), [`freezer/outputs.ts`](../src/freezer/outputs.ts), [`shot/pictures.ts`](../src/shot/pictures.ts), [`motion/axis.ts`](../src/motion/axis.ts), [`motion/joy.ts`](../src/motion/joy.ts), [`power/power.ts`](../src/power/power.ts) | The ROS interface of one module, given a `Rosbridge`, or pure computation. No React, no store, no global. |
+| State | [`commander/store.ts`](../src/commander/store.ts), [`camera/store.ts`](../src/camera/store.ts), [`shot/store.ts`](../src/shot/store.ts), [`freezer/lights.ts`](../src/freezer/lights.ts), [`motion/store.ts`](../src/motion/store.ts), [`power/store.ts`](../src/power/store.ts) | One zustand store per device: what the page shows, and the actions the views call. |
 | Views | [`components`](../src/components), [`App.tsx`](../src/App.tsx) | What the user sees and does. |
 
 The dependencies are meant to point down only. The diagram shows the imports as they are; the dashed arrows skip the layer of interfaces, see [Are the Layers Respected?](#are-the-layers-respected).
@@ -242,6 +242,7 @@ A store that follows a topic subscribes through `ros()`, and subscribes again on
 | StepIt Freezer | in the store, [`freezer/lights.ts`](../src/freezer/lights.ts), with the bits of a jack in [`freezer/outputs.ts`](../src/freezer/outputs.ts) | `/freezer/set_outputs`, `/freezer/outputs`. |
 | The controller manager | in the store, [`motion/store.ts`](../src/motion/store.ts) | `/controller_manager/list_controllers`, every 2 s. |
 | ui_teleop | [`motion/joy.ts`](../src/motion/joy.ts), `JoyPublisher` | `sensor_msgs/Joy` on `/ui/joy`, at 20 Hz while a slider is held. |
+| power_off | [`power/power.ts`](../src/power/power.ts) | `/power_off/power_off`, `std_srvs/Trigger`: switches the rig's computer off, or says why not. |
 
 ## The Stores
 
@@ -255,6 +256,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
 | `useStack` | the rail's marks, the counts and the stage's turn either way, from the rig's state file; `marking`, `progress`, from the rig; `setPlan()`, which sets the counts on the rig, `mark()`, `goToMark()`, `start()`; `flashed`, the end just marked. Nothing in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), the parameters in [`stack/parameters.ts`](../src/stack/parameters.ts), which the tests import | `followStack`: reads the commander's `state.*` on every connection, those that exist (`list_parameters` first: `get_parameters` answers nothing to a request naming one missing), follows `/parameter_events` and the latched `/focus_stack/progress` | `useCommander`, `useCamera` |
+| `usePower` | `switchingOff`, `failure`, `hint`; `switchOff()`, `showHint()` | `followPower`: a new connection is a rig on again, which clears them | — |
 | `useSettings` | the preferences of the browser, in `localStorage` | — | — |
 
 ```mermaid
@@ -485,9 +487,10 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 
 | Component | Where | Responsibility | Reads |
 |---|---|---|---|
-| [`TaskStatus`](../src/components/TaskStatus.tsx) | Top bar | The task that runs, and why the last one of this page failed. | `useCommander` |
+| [`TaskStatus`](../src/components/TaskStatus.tsx) | Top bar | The task that runs, and why the last one of this page failed; before them, *Switching off…*, why the rig refused to, or the hint to hold the power button. | `useCommander`, `usePower` |
 | [`ConnectionBadge`](../src/components/ConnectionBadge.tsx) | Top bar | Whether the page reaches rosbridge. | `useStatus`, `useSettings` |
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
+| [`PowerButton`](../src/components/PowerButton.tsx) | Top bar, at the right | Switches the rig off: hold for 3 seconds, `POWER_HOLD_MS`, with [`hold.ts`](../src/components/hold.ts), filling in red; off while disconnected or a stack runs, saying why in its tooltip. | `useStatus`, `useCommander`, `usePower` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
 | [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it; Shots, Angles; while it runs, a progress bar of its pictures. | `useStack`, `useCommander` |
@@ -510,6 +513,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | `picture.test.ts`, `raw.test.ts` | Loading a picture, and the preview inside a RAW. |
 | `joy.test.ts`, `axis.test.ts` | The sliders as a gamepad, and a slider as an axis. |
 | `lights.test.ts` | The bits of the lights on the Freezer's outputs. |
+| `power.test.ts` | Switching off: the service, the refusal passed on, when the button is off and why, the hold of 3 seconds. |
 | `shot.test.ts` | The pictures kept, and the previews of the others released. |
 
 Every test is of the transport or of the layer of interfaces and logic. **No store is tested**, and no component: importing a store imports `settings.ts`, which touches `window` at import time and fails in Node.js. The flows that cross several stores, a shot, manual drive, a reconnection, are only checked by hand on the rig.

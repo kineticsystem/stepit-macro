@@ -35,4 +35,5 @@ jobs:
             src/plugins/stepit_tests \
             src/stepit-macro/stepit_bringup \
             src/stepit-macro/stepit_teleop \
+            src/stepit-macro/stepit_power \
             src/stepit-macro/stepit_macro_tests
