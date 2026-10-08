@@ -32,6 +32,16 @@ if(BUILD_TESTING)
     ${sensor_msgs_TARGETS}
     ${std_msgs_TARGETS})
 
+  # Switching the computer off on request, with a command of the test's own.
+  find_package(std_srvs REQUIRED)
+  find_package(stepit_power REQUIRED)
+  ament_add_gtest(test_power_off tests/test_power_off.cpp)
+  target_link_libraries(test_power_off
+    stepit_power::stepit_power
+    rclcpp::rclcpp
+    ${std_msgs_TARGETS}
+    ${std_srvs_TARGETS})
+
   # The configuration of the rig, rig.yaml, as rig.launch.py reads it.
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_rig_config tests/test_rig_config.py)

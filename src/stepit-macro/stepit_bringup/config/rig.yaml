@@ -185,3 +185,11 @@ ui_teleop:
     joint4: { axis: -1, scale: 0.0 }
     joint5: { axis: -1, scale: 0.0 }
     joy_timeout: 0.5
+
+# Switching the computer off, from StepIt UI's power button: the node power_off,
+# stepit_power/power.launch.py, with its defaults in config/power_off.yaml
+# there. It refuses while one of these objectives runs, and works only with
+# the polkit rule of docker/polkit installed on the rig's computer.
+power_off:
+  ros__parameters:
+    refuse_during: [FocusStack, Stack]

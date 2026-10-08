@@ -108,6 +108,7 @@ tests go in `stepit_macro_tests`. A new program needs a launch file, an entry in
 |---|---|
 | `stepit_bringup` | `rig.launch.py` and `config/rig.yaml`: the only place the rig starts and configures the modules. Installed as links (`--symlink-install`): the launch file finds the repo from its source. |
 | `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ToggleTeleop`, which the commander runs in place of the running one: `ActivateTeleop`, or the trajectory controller back when the gamepad already drives the robot. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
+| `stepit_power` | `power_off`: the service `~/power_off` behind StepIt UI's power button. It switches the computer off with `busctl` (systemd-logind, over the host's `/run/dbus`, mounted by `docker-compose.yml`), refused while an objective of `refuse_during` runs (`FocusStack`, `Stack`). logind allows it only with `docker/polkit/50-stepit-power-off.rules` installed on the rig's computer: never on a development PC, and never let a test run the real command (tests pass a command of their own). |
 | `stepit_macro_tests` | All tests of `src/stepit-macro`, `rig.yaml` included. |
 
 **Nothing is wired up by hand.** An objective is an XML file dropped into

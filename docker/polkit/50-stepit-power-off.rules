@@ -1,0 +1,16 @@
+// Lets the user that runs the rig switch the computer off, without a
+// password, through systemd-logind: the power button of StepIt UI, through
+// the node power_off. Install it on the rig's computer, with that user's name
+// in place of @USER@, see the README:
+//
+//   sed "s/@USER@/$USER/" docker/polkit/50-stepit-power-off.rules \
+//     | sudo tee /etc/polkit-1/rules.d/50-stepit-power-off.rules
+//
+// Only power off: not reboot, nor anything else.
+polkit.addRule(function (action, subject) {
+  if ((action.id == "org.freedesktop.login1.power-off" ||
+       action.id == "org.freedesktop.login1.power-off-multiple-sessions") &&
+      subject.user == "@USER@") {
+    return polkit.Result.YES;
+  }
+});

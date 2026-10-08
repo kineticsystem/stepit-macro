@@ -89,6 +89,11 @@ services:
       - /dev:/dev
       # RViz, on the host's display.
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      # The host's system D-Bus, where power_off asks systemd-logind to switch
+      # the computer off: the folder, not the socket alone, which a restart of
+      # the D-Bus daemon would replace. logind lets the rig's user do it only
+      # with the polkit rule of polkit/, see the README.
+      - /run/dbus:/run/dbus
       - ./apt-cache/apt-proxy.conf:/etc/apt/apt.conf.d/01proxy:ro
       - ./apt-cache/apt-proxy-detect:/usr/local/bin/apt-proxy-detect:ro
     environment:

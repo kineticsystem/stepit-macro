@@ -52,6 +52,7 @@ MODULES = {
     "camera": ("stepit_camera", "camera.launch.py", True),
     "freezer": ("freezer_node", "freezer.launch.py", True),
     "teleop": ("stepit_teleop", "teleop.launch.py", False),
+    "power": ("stepit_power", "power.launch.py", True),
 }
 
 # The programs that are not ROS launch files, by their name in the section

@@ -34,6 +34,7 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 | Part | What it does | Through |
 |---|---|---|
 | Top bar | Whether the page reaches the rig, which task runs, whoever started it, and why the last task of this page failed. | the commander |
+| **Power** | The ⏻ button at the right of the top bar: **hold** for 3 seconds, the button filling in red as it lasts, to switch the rig's computer off; letting go sooner cancels, and a tap only says, in the top bar, to hold. Off while disconnected and while `FocusStack` or `Stack` runs, which the rig refuses anyway. The top bar then says *Switching off…*, or why the rig refused, e.g. that polkit does not allow it. | `power_off` |
 | **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last picture the camera took, whoever fired it. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
 | **Test shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights, and the picture goes into the folder `tests` of the pictures. It takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
@@ -96,6 +97,7 @@ src/camera/      the camera driver's interface, its settings and live view, and 
 src/shot/        the shot, and the latest pictures
 src/freezer/     the lights, as outputs of the Freezer board
 src/motion/      the sliders: an axis per slider, sent as a gamepad
+src/power/       switching the rig's computer off, and why not
 src/components/  React, one component per part of the page
 ```
 
@@ -157,6 +159,7 @@ The files stay on the rig, in the folder `pictures` of the repo: the page neithe
 | `axis.test.ts` | A slider as an axis. |
 | `stack.test.ts` | The plan of a stack: the pictures it takes, the payload of `FocusStack`, what stops it from running, the defaults. |
 | `hold.test.ts` | A press as a tap or a hold: early release, long press, abandoned, repeated keydown. |
+| `power.test.ts` | Switching off: the service of `power_off`, its refusal passed on, when the button is off and why, a hold of 3 seconds. |
 | `stackParameters.test.ts` | The stack as the rig keeps it, in the commander's parameters: the marks, the counts, rig.yaml's angles. |
 | `lights.test.ts` | The lights as outputs of the Freezer board. |
 
