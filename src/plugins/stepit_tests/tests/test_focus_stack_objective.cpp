@@ -166,13 +166,18 @@ protected:
     std::vector<std::string> all_stacks;  ///< On /focus_stack/all_stacks_done.
   };
 
-  /// @brief Runs FocusStack, listening to the topics of the finished stacks.
-  Run runAndListen()
+  /// @brief Runs FocusStack, listening to the topics of the finished stacks, latched or not.
+  Run runAndListen(bool latched = true)
   {
     std::mutex mutex;
     Run run;
+    auto qos = rclcpp::QoS{ 10 }.reliable();
+    if (latched)
+    {
+      qos.transient_local();
+    }
     const auto listen = [&](const std::string& topic, std::vector<std::string>& into) {
-      return node_->create_subscription<std_msgs::msg::String>(topic, rclcpp::QoS{ 10 }.reliable().transient_local(),
+      return node_->create_subscription<std_msgs::msg::String>(topic, qos,
                                                                [&mutex, &into](const std_msgs::msg::String& message) {
                                                                  const std::lock_guard<std::mutex> lock{ mutex };
                                                                  into.push_back(message.data);
@@ -311,6 +316,23 @@ TEST_F(FocusStackObjective, EachAngleIsAnnouncedOnceItsPicturesAreSaved)
   const auto folders = camera_->folders();
   ASSERT_EQ(folders.size(), 3u);
   EXPECT_EQ(run.stacks, (std::vector<std::string>{ folders[0], folders[1] }));
+}
+
+// A subscriber that is not latched, e.g. rosbridge's when it subscribed before
+// the topics existed, hears every angle and the end of the stack too. In one
+// process, a subscriber finds a new publisher at once, so this test passes
+// even with publishers made at the first tick; across processes, through
+// rosbridge, their first message was lost, which only a run on the rig shows.
+TEST_F(FocusStackObjective, ASubscriberThatIsNotLatchedHearsEveryAnnouncement)
+{
+  mark(1.0, 2.0);
+  const auto run = runAndListen(false);
+  ASSERT_EQ(run.status, BT::NodeStatus::SUCCESS);
+
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 3u);
+  EXPECT_EQ(run.stacks, (std::vector<std::string>{ folders[0], folders[1] }));
+  EXPECT_EQ(run.all_stacks, (std::vector<std::string>{ std::filesystem::path(folders[0]).parent_path().string() }));
 }
 
 // Once the last angle is done, the stack's folder is announced: nothing more

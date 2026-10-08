@@ -34,6 +34,24 @@ namespace stepit_behaviors
 /// @brief The file StackDone writes into the folder of a finished stack.
 inline constexpr auto kStackDoneFile = "stack.json";
 inline constexpr auto kAllStacksDoneFile = "all_stacks.json";
+inline constexpr auto kStackDoneTopic = "/focus_stack/stack_done";
+inline constexpr auto kAllStacksDoneTopic = "/focus_stack/all_stacks_done";
+
+using LatchedPublisher = rclcpp::Publisher<std_msgs::msg::String>::SharedPtr;
+
+/**
+ * @brief A latched publisher of text: the last message reaches a subscriber
+ * that comes later.
+ *
+ * registerNodes creates the publishers of StackDone and AllStacksDone once,
+ * when the plugin loads, and gives them to every node it builds. A publisher
+ * created at the first tick of each run would publish at once, before a
+ * subscriber found it, e.g. rosbridge's: that first message would be lost,
+ * the first angle of every stack and the end of the stack. A subscriber that
+ * comes after a publisher that exists is also latched itself, so it gets the
+ * last message when it connects again.
+ */
+LatchedPublisher latchedPublisher(rclcpp::Node& node, const std::string& topic);
 
 /**
  * @brief Announces that the pictures of one rail's stack are all on disk: a
@@ -57,11 +75,15 @@ inline constexpr auto kAllStacksDoneFile = "all_stacks.json";
  *
  * It fails neither the stack nor the objective when the file cannot be
  * written: it logs why, and still publishes.
+ *
+ * It publishes with `publisher`, see latchedPublisher, unless `topic_name`
+ * names another topic, or there is none: then with one of its own.
  */
 class StackDone : public BT::SyncActionNode
 {
 public:
-  StackDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+  StackDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params,
+            LatchedPublisher publisher = nullptr);
 
   static BT::PortsList providedPorts();
 
@@ -69,7 +91,7 @@ public:
 
 private:
   std::weak_ptr<rclcpp::Node> node_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  LatchedPublisher publisher_;
 };
 
 /**
@@ -90,12 +112,13 @@ private:
  *   std_msgs/String.
  *
  * It does not fail the objective when the file cannot be written: it logs why,
- * and still publishes.
+ * and still publishes, with `publisher` as StackDone does.
  */
 class AllStacksDone : public BT::SyncActionNode
 {
 public:
-  AllStacksDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
+  AllStacksDone(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params,
+                LatchedPublisher publisher = nullptr);
 
   static BT::PortsList providedPorts();
 
@@ -103,7 +126,7 @@ public:
 
 private:
   std::weak_ptr<rclcpp::Node> node_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  LatchedPublisher publisher_;
 };
 
 }  // namespace stepit_behaviors
