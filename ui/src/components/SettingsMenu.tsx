@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_CAMERA_NODE, picturesUrl, rosbridgeUrl, useSettings, videoUrl, type Theme } from '../settings';
 import { CameraSettings } from './CameraSettings';
 import { GearIcon } from './icons';
+import { PowerButton } from './PowerButton';
 
 type Tab = 'camera' | 'appearance' | 'connection';
 
@@ -14,7 +15,8 @@ const TABS: { id: Tab; label: string }[] = [
 /**
  * The settings, under the gear, on tabs, by how often they change: the
  * camera's, before a shoot; the theme of this browser; and, rarely, where the
- * rig's servers are. The menu opens on the tab it was closed on.
+ * rig's servers are. The menu opens on the tab it was closed on. Under the
+ * tabs, whichever is open, the button that switches the rig off.
  */
 export function SettingsMenu() {
   const [open, setOpen] = useState(false);
@@ -96,6 +98,9 @@ export function SettingsMenu() {
               />
             </>
           )}
+          <div className="settings-footer">
+            <PowerButton />
+          </div>
         </div>
       )}
     </div>

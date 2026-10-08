@@ -219,7 +219,11 @@ button.hold::after {
   background: var(--accent); opacity: 0.25; pointer-events: none;
 }
 button.hold.holding::after { width: 100%; transition: width var(--hold-ms, 600ms) linear; }
-/* The power button fills in the colour of danger, over POWER_HOLD_MS of power.ts. */
+/* The power button, at the bottom of the settings menu: it fills in the colour
+   of danger, over POWER_HOLD_MS of power.ts. */
+.settings-footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.power-off button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--error); }
+.power-off p { margin: 6px 0 0; text-align: center; }
 button.hold.power::after { background: var(--error); opacity: 0.35; }
 /* A new mark shows, even on an end marked already. */
 button.hold.flash { animation: mark-flash 700ms ease-out; }

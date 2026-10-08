@@ -489,8 +489,8 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 |---|---|---|---|
 | [`TaskStatus`](../src/components/TaskStatus.tsx) | Top bar | The task that runs, and why the last one of this page failed; before them, *Switching off…*, why the rig refused to, or the hint to hold the power button. | `useCommander`, `usePower` |
 | [`ConnectionBadge`](../src/components/ConnectionBadge.tsx) | Top bar | Whether the page reaches rosbridge. | `useStatus`, `useSettings` |
-| [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers. | `useSettings` |
-| [`PowerButton`](../src/components/PowerButton.tsx) | Top bar, at the right | Switches the rig off: hold for 3 seconds, `POWER_HOLD_MS`, with [`hold.ts`](../src/components/hold.ts), filling in red; off while disconnected or a stack runs, saying why in its tooltip. | `useStatus`, `useCommander`, `usePower` |
+| [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers; under them, `PowerButton`. | `useSettings` |
+| [`PowerButton`](../src/components/PowerButton.tsx) | Settings menu, under the tabs | Switches the rig off: hold for 3 seconds, `POWER_HOLD_MS`, with [`hold.ts`](../src/components/hold.ts), filling in red; off while disconnected or a stack runs, saying why under it, as a tablet has no tooltip. Away from the top bar, next to which a thumb reaches for Mark. | `useStatus`, `useCommander`, `usePower` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
 | [`Toolbar`](../src/components/Toolbar.tsx) | Centre | Test shot, Live view, Lights, Manual drive, Stop: one small component per button. | every store |
 | [`StackBar`](../src/components/StackBar.tsx) | Centre, under the live view | Stack, which runs it; Shots, Angles; while it runs, a progress bar of its pictures. | `useStack`, `useCommander` |
