@@ -357,9 +357,6 @@ Two nodes build one:
   `GetJointPositions`. Every objective that moves the robot through the
   trajectory controller uses it.
 
-[`TODO.md`](TODO.md) records the decisions deferred about them, with the
-measurements behind them.
-
 ### Adding an Objective
 
 1. Write the XML in `src/plugins/stepit_objectives/objectives`. Nothing else to do: the

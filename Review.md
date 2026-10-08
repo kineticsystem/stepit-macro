@@ -407,7 +407,6 @@ These are ordered from the most to the least serious.
     - The camera's `savePicture` writes the final file in place, so its web server's listing can show a picture half written. The listing hides only dotfiles, "a file still being written under a temporary name".
     - `StepitHardware::on_init` swallows its exception without a log.
     - Documentation has drifted:
-      - `TODO.md` item 3 gives a `goal_time` of 0.5 s, while `controllers.yaml` sets 1.0;
       - `logitech_dual_action.yaml` refers to `docs/Teleop.md`, which is `docs/Gamepad.md`;
       - the commander's `TODO.md` still says it has no CI;
       - the comment in [`register_nodes.cpp:83`](src/plugins/stepit_behaviors/src/register_nodes.cpp) says registration is repeated "for every goal": it is repeated after every parameter change (finding 1).
