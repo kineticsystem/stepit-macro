@@ -7,7 +7,6 @@ power_off:
     # systemd-logind's PowerOff, over the system's D-Bus, not interactive.
     command: [busctl, call, --system, org.freedesktop.login1, /org/freedesktop/login1,
               org.freedesktop.login1.Manager, PowerOff, b, "false"]
-    # The objectives that must not be cut short: refused while one runs.
-    refuse_during: [FocusStack, Stack]
-    # Where the commander says which objective runs, latched.
+    # Where the commander says which objective runs, latched: refused while
+    # one does.
     objective_topic: /stepit_server/objective

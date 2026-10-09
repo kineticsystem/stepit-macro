@@ -127,7 +127,7 @@ The interface the rig's own code adds to the modules':
 | `/focus_stack/stack_done`, `/focus_stack/all_stacks_done` | `std_msgs/String`, latched | The folder of a finished angle, and of a finished focus stack, from `StackDone` and `AllStacksDone`. |
 | `/joy`, `/ui/joy` | `sensor_msgs/Joy`, in | The gamepad, and StepIt UI's sliders, for `gamepad_teleop` and `ui_teleop`. |
 | `/velocity_controller/commands` | `std_msgs/Float64MultiArray`, out | The joints' velocities, from both teleop nodes. |
-| `/power_off/power_off` | service, `std_srvs/Trigger` | Switches the computer off, refused while `FocusStack` or `Stack` runs. |
+| `/power_off/power_off` | service, `std_srvs/Trigger` | Switches the computer off, refused while any objective runs. |
 | ports 8070 and 8080 | HTTP | StepIt UI's static files, and StepIt Editor on the rig's objectives. |
 
 ## The Workspaces and the Packages
@@ -386,7 +386,7 @@ The rig runs it twice: `gamepad_teleop` for the gamepad, configured by [`logitec
 
 ### Switching the Rig Off
 
-[`power_off`](../src/stepit-macro/stepit_power/src/power_off.cpp) offers `~/power_off`, a `std_srvs/Trigger`. It follows the commander's latched `/stepit_server/objective`, refuses while an objective of `refuse_during` runs, and otherwise runs its `command`, by default `busctl` asking systemd-logind to power off over the host's D-Bus, mounted into the container. logind allows it only with [`50-stepit-power-off.rules`](../docker/polkit/50-stepit-power-off.rules) installed on the rig's computer. The command is a parameter and `runCommand` is injected, so the tests never switch anything off.
+[`power_off`](../src/stepit-macro/stepit_power/src/power_off.cpp) offers `~/power_off`, a `std_srvs/Trigger`. It follows the commander's latched `/stepit_server/objective`, refuses while any objective runs, so that it names none, and otherwise runs its `command`, by default `busctl` asking systemd-logind to power off over the host's D-Bus, mounted into the container. logind allows it only with [`50-stepit-power-off.rules`](../docker/polkit/50-stepit-power-off.rules) installed on the rig's computer. The command is a parameter and `runCommand` is injected, so the tests never switch anything off.
 
 ## StepIt UI
 

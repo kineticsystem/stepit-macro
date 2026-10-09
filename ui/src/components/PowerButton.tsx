@@ -10,9 +10,9 @@ import { PowerIcon } from './icons';
  * Switches the rig's computer off, at the bottom of the settings menu, away
  * from the buttons a thumb uses all the time. **Hold for 3 seconds**: the
  * button fills while it is held, and letting go sooner cancels; a tap only
- * says to hold, in the top bar. Off while disconnected, and while a stack
- * runs, which power_off would refuse anyway: the reason shows under it, as a
- * tablet has no tooltip.
+ * says to hold, in the top bar. Off while disconnected, and while any
+ * objective runs, which power_off would refuse anyway: the reason shows under
+ * it, as a tablet has no tooltip.
  */
 export function PowerButton() {
   const connected = useStatus() === 'connected';

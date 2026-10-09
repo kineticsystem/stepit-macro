@@ -50,8 +50,7 @@ The weak points are **between the modules**:
 
 1. **Anyone on the network can drive the rig, write objectives, and switch it off.** rosbridge, the editor's file API, Groot2 and the power button have no authorisation.
 2. **The rig's own contracts are untyped, and kept in step by hand across modules.** These are the progress topic, the state parameters, the joint lists, the motor limits and the objective names. The objectives check little of their payload: `MoveRailToMark` takes any value the state keeps as a mark.
-3. **Rules are split across layers.** Which objectives must not be interrupted is a list of names, in `power_off`'s configuration and in StepIt UI, not a property of the objectives.
-4. **Nothing tests the parts together.** No test runs the plugin inside the real commander. No test starts the real launch file. No CI job builds the modules at the commits the rig pins.
+3. **Nothing tests the parts together.** No test runs the plugin inside the real commander. No test starts the real launch file. No CI job builds the modules at the commits the rig pins.
 
 None of the findings is a safety issue for the motion. The stops are:
 
@@ -180,12 +179,7 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 **Mostly respected.** Each place where knowledge sits in the wrong part:
 
 1. **Robot interfaces in the objectives.** `CLAUDE.md` says that `stepit_behaviors` is "the **only** place the objectives name robot topics, actions and services". Yet the XML names 28 robot topics, services and actions in 14 files: `topic_name="/joint_states"` 10 times, `"/position_controller/commands"` 11 times, the services of the controller manager 3 times; each of these values equals the port's default. The joint list `joint1;…;joint5` appears 28 times in 8 files, 13 of them in [`focus_stack.xml`](src/plugins/stepit_objectives/objectives/focus_stack.xml), and must match `controllers.yaml` of StepIt Motors.
-2. **Objective names in the clients.** Several clients name objectives directly:
-   - `power_off` refuses during `[FocusStack, Stack]`, in [`rig.yaml:202`](src/stepit-macro/stepit_bringup/config/rig.yaml);
-   - StepIt UI repeats that list as `STACKS` in [`power.ts`](ui/src/power/power.ts);
-   - StepIt UI disables Manual drive by matching `ActivateTeleop` and `ActivateController` ([`Toolbar.tsx:100`](ui/src/components/Toolbar.tsx)), and shows progress only while the objective is `'FocusStack'` ([`StackBar.tsx`](ui/src/components/StackBar.tsx)).
-
-   The clients know the names of the policy, not its meaning, e.g. "an objective that must not be interrupted". One of the two names is stale: `Stack` ([`stack.xml`](src/plugins/stepit_objectives/objectives/stack.xml)) is a prototype grid of 11 × 11 moves whose photo is still a comment, `<!-- Take the photo here. -->`, yet three places protect it from a shutdown.
+2. **Objective names in StepIt UI.** The page disables Manual drive by matching `ActivateTeleop` and `ActivateController` ([`Toolbar.tsx:100`](ui/src/components/Toolbar.tsx)), and shows progress only while the objective is `'FocusStack'` ([`StackBar.tsx`](ui/src/components/StackBar.tsx)). A renamed objective breaks the page silently.
 3. **StepIt UI's stores talk to ROS directly**: `/freezer/set_outputs`, `/controller_manager/list_controllers`, and `/stack_state` with its parameter services. StepIt UI's own review reports it too.
 4. **StackDone reaches into the camera's disk.** It rebuilds the camera's folder path itself, from `pictures_folder`, the folder and `angleFolder(index, degrees)`, then lists the camera's files ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp)). The YAML anchor `&pictures`, and `test_the_commander_writes_into_the_cameras_pictures_folder`, keep the two folders equal. It is still an implicit contract with the camera's layout of files.
 5. **The limits of the motors are known twice.** StepIt Motors makes the controller "the authority on the limits": `StepitHardware` reads them from the firmware at configure time. The plugin hard-codes them instead, in `kMotorMaxVelocity` and `kMotorMaxAcceleration` ([`trapezoidal_trajectory.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/trapezoidal_trajectory.hpp)), and so does `ui_teleop`'s `scale` in `rig.yaml`.
@@ -243,7 +237,7 @@ Neither has authorisation: see finding 1.
 |---|---|---|
 | The joints of the robot and their order | 28 times in the objectives; `ui_teleop.joints` in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml); [`logitech_dual_action.yaml`](src/stepit-macro/stepit_teleop/config/logitech_dual_action.yaml); the default of `gamepad_teleop`; `controllers.yaml` of StepIt Motors | High. Four places in two repositories. |
 | The motor limits | the plugin's `kMotorMaxVelocity`; `scale: 18.8496` in `rig.yaml`; the firmware's `MAX_SPEED`; the xacro | Medium. The firmware reports them at connection time, and only `StepitHardware` asks. |
-| Objective names in the clients | `refuse_during` in `rig.yaml` and in `power_off.yaml`; StepIt UI's `STACKS`, `Toolbar.tsx`, `StackBar.tsx`, `motion/store.ts`, `stack/store.ts`, `shot/store.ts` | Medium. `Stack`, in three of them, takes no picture. |
+| Objective names in StepIt UI | `Toolbar.tsx`, `StackBar.tsx`, `motion/store.ts`, `stack/store.ts`, `shot/store.ts` | Medium. |
 | The node name `/stack_state` and the `state.*` names | `saved` and `forgotten` in `rig.yaml`; `kStateNode` in [`values_file.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/values_file.hpp); the keys of the objectives; [`stack/store.ts:22`](ui/src/stack/store.ts) and `STACK_PARAMETERS` | Medium. |
 | The overshoots, derived from the ratios | `overshoot.*` in [`rig.yaml:88`](src/stepit-macro/stepit_bringup/config/rig.yaml) | Low. They are computed by hand, but `test_the_stage_overshoots_by_a_degree_and_the_rail_by_a_millimetre` fails if a ratio changes alone. |
 | The serial protocols | command ids, frame layouts and versions in the firmware's `main.cpp` and in each `default_driver.cpp` | Low. The protocol version check catches a mismatch at connection time. |
@@ -272,7 +266,7 @@ Neither has authorisation: see finding 1.
 |---|---|---|
 | Commander | Payload, tree loader, execution status, and preemption through the real server, including the published objective and runs, and a tree that throws. | Good. |
 | Behaviors and objectives | 22 test files, `TakeShot` failing without a picture included. The objectives run against `FakeRobot`, `FakeControllerManager`, `FakeFreezer`, `FakeCamera` and `FakeState`, with the real names, on ROS domain 77. | Good. `test_focus_stack_objective` checks every command sent, including the approaches against backlash, the folders, the progress, the files and the announcements. One limit: `FakeRobot` succeeds every trajectory at once without moving, so arrival through the trajectory controller is not tested. |
-| `stepit_teleop`, `stepit_power` | Against a fake commander: the watchdog, the stop button, refusal during a stack, the system's refusal. | Good. |
+| `stepit_teleop`, `stepit_power` | Against a fake commander: the watchdog, the stop button, refusal while any objective runs, the system's refusal. | Good. |
 | `stepit_state` | The real node on a file of its own: defaults, what a restart keeps and forgets, the file's format, refusals, read-only configuration. | Good. |
 | `rig.yaml`, `rig.launch.py` | `test_rig_config.py`: the structure, refusal of unknown arguments, and the relations between values, e.g. that the commander holds no state. | Good for the logic. Several tests pin measured values, e.g. `test_the_stage_turns_on_an_80_to_1_gear`: these are change detectors. |
 | StepIt UI | The transport, against `FakeSocket`; pure functions; the commander and power interfaces. | Good below the stores. **No store is tested**: `settings.ts:76` calls `window.matchMedia` at import time. |
@@ -330,7 +324,7 @@ So a registration repeated while the rig runs drops every objective added since 
 
 ### How a run ends
 
-The commander publishes the name of the running objective on the latched topic `/stepit_server/objective`, and `""` when it ends, from its hook `onTreeExecutionCompleted`. Two clients rely on it: StepIt UI, to show "Running FocusStack" and turn Stop red, and `power_off`, to refuse to switch off during a stack.
+The commander publishes the name of the running objective on the latched topic `/stepit_server/objective`, and `""` when it ends, from its hook `onTreeExecutionCompleted`. Two clients rely on it: StepIt UI, to show "Running FocusStack" and turn Stop red, and `power_off`, to refuse to switch off while any objective runs.
 
 BehaviorTree.ROS2 ends a run in one of three ways ([`tree_execution_server.cpp`](modules/stepit-commander/modules/BehaviorTree.ROS2/behaviortree_ros2/src/tree_execution_server.cpp), `execute`):
 
@@ -382,7 +376,7 @@ These are ordered from the most to the least serious.
     - `StepitHardware::on_init` swallows its exception without a log.
     - `CubicTrajectory` rounds the fraction of a second with `std::lround(fraction * 1e9)` ([`cubic_trajectory.cpp:85`](src/plugins/stepit_behaviors/src/cubic_trajectory.cpp)), which gives a `nanosec` of 1,000,000,000, out of range, for a fraction above 0.9999999995. No objective uses `CubicTrajectory` today.
     - `rig.launch.py` writes its parameter file with `delete=False` and never removes it: one file per start, three in the Pi's container (*verified*).
-    - `Stack` is a prototype that takes no picture, kept as an objective and named in `refuse_during` and `STACKS`: see [Separation of Concerns](#separation-of-concerns).
+    - `Stack` ([`stack.xml`](src/plugins/stepit_objectives/objectives/stack.xml)) is a prototype grid of 11 × 11 moves whose photo is a comment, `<!-- Take the photo here. -->`, listed among the objectives as if it shot.
     - Documentation has drifted:
       - `logitech_dual_action.yaml` refers to `docs/Teleop.md`, which is `docs/Gamepad.md`;
       - the commander's `TODO.md` says it has no CI, while it has three workflows;
@@ -405,7 +399,7 @@ These are ordered by value against effort, and each fits in one pull request.
 5. **Create the progress publisher once, at registration**, as `StackDone` does (fixes 4). Introduce `stepit_macro_msgs` with `StackProgress` and `StackDone`, and write the JSON files with `nlohmann::json`.
 6. **Check the mark of `MoveRailToMark`** (fixes 5): accept only `near` and `far`, e.g. with a `Switch2` on `{@mark}` whose default fails, so a wrong name fails before anything moves. Add the test to `test_focus_stack_objective`.
 7. **Take the robot out of the XML** (fixes 6). First, delete the 24 `topic_name` and `service_name` attributes that equal their default. Then give the joint list one home, e.g. `robot.joints` in the commander's section of `rig.yaml`, read like the other configuration of the plugin, used as the default of the behaviors' ports and read by both teleops.
-8. **Derive what can be derived.** Read the motor limits from the controller instead of `kMotorMaxVelocity`. Replace objective names in the clients by a property: e.g. an `uninterruptible` flag in an objective's `TreeNodesModel`, which the commander publishes with `~/objective`. Meanwhile, remove `Stack`, or make it shoot, and drop it from `refuse_during` and `STACKS` if it goes.
+8. **Derive what can be derived.** Read the motor limits from the controller instead of `kMotorMaxVelocity`. Remove `Stack`, or make it shoot.
 9. **Build and test the rig as it runs, in CI** (closes the test gaps).
     - Add a job that runs `bin/modules/build.sh`, with `check_shared_libraries`, and the modules' tests at the pinned commits.
     - Add a launch smoke test that starts `rig.launch.py` on fake hardware and waits for the commander's action.

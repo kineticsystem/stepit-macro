@@ -138,22 +138,31 @@ TEST_F(PowerOffTest, SwitchesOffWhenNothingRuns)
   EXPECT_EQ(commands(), (std::vector<std::vector<std::string>>{ { "switch", "off" } }));
 }
 
-// A stack cut short would leave a session half shot.
-TEST_F(PowerOffTest, RefusesWhileAStackRuns)
+// Whatever runs is stopped first: power_off knows no objective by name.
+TEST_F(PowerOffTest, RefusesWhileAnyObjectiveRuns)
 {
-  for (const auto* stack : { "FocusStack", "Stack" })
+  for (const auto* objective : { "FocusStack", "MoveRailBy", "SomeNewObjective" })
   {
-    running(stack);
+    running(objective);
     const auto response = press();
-    EXPECT_FALSE(response.success) << stack;
-    EXPECT_EQ(response.message, std::string(stack) + " is running: stop it first");
+    EXPECT_FALSE(response.success) << objective;
+    EXPECT_EQ(response.message, std::string(objective) + " is running: stop it first");
   }
   EXPECT_TRUE(commands().empty());
 }
 
-TEST_F(PowerOffTest, SwitchesOffWhileAnotherObjectiveRuns)
+TEST_F(PowerOffTest, SwitchesOffOnceTheObjectiveEnded)
 {
-  running("ActivateTeleop");
+  running("FocusStack");
+  EXPECT_FALSE(press().success);
+  running("");
+  EXPECT_TRUE(press().success);
+  EXPECT_EQ(commands().size(), 1u);
+}
+
+// A commander that never started runs nothing: the rig can still be switched off.
+TEST_F(PowerOffTest, SwitchesOffWhenTheCommanderSaidNothing)
+{
   EXPECT_TRUE(press().success);
   EXPECT_EQ(commands().size(), 1u);
 }
