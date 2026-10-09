@@ -96,7 +96,7 @@ TEST_F(TakeShotObjective, ThePictureGoesIntoTheFolderTests)
   startFreezer();
   ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::SUCCESS);
   // Then the next pictures go into the pictures folder itself again.
-  EXPECT_EQ(camera_->folders(), (std::vector<std::string>{ "tests", "" }));
+  EXPECT_EQ(camera_->folders(2), (std::vector<std::string>{ "tests", "" }));
   EXPECT_EQ(camera_->pictures(), (std::vector<std::string>{ "tests/IMG_1.CR2" }));
 }
 
@@ -116,7 +116,7 @@ TEST_F(TakeShotObjective, ItFailsWhenTheCameraIgnoresTheShot)
   EXPECT_EQ(runObjective(factory_, kObjective, "", std::chrono::seconds{ 30 }), BT::NodeStatus::FAILURE);
   EXPECT_EQ(freezer_->fired(), (std::vector<std::string>{ "test_shot" }));
   EXPECT_EQ(camera_->taken(), 0);
-  EXPECT_EQ(camera_->folders(), (std::vector<std::string>{ "tests", "" }));
+  EXPECT_EQ(camera_->folders(2), (std::vector<std::string>{ "tests", "" }));
 }
 
 TEST_F(TakeShotObjective, AnUnknownSequenceFails)

@@ -255,7 +255,7 @@ TEST_F(FocusStackObjective, EachAngleHasAFolderOfPicturesInTheStacksFolder)
   mark(1.0, 2.0);
   ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 }), BT::NodeStatus::SUCCESS);
 
-  const auto folders = camera_->folders();
+  const auto folders = camera_->folders(3);
   ASSERT_EQ(folders.size(), 3u);
   const std::regex stack_folder{ R"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})" };
   const auto stack = folders[0].substr(0, folders[0].find('/'));
@@ -465,7 +465,32 @@ TEST_F(FocusStackObjective, StopsWhenTheCameraIgnoresAShot)
   EXPECT_EQ(camera_->taken(), 0);
   // The next pictures go into the pictures folder itself again, not into the
   // folder of the angle the stack stopped at.
-  const auto folders = camera_->folders();
+  const auto folders = camera_->folders(2);
+  ASSERT_EQ(folders.size(), 2u);
+  EXPECT_NE(folders[0].find("/angle_01_"), std::string::npos) << folders[0];
+  EXPECT_EQ(folders[1], "");
+}
+
+// Stop, or another objective, halts the stack: no node of the tree runs, yet
+// the next pictures go into the pictures folder itself again.
+TEST_F(FocusStackObjective, AStoppedStackSendsThePicturesBackToThePicturesFolder)
+{
+  mark(1.0, 2.0);
+  auto global_blackboard = BT::Blackboard::create();
+  stepit_server::writeToBlackboard(stepit_server::parsePayload(kPayload), *global_blackboard);
+  auto tree = factory_.createTree("FocusStack", BT::Blackboard::create(global_blackboard));
+
+  // Halted after its first picture, in the middle of the first angle.
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{ 30 };
+  while (camera_->taken() < 1 && std::chrono::steady_clock::now() < deadline)
+  {
+    ASSERT_EQ(tree.tickExactlyOnce(), BT::NodeStatus::RUNNING);
+    std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+  }
+  ASSERT_EQ(camera_->taken(), 1);
+  tree.haltTree();
+
+  const auto folders = camera_->folders(2);
   ASSERT_EQ(folders.size(), 2u);
   EXPECT_NE(folders[0].find("/angle_01_"), std::string::npos) << folders[0];
   EXPECT_EQ(folders[1], "");

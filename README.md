@@ -322,8 +322,10 @@ whose angles are all done), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 (`OffsetVector`, `SetJoints`, `CubicTrajectory`, `CurrentTime`,
 `MillimetresToRadians`, `DegreesToRadians`) and the state of the rig
-(`SaveValues`, `LoadValues`, service clients of the node `stack_state`). `Steps` is a decorator that loops over values, and
-`ExpectPicture` one that waits for the camera's picture of the shot it wraps.
+(`SaveValues`, `LoadValues`, service clients of the node `stack_state`). `Steps` is a decorator that loops over values,
+`ExpectPicture` one that waits for the camera's picture of the shot it wraps,
+and `RestorePictureFolder` one that sends the camera's next pictures to the
+pictures folder again however its child ends, halted included.
 
 Some behaviors read parameters of their own from the commander's section of
 `rig.yaml`: the overshoot of each motor against backlash, `overshoot.<joint>`,

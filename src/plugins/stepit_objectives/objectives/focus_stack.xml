@@ -31,9 +31,8 @@
   The pictures of a stack go into a folder of their own under the camera's
   pictures folder, named after when it started, with one folder per angle:
   2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on. When
-  the stack ends, succeeded or failed, the next pictures go into the pictures
-  folder itself again; a stack that is halted, by Stop or by another
-  objective, leaves its folder set.
+  the stack ends, succeeded, failed or stopped, the next pictures go into the
+  pictures folder itself again.
 
   Once the last picture of an angle is saved, its folder gets stack.json, and
   its name goes on the latched topic /focus_stack/stack_done: the pictures of
@@ -78,9 +77,10 @@
                              joint_names="joint1;joint2;joint3;joint4;joint5" positions="{first}"
                              approach_from="{first}" approach_to="{last}" overshoot_in_place="true"/>
 
-      <!-- However the stack fails, the next pictures go into the pictures folder
-           itself again, not into the folder of the angle it stopped at. -->
-      <Fallback>
+      <!-- However the stack ends, succeeded, failed or stopped, the next
+           pictures go into the pictures folder itself again, not into the
+           folder of the angle it stopped at. -->
+      <RestorePictureFolder _description="However the stack ends, the next pictures go into the pictures folder again.">
         <Sequence>
           <Steps _description="The angles of the stage, in degrees." start="{@stage_from}" end="{@stage_to}" count="{@angles}" value="{angle_degrees}" index="{angle_index}">
             <Sequence>
@@ -120,13 +120,8 @@
           <AllStacksDone _description="Every stack is complete: all_stacks.json in the stack's folder, and /focus_stack/all_stacks_done."
                          folder="{stack_folder}" shots="{@shots}" angles="{@angles}"/>
         </Sequence>
-        <Sequence _description="The stack failed: the pictures folder again, then fail.">
-          <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
-          <AlwaysFailure/>
-        </Sequence>
-      </Fallback>
+      </RestorePictureFolder>
 
-      <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
       <CommandJointPositions _description="Every joint back to where it started."
                              topic_name="/position_controller/commands"
                              controller_joints="joint1;joint2;joint3;joint4;joint5"
