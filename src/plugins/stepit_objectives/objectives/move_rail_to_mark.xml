@@ -10,6 +10,9 @@
       btcpp_ros2_interfaces/action/ExecuteTree \
       "{target_tree: MoveRailToMark, payload: '{mark: near}'}"
 
+  Only near and far are marks: any other name fails before anything moves,
+  though the rig's state keeps other values, e.g. the shots of a stack.
+
   The rail approaches the mark going from the near mark toward the far one, as
   every move of FocusStack does: a move the other way first goes past the mark
   by the rail's overshoot, against backlash, so that the camera stands where
@@ -19,6 +22,11 @@
 
   <BehaviorTree ID="MoveRailToMark" _description="Moves the rail back to a mark of the stack, then hands the robot back to manual drive.">
     <Sequence>
+      <Switch2 _description="Only near and far are marks." variable="{@mark}" case_1="near" case_2="far">
+        <AlwaysSuccess/>
+        <AlwaysSuccess/>
+        <AlwaysFailure _description="Not a mark: nothing moves."/>
+      </Switch2>
       <LoadValues _description="The mark to go to." key="{@mark}" values="{mark}"/>
       <LoadValues _description="The near end of the rail, the start of the approach." key="near" values="{near}"/>
       <LoadValues _description="The far end of the rail, the end of the approach." key="far" values="{far}"/>

@@ -27,6 +27,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -491,6 +492,23 @@ TEST_F(FocusStackObjective, TheRailGoesBackToAMarkAsAStackApproachesIt)
   };
   EXPECT_EQ(stageAndRail(robot_->positionCommands()), expected);
   EXPECT_EQ(manager_->stateOf("velocity_controller"), "active");
+}
+
+// The state keeps other values next to the marks: none of them is a mark.
+TEST_F(FocusStackObjective, OnlyNearAndFarAreMarks)
+{
+  // As the rig's stack_state keeps it: the shots next to the marks.
+  state_.reset();
+  state_ = std::make_unique<FakeState>(
+      std::map<std::string, std::vector<double>>{ { "near", {} }, { "far", {} }, { "shots", { 25.0 } } });
+  mark(1.0, 2.0);
+  for (const auto* payload : { "{mark: shots}", "{mark: middle}" })
+  {
+    EXPECT_EQ(runObjective(factory_, "MoveRailToMark", payload), BT::NodeStatus::FAILURE) << payload;
+  }
+  // A number is not even a name: the tree is not created, and the commander aborts the goal.
+  EXPECT_ANY_THROW(runObjective(factory_, "MoveRailToMark", "{mark: 1.5}"));
+  EXPECT_TRUE(robot_->positionCommands().empty());
 }
 
 TEST_F(FocusStackObjective, GoingToAMarkNeedsBothMarks)
