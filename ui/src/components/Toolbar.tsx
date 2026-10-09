@@ -48,7 +48,7 @@ function ShotButton() {
   const { state, takeShot } = useShot();
   const busy = useCommander((s) => s.busy);
   const connected = useStatus() === 'connected';
-  const shooting = state === 'shooting' || state === 'waiting';
+  const shooting = state === 'shooting';
   return (
     <button className="primary main-action" disabled={!connected || busy || shooting} onClick={() => void takeShot()}>
       <ShutterIcon />

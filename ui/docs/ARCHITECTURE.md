@@ -397,15 +397,14 @@ sequenceDiagram
     Note over Shot: followPictures: listening since the page opened
     Note over Shot: stop the live view
     Shot->>Rig: run TakeShot
-    Note over Rig: SetPictureFolder tests, then Shoot
+    Note over Rig: SetPictureFolder tests, then Shoot in ExpectPicture
     Rig-->>Shot: picture: tests/IMG_0042.CR2
+    Rig-->>Shot: TakeShot succeeded: the picture came
     Shot->>Web: HEAD, Range /pictures/tests/IMG_0042.CR2
     Web-->>Shot: JPEG preview
-    Rig-->>Shot: TakeShot succeeded
-    Note over Shot: wait 2 s for a second file
 ```
 
-The Toolbar's button calls `takeShot()`. The live view is stopped through `useCamera`, and the objective runs through `useCommander`, which the diagram leaves out: both talk to rosbridge. **Every page shows every picture**: `followPictures` hands each one the camera reports to `show()`, whoever fired the shot, a test shot or a stack, from this page or another device; `takeShot()` only listens to know whether one came. If the objective ends before any picture came, the store waits up to 30 s for one, then says why none came.
+The Toolbar's button calls `takeShot()`. The live view is stopped through `useCamera`, and the objective runs through `useCommander`, which the diagram leaves out: both talk to rosbridge. **Every page shows every picture**: `followPictures` hands each one the camera reports to `show()`, whoever fired the shot, a test shot or a stack, from this page or another device. **The rig proves the shot, not the page**: `TakeShot` wraps `Shoot` in `ExpectPicture`, so it succeeds only once the camera has reported the picture, and fails when none comes, for every client that runs it. `takeShot()` only says how the objective ended.
 
 The picture is loaded at its `relative_path` under `/pictures`: a test shot's is in `tests`, a stack's in the stack's folder and the folder of its angle, which the rig chose.
 

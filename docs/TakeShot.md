@@ -16,8 +16,11 @@ ros2 action send_goal /commander/execute_objective \
 TakeShot
 └── Sequence
     ├── SetPictureFolder   tests   (where the camera saves the picture)
-    └── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
+    └── ExpectPicture   (fails if the camera reports no picture of the shot)
+        └── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
 ```
+
+**The picture proves the shot.** The Freezer fires the camera through a wire and cannot tell whether its shutter opened: the camera may ignore the release. `ExpectPicture` listens on `/camera/picture` from before the shot, and the objective succeeds only once the camera has reported the picture, within 15 s of the end of the shot. Each shot of [`FocusStack`](FocusStack.md) is checked the same way, so every client that fires a shot, StepIt UI, the editor or the command line, learns the same.
 
 **A test shot goes into the folder `tests`** of the camera's pictures, apart from the folders of the stacks, see [`FocusStack`](FocusStack.md). StepIt UI's **Test shot** runs this objective.
 
@@ -27,4 +30,4 @@ The shot is the behavior `Shoot`, which another objective uses as one of its ste
 
 **A shot that has started always runs to its end.** When another objective replaces this one, the commander halts it, but the Freezer refuses to cancel a shot that has started, so that the shutters close: the shot ends on its own, within its duration. A shot ends with every output of the board off, lights included.
 
-It fails when the Freezer node is not running, when the sequence is unknown, or when the board is busy with another shot, e.g. one fired by its remote trigger. The log of the Freezer node says why.
+It fails when the Freezer node is not running, when the sequence is unknown, or when the board is busy with another shot, e.g. one fired by its remote trigger: the log of the Freezer node says why. It also fails when no picture comes: the camera is off, not connected over USB, not plugged into the jack of the sequence, or ignored the release. A camera set to RAW+JPEG reports two files for a shot: the objective succeeds on the first, and StepIt UI shows both.

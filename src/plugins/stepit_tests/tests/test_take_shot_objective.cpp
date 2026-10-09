@@ -106,6 +106,17 @@ TEST_F(TakeShotObjective, ItFiresTheSequenceOfThePayload)
   EXPECT_EQ(freezer_->fired(), (std::vector<std::string>{ "timed_light" }));
 }
 
+// The Freezer fired, but the camera ignored the release: no picture proves the
+// shot, so it fails, as a shot of a stack does.
+TEST_F(TakeShotObjective, ItFailsWhenTheCameraIgnoresTheShot)
+{
+  startFreezer();
+  camera_->ignore(1);
+  EXPECT_EQ(runObjective(factory_, kObjective, "", std::chrono::seconds{ 30 }), BT::NodeStatus::FAILURE);
+  EXPECT_EQ(freezer_->fired(), (std::vector<std::string>{ "test_shot" }));
+  EXPECT_EQ(camera_->taken(), 0);
+}
+
 TEST_F(TakeShotObjective, AnUnknownSequenceFails)
 {
   startFreezer();
