@@ -30,7 +30,10 @@
 
   The pictures of a stack go into a folder of their own under the camera's
   pictures folder, named after when it started, with one folder per angle:
-  2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on.
+  2026-10-06_15-20-04/angle_01_-17.0deg, angle_02_-16.0deg, and so on. When
+  the stack ends, succeeded or failed, the next pictures go into the pictures
+  folder itself again; a stack that is halted, by Stop or by another
+  objective, leaves its folder set.
 
   Once the last picture of an angle is saved, its folder gets stack.json, and
   its name goes on the latched topic /focus_stack/stack_done: the pictures of
@@ -75,43 +78,53 @@
                              joint_names="joint1;joint2;joint3;joint4;joint5" positions="{first}"
                              approach_from="{first}" approach_to="{last}" overshoot_in_place="true"/>
 
-      <Steps _description="The angles of the stage, in degrees." start="{@stage_from}" end="{@stage_to}" count="{@angles}" value="{angle_degrees}" index="{angle_index}">
+      <!-- However the stack fails, the next pictures go into the pictures folder
+           itself again, not into the folder of the angle it stopped at. -->
+      <Fallback>
         <Sequence>
-          <DegreesToRadians _description="This angle, in radians of the stage's motor." joint="joint1"
-                            degrees="{angle_degrees}" radians="{angle}"/>
-          <SetJoints _description="Every joint where it started, the stage at this angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
-                     joints="joint1" values="{angle}" relative="true" output="{pose}"/>
-          <!-- One folder of pictures per angle, inside the stack's: the
-               pictures of one rail's stack, to be stacked together. -->
-          <SetPictureFolder _description="The pictures of this angle go into a folder of their own."
-                            folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}"/>
-          <Steps _description="The shots of the rail, from the near end to the far one." start="{near}" end="{far}" count="{@shots}" value="{rail}" index="{shot}">
+          <Steps _description="The angles of the stage, in degrees." start="{@stage_from}" end="{@stage_to}" count="{@angles}" value="{angle_degrees}" index="{angle_index}">
             <Sequence>
-              <SetJoints _description="The rail at this shot." input="{pose}" joint_names="joint1;joint2;joint3;joint4;joint5"
-                         joints="joint2" values="{rail}" output="{target}"/>
-              <CommandJointPositions _description="Moves there, approaching from the start of the stack."
-                                     topic_name="/position_controller/commands"
-                                     controller_joints="joint1;joint2;joint3;joint4;joint5"
-                                     joint_names="joint1;joint2;joint3;joint4;joint5" positions="{target}"
-                                     approach_from="{first}" approach_to="{last}"/>
-              <!-- Let the vibrations of the move die down. To be measured. -->
-              <Sleep msec="500"/>
-              <!-- A shot without its picture stops the whole focus stack. -->
-              <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
-                <Shoot _description="Fires the default sequence of the Freezer: the camera and the lights."/>
-              </ExpectPicture>
-              <Script code="pictures_done := angle_index * @shots + shot + 1"/>
-              <ReportProgress _description="One more picture of the stack." done="{pictures_done}" total="{pictures_total}"/>
+              <DegreesToRadians _description="This angle, in radians of the stage's motor." joint="joint1"
+                                degrees="{angle_degrees}" radians="{angle}"/>
+              <SetJoints _description="Every joint where it started, the stage at this angle." input="{home}" joint_names="joint1;joint2;joint3;joint4;joint5"
+                         joints="joint1" values="{angle}" relative="true" output="{pose}"/>
+              <!-- One folder of pictures per angle, inside the stack's: the
+                   pictures of one rail's stack, to be stacked together. -->
+              <SetPictureFolder _description="The pictures of this angle go into a folder of their own."
+                                folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}"/>
+              <Steps _description="The shots of the rail, from the near end to the far one." start="{near}" end="{far}" count="{@shots}" value="{rail}" index="{shot}">
+                <Sequence>
+                  <SetJoints _description="The rail at this shot." input="{pose}" joint_names="joint1;joint2;joint3;joint4;joint5"
+                             joints="joint2" values="{rail}" output="{target}"/>
+                  <CommandJointPositions _description="Moves there, approaching from the start of the stack."
+                                         topic_name="/position_controller/commands"
+                                         controller_joints="joint1;joint2;joint3;joint4;joint5"
+                                         joint_names="joint1;joint2;joint3;joint4;joint5" positions="{target}"
+                                         approach_from="{first}" approach_to="{last}"/>
+                  <!-- Let the vibrations of the move die down. To be measured. -->
+                  <Sleep msec="500"/>
+                  <!-- A shot without its picture stops the whole focus stack. -->
+                  <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
+                    <Shoot _description="Fires the default sequence of the Freezer: the camera and the lights."/>
+                  </ExpectPicture>
+                  <Script code="pictures_done := angle_index * @shots + shot + 1"/>
+                  <ReportProgress _description="One more picture of the stack." done="{pictures_done}" total="{pictures_total}"/>
+                </Sequence>
+              </Steps>
+              <!-- Every picture of this angle is on disk. -->
+              <StackDone _description="The stack of this angle is complete: stack.json in its folder, and /focus_stack/stack_done."
+                         folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}" shots="{@shots}"/>
             </Sequence>
           </Steps>
-          <!-- Every picture of this angle is on disk. -->
-          <StackDone _description="The stack of this angle is complete: stack.json in its folder, and /focus_stack/stack_done."
-                     folder="{stack_folder}" index="{angle_index}" degrees="{angle_degrees}" shots="{@shots}"/>
+          <!-- Every angle is on disk. -->
+          <AllStacksDone _description="Every stack is complete: all_stacks.json in the stack's folder, and /focus_stack/all_stacks_done."
+                         folder="{stack_folder}" shots="{@shots}" angles="{@angles}"/>
         </Sequence>
-      </Steps>
-      <!-- Every angle is on disk. -->
-      <AllStacksDone _description="Every stack is complete: all_stacks.json in the stack's folder, and /focus_stack/all_stacks_done."
-                     folder="{stack_folder}" shots="{@shots}" angles="{@angles}"/>
+        <Sequence _description="The stack failed: the pictures folder again, then fail.">
+          <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
+          <AlwaysFailure/>
+        </Sequence>
+      </Fallback>
 
       <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
       <CommandJointPositions _description="Every joint back to where it started."
