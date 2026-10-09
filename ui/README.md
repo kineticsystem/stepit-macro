@@ -5,7 +5,6 @@
 - [Introduction](#introduction)
 - [The Page](#the-page)
 - [Running the Application](#running-the-application)
-  - [Install It as an App](#install-it-as-an-app)
 - [Working on the Page](#working-on-the-page)
 - [How It Works](#how-it-works)
   - [The Layers](#the-layers)
@@ -61,23 +60,6 @@ The page reaches the rig on the computer that served it:
 | The commander's rosbridge | 9090 | everything but the pictures and the live view |
 | web_video_server | 8081 | the live view, as MJPEG |
 | The camera's web server | 8090 | the pictures |
-
-### Install It as an App
-
-In a browser tab, the address bar and the tabs take room from the live view, and a page cannot hide them on its own. Installed, StepIt UI opens from an icon on the home screen, full screen and sideways, with no bars: its manifest, `public/manifest.webmanifest`, asks for that.
-
-Chrome installs a web app only from a secure origin, https or `localhost`, and the rig serves the page over plain http. On an Android tablet, you tell Chrome once to trust the rig's address:
-
-1. Open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
-2. Enter the rig's address with its port, e.g. `http://192.168.100.24:8070`, set the flag to **Enabled**, and press **Relaunch**.
-3. Open the page, then choose **⋮** → **Install app**.
-
-The flag holds for that address only: if the rig's computer gets another address, add the new one. On a desktop, Chrome installs from `http://localhost:8070` without the flag.
-
-On an iPad, open the page in Safari and choose **Share** → **Add to Home Screen**, which works over http. Safari ignores the manifest's full screen: the app opens without Safari's bars, but keeps the status bar at the top.
-
-> [!NOTE]
-> An installed app still loads the page from the rig every time it opens: it works only on the rig's network, and shows the rig's latest build.
 
 ## Working on the Page
 
