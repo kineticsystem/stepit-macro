@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>stepit_state</name>
+  <version>0.1.0</version>
+  <description>
+    The state of the StepIt macro rig that every page shares and the objectives
+    use, e.g. the marks and the counts of a focus stack: the node stack_state.
+  </description>
+  <maintainer email="lentigrams@gmail.com">developer</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>yaml-cpp</depend>
+
+  <exec_depend>ros2launch</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

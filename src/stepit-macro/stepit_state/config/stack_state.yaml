@@ -1,0 +1,11 @@
+# The defaults of stack_state, the node that keeps the state of the rig: see
+# include/stepit_state/stack_state.hpp. The rig overrides them in the section
+# stack_state of rig.yaml.
+stack_state:
+  ros__parameters:
+    # The YAML file of the saved values.
+    state_file: ~/.ros/stepit_state.yaml
+    # Kept in state_file across restarts.
+    saved: [shots, angles, turn]
+    # In memory only, empty at every start.
+    forgotten: [near, far]

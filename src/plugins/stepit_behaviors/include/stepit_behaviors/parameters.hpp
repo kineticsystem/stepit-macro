@@ -20,20 +20,17 @@
 
 #pragma once
 
-#include <filesystem>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
 namespace stepit_behaviors
 {
 
-/**
- * @brief The parameters of the behaviors, read from the node of the commander,
- * which loads them: the section of the commander in the robot's parameter
- * file, e.g.
+/*
+ * The parameters of the behaviors, read from the node of the commander, which
+ * loads them: the section of the commander in the robot's parameter file, e.g.
  *
  *     stepit_server:
  *       ros__parameters:
@@ -43,22 +40,18 @@ namespace stepit_behaviors
  *           joint2: 1.592
  *         deg_per_turn:
  *           joint1: 4.5
- *         focus_stack:
- *           turn: 17.0
- *         state_file: ~/ws/state/stack.yaml
  *         pictures_folder: ~/ws/pictures
  *
- * The commander knows nothing about them: registerNodes declares them on its
- * node, so that they show in `ros2 param list` and can be read, by the
- * behaviors and by the pages of the rig: `focus_stack.*` is read by StepIt UI
- * alone, the defaults of its stack. It also shows what the state file holds
- * as `state.<key>`, see publishState, and writes into the file every
- * `state.<key>` a page sets, e.g. the number of shots a page typed:
- * `state.turn`, `state.shots` and `state.angles` exist from the start, with
- * the defaults `focus_stack.turn`, `focus_stack.shots` and
- * `focus_stack.angles`.
+ * The commander knows nothing about them, and they are not declared on its
+ * node: they are read from the parameter file it was started with, its
+ * parameter overrides. BehaviorTree.ROS2 registers every plugin and tree again
+ * before the next goal after any change of the node's parameters, and a
+ * declaration counts as one: declaring them while the plugin registers made
+ * the first goal of every start register everything again, which drops the
+ * objectives added since the last build. They are configuration, read-only.
+ * What changes while the rig runs, e.g. the marks of a stack, is the state of
+ * the rig, kept by the node stack_state, see SaveValues.
  */
-void declareParameters(rclcpp::Node& node);
 
 /// @brief The overshoot of a joint against backlash, `overshoot.<joint>`, in radians: 0 if not set.
 double overshootParameter(rclcpp::Node& node, const std::string& joint);
@@ -69,9 +62,6 @@ std::optional<double> mmPerTurnParameter(rclcpp::Node& node, const std::string& 
 /// @brief How far a rotary axis turns per turn of its motor, `deg_per_turn.<joint>`, in degrees, if set.
 std::optional<double> degPerTurnParameter(rclcpp::Node& node, const std::string& joint);
 
-/// @brief The YAML file where SaveValues and LoadValues keep their values, `state_file`, with `~` expanded.
-std::string stateFileParameter(rclcpp::Node& node);
-
 /**
  * @brief The camera's folder of pictures, `pictures_folder`, with `~`
  * expanded: the camera's download_directory, as seen by the commander, which
@@ -79,24 +69,6 @@ std::string stateFileParameter(rclcpp::Node& node);
  * there.
  */
 std::string picturesFolderParameter(rclcpp::Node& node);
-
-/**
- * @brief Save numbers under a name in a YAML file, keeping the other names:
- * to a temporary file first, then renamed, so that a crash never leaves it
- * half written. Throws on failure.
- */
-void writeStateValues(const std::filesystem::path& path, const std::string& key, const std::vector<double>& values);
-
-/**
- * @brief Show values saved in the state file as the parameter `state.<key>`
- * of the commander's node, e.g. state.near, for the pages of the rig to read,
- * and to follow on /parameter_events: what one page marked, every page knows.
- * The node declares it the first time.
- */
-void publishState(rclcpp::Node& node, const std::string& key, const std::vector<double>& values);
-
-/// @brief The default of `state_file`.
-inline constexpr auto kDefaultStateFile = "~/.ros/stepit_state.yaml";
 
 /// @brief The default of `pictures_folder`: the camera's own default download_directory.
 inline constexpr auto kDefaultPicturesFolder = "~/ws/pictures";

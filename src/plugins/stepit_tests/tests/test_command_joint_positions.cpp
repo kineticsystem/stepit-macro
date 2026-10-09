@@ -286,7 +286,8 @@ TEST_F(CommandJointPositionsTest, TheOvershootComesFromTheParameters)
   const auto node = std::make_shared<rclcpp::Node>("stepit_tests_overshoot", options);
   BT::BehaviorTreeFactory factory;
   stepit_behaviors::registerNodes(factory, BT::RosNodeParams{ node });
-  EXPECT_DOUBLE_EQ(node->get_parameter("overshoot.joint2").as_double(), 0.25);
+  // Read from the parameter file, never declared on the commander's node: see parameters.hpp.
+  EXPECT_FALSE(node->has_parameter("overshoot.joint2"));
 
   auto tree = factory.createTreeFromText(treeXml(R"(joint_names="joint2" positions="0.5" approach_from="0" )"
                                                  R"(approach_to="1")"));

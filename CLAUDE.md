@@ -109,6 +109,7 @@ tests go in `stepit_macro_tests`. A new program needs a launch file, an entry in
 | `stepit_bringup` | `rig.launch.py` and `config/rig.yaml`: the only place the rig starts and configures the modules. Installed as links (`--symlink-install`): the launch file finds the repo from its source. |
 | `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ToggleTeleop`, which the commander runs in place of the running one: `ActivateTeleop`, or the trajectory controller back when the gamepad already drives the robot. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
 | `stepit_power` | `power_off`: the service `~/power_off` behind StepIt UI's power button. It switches the computer off with `busctl` (systemd-logind, over the host's `/run/dbus`, mounted by `docker-compose.yml`), refused while an objective of `refuse_during` runs (`FocusStack`, `Stack`). logind allows it only with `docker/polkit/50-stepit-power-off.rules` installed on the rig's computer: never on a development PC, and never let a test run the real command (tests pass a command of their own). |
+| `stepit_state` | `stack_state`: the state of the rig, its parameters `state.*`. The only writer of the state file. |
 | `stepit_macro_tests` | All tests of `src/stepit-macro`, `rig.yaml` included. |
 
 **Nothing is wired up by hand.** An objective is an XML file dropped into
@@ -128,26 +129,30 @@ behavior (BehaviorTree.CPP refuses it): the objective of `Shoot` is `TakeShot`.
 
 **Parameters of the behaviors** (the overshoot of each motor against backlash, `overshoot.<joint>`,
 the millimetres a linear axis travels per motor turn, `mm_per_turn.<joint>`, the degrees a rotary
-axis turns per motor turn, `deg_per_turn.<joint>`, `state_file`, and `pictures_folder`, the
+axis turns per motor turn, `deg_per_turn.<joint>`, and `pictures_folder`, the
 camera's `download_directory` through a YAML anchor, for `StackDone` and `AllStacksDone`) go in the section
-`stepit_server` of `rig.yaml`: `registerNodes` declares them on the commander's node, which knows
-nothing about them. Configuration measured by hand goes there; what the objectives learn while the
-rig runs, e.g. the marks of a focus stack, goes in the state file, in the git-ignored folder
-`state`, never in `rig.yaml`.
+`stepit_server` of `rig.yaml`. The plugin reads them from the commander's parameter overrides
+(`parameters.cpp`) and **never declares or sets a parameter on the commander's node**:
+BehaviorTree.ROS2 registers every plugin and tree again before the next goal after any change of
+that node's parameters, a declaration included, which drops the objectives added since the last
+build. Configuration measured by hand goes there; what the objectives learn while the rig runs,
+e.g. the marks of a focus stack, is the state of the rig (below), never in `rig.yaml`.
 
 **Every page shows the same.** StepIt UI keeps nothing of the rig in the browser: the state of a
-stack lives on the rig, in the state file, which the plugin shows as the commander's parameters
-`state.*` (loaded when it starts, written back when a page or `SaveValues` sets one); the
+stack lives on the rig, in the node `stack_state` (`stepit_state`), as its parameters `state.*`,
+which `SaveValues`, `LoadValues` and the pages read and set through its parameter services: the
+values of `saved` (the counts) in its state file, `~/ws/state/stack.yaml` in the git-ignored
+folder `state`, and those of `forgotten` (the marks, counts of motor steps) in memory only, empty
+at every start; the
 commander publishes the running objective on `/stepit_server/objective`, and the whole run, every node
 with its status, on `/stepit_server/execution`, which the editor's Execution tab follows, `FocusStack` its progress
 on `/focus_stack/progress` (`ReportProgress`), both latched; each angle of a stack whose pictures are
 all saved on `/focus_stack/stack_done` (`StackDone`), latched, with `stack.json` written into its
 folder; each stack whose angles are all done on `/focus_stack/all_stacks_done` (`AllStacksDone`),
 latched, with `all_stacks.json` written into its folder; and every page shows every picture on
-`/camera/picture`. A new piece of shared state goes the same way, never into `localStorage`. What a
-rig start must forget, e.g. the marks, which are counts of motor steps, `rig.launch.py` removes
-from the state file before anything starts (`state_cleared_on_start` of `rig.yaml`): the rig's
-launch file, never the commander nor the plugin.
+`/camera/picture`. A new piece of shared state goes the same way, never into `localStorage`, and
+never onto the commander's node: a new value is a name in `saved` or `forgotten` of the section
+`stack_state` of `rig.yaml`.
 
 **Node models for editors.** `stepit_objectives/objectives/stepit_behaviors.xml` is the
 `<TreeNodesModel>` of every behavior, generated by `stepit_behaviors::nodesModel()` from the

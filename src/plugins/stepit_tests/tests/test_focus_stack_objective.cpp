@@ -47,6 +47,7 @@
 #include "fake/fake_controller_manager.hpp"
 #include "fake/fake_freezer.hpp"
 #include "fake/fake_robot.hpp"
+#include "fake/fake_state.hpp"
 #include "objective.hpp"
 
 namespace stepit_tests
@@ -91,19 +92,20 @@ protected:
     {
       rclcpp::init(0, nullptr);
     }
-    state_file_ = std::filesystem::temp_directory_path() /
-                  ("stepit_focus_stack_" + std::string(testing::UnitTest::GetInstance()->current_test_info()->name())) /
-                  "stack.yaml";
-    std::filesystem::remove_all(state_file_.parent_path());
+    folder_ = std::filesystem::temp_directory_path() /
+              ("stepit_focus_stack_" + std::string(testing::UnitTest::GetInstance()->current_test_info()->name()));
+    std::filesystem::remove_all(folder_);
 
     // The commander's section of rig.yaml.
     rclcpp::NodeOptions options;
-    options.parameter_overrides(
-        { rclcpp::Parameter("state_file", state_file_.string()), rclcpp::Parameter("overshoot.joint1", kStageOvershoot),
-          rclcpp::Parameter("overshoot.joint2", kRailOvershoot), rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn),
-          rclcpp::Parameter("pictures_folder", pictures().string()) });
+    options.parameter_overrides({ rclcpp::Parameter("overshoot.joint1", kStageOvershoot),
+                                  rclcpp::Parameter("overshoot.joint2", kRailOvershoot),
+                                  rclcpp::Parameter("deg_per_turn.joint1", kDegPerTurn),
+                                  rclcpp::Parameter("pictures_folder", pictures().string()) });
     node_ = std::make_shared<rclcpp::Node>("stepit_tests_focus_stack", options);
 
+    // The marks of the rail, not set, as at every start of the rig.
+    state_ = std::make_unique<FakeState>();
     robot_ = std::make_unique<FakeRobot>(kJointStateTopic, kActionName, kJointNames, kJointPositions);
     robot_->followPositionCommands(kCommandTopic, 100.0);
     manager_ = std::make_unique<FakeControllerManager>(
@@ -134,21 +136,22 @@ protected:
     camera_.reset();
     manager_.reset();
     robot_.reset();
+    state_.reset();
     node_.reset();
-    std::filesystem::remove_all(state_file_.parent_path());
+    std::filesystem::remove_all(folder_);
   }
 
   /// @brief The marks, as MarkNear and MarkFar would have saved them.
   void mark(double near, double far)
   {
-    std::filesystem::create_directories(state_file_.parent_path());
-    std::ofstream(state_file_) << "near: [" << near << "]\nfar: [" << far << "]\n";
+    state_->set("near", { near });
+    state_->set("far", { far });
   }
 
-  /// @brief The camera's folder of pictures, next to the state file.
+  /// @brief The camera's folder of pictures, in the test's own folder.
   std::filesystem::path pictures() const
   {
-    return state_file_.parent_path() / "pictures";
+    return folder_ / "pictures";
   }
 
   /// @brief The text of a file, empty if there is none.
@@ -197,22 +200,16 @@ protected:
     return run;
   }
 
-  /// @brief The values LoadValues reads under `key`, or nothing.
-  std::optional<std::vector<double>> saved(const std::string& key)
+  /// @brief The values saved in the state of the rig under `key`, or nothing.
+  std::optional<std::vector<double>> saved(const std::string& key) const
   {
-    auto blackboard = BT::Blackboard::create();
-    auto tree = factory_.createTreeFromText(R"(<root BTCPP_format="4"><BehaviorTree ID="Read"><LoadValues key=")" +
-                                                key + R"(" values="{values}"/></BehaviorTree></root>)",
-                                            blackboard);
-    if (tree.tickOnce() != BT::NodeStatus::SUCCESS)
-    {
-      return std::nullopt;
-    }
-    return blackboard->get<std::vector<double>>("values");
+    const auto values = state_->get(key);
+    return values.empty() ? std::nullopt : std::optional<std::vector<double>>{ values };
   }
 
-  std::filesystem::path state_file_;
+  std::filesystem::path folder_;
   rclcpp::Node::SharedPtr node_;
+  std::unique_ptr<FakeState> state_;
   std::unique_ptr<FakeRobot> robot_;
   std::unique_ptr<FakeControllerManager> manager_;
   std::unique_ptr<FakeCamera> camera_;
@@ -469,8 +466,7 @@ TEST_F(FocusStackObjective, StopsWhenTheCameraIgnoresAShot)
 
 TEST_F(FocusStackObjective, NeedsBothMarks)
 {
-  std::filesystem::create_directories(state_file_.parent_path());
-  std::ofstream(state_file_) << "near: [1.0]\n";
+  state_->set("near", { 1.0 });
   EXPECT_EQ(runObjective(factory_, "FocusStack", kPayload), BT::NodeStatus::FAILURE);
 
   EXPECT_TRUE(robot_->positionCommands().empty());
@@ -499,8 +495,7 @@ TEST_F(FocusStackObjective, TheRailGoesBackToAMarkAsAStackApproachesIt)
 
 TEST_F(FocusStackObjective, GoingToAMarkNeedsBothMarks)
 {
-  std::filesystem::create_directories(state_file_.parent_path());
-  std::ofstream(state_file_) << "near: [1.0]\n";
+  state_->set("near", { 1.0 });
   EXPECT_EQ(runObjective(factory_, "MoveRailToMark", "{mark: near}"), BT::NodeStatus::FAILURE);
   EXPECT_TRUE(robot_->positionCommands().empty());
 }

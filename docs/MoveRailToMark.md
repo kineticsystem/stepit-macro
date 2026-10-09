@@ -14,7 +14,7 @@ ros2 action send_goal /commander/execute_objective \
 
 ```
 MoveRailToMark
-├── LoadValues              {@mark}, near, far   (the marks, from the state file)
+├── LoadValues              {@mark}, near, far   (the marks, from stack_state)
 ├── SubTree EnsureControllers   (position_controller only)
 ├── CommandJointPositions   joint2 to the mark, approaching it from near toward far
 └── SubTree ActivateTeleop      (manual drive again)

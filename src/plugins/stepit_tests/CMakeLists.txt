@@ -162,9 +162,10 @@ if(BUILD_TESTING)
   target_link_libraries(test_set_joints
     stepit_behaviors::stepit_behaviors)
 
-  # Saving and loading values, e.g. the marks of a stack, in a YAML file.
-  ament_add_gtest(test_values_file tests/test_values_file.cpp)
-  target_link_libraries(test_values_file
+  # Saving and loading values, e.g. the marks of a stack, in the state of the rig, against a fake stack_state.
+  ament_add_gtest(test_values tests/test_values.cpp)
+  target_include_directories(test_values PRIVATE tests)
+  target_link_libraries(test_values
     stepit_behaviors::stepit_behaviors
     rclcpp::rclcpp)
 

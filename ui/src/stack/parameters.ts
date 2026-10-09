@@ -1,7 +1,7 @@
-// The stack as the rig keeps it, in the commander's parameters: what the
-// objectives and the pages saved in the rig's state file, state.*: the marks
-// of the rail, the counts and the stage's turn, rig.yaml's focus_stack.* until
-// a page sets them.
+// The stack as the rig keeps it, in the parameters state.* of its node
+// stack_state: the marks of the rail, which it forgets at every start, and the
+// counts and the stage's turn, which it keeps in its state file, rig.yaml's
+// defaults until a page sets them. An empty list means not set.
 // Apart from the store, so that it can be tested without a browser.
 
 /** A value of rcl_interfaces/msg/Parameter: the types the stack uses. */
@@ -51,6 +51,10 @@ export function stackOf(parameters: Parameter[]): StackParameters {
   const stack: StackParameters = {};
   for (const { name, value } of parameters) {
     const number = numberOf(value);
+    // An empty list is a mark not made, e.g. after a start of the rig.
+    if (number === undefined && value?.type === DOUBLE_ARRAY && (name === 'state.near' || name === 'state.far')) {
+      stack[name === 'state.near' ? 'near' : 'far'] = undefined;
+    }
     if (number === undefined) continue;
     switch (name) {
       case 'state.near': stack.near = number; break;

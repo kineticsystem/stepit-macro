@@ -24,13 +24,6 @@ find_package(std_msgs REQUIRED)
 find_package(stepit_camera_msgs REQUIRED)
 find_package(stepit_server REQUIRED)
 find_package(trajectory_msgs REQUIRED)
-find_package(yaml-cpp REQUIRED)
-# yaml-cpp 0.8 exports a namespaced target, older versions only the plain one.
-if(TARGET yaml-cpp::yaml-cpp)
-  set(YAML_CPP_TARGET yaml-cpp::yaml-cpp)
-else()
-  set(YAML_CPP_TARGET yaml-cpp)
-endif()
 
 ######################################################
 # The behaviors, as a normal library. Anything owning a BT factory (the tests,
@@ -77,8 +70,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${stepit_camera_msgs_TARGETS}
-  ${trajectory_msgs_TARGETS}
-  ${YAML_CPP_TARGET})
+  ${trajectory_msgs_TARGETS})
 
 ######################################################
 # The same behaviors, wrapped into a BehaviorTree.CPP plugin, which is how the
@@ -129,7 +121,6 @@ ament_export_dependencies(
   std_msgs
   stepit_camera_msgs
   stepit_server
-  trajectory_msgs
-  yaml-cpp)
+  trajectory_msgs)
 
 ament_package()

@@ -53,6 +53,7 @@ MODULES = {
     "freezer": ("freezer_node", "freezer.launch.py", True),
     "teleop": ("stepit_teleop", "teleop.launch.py", False),
     "power": ("stepit_power", "power.launch.py", True),
+    "state": ("stepit_state", "state.launch.py", True),
 }
 
 # The programs that are not ROS launch files, by their name in the section
@@ -178,44 +179,9 @@ def ui_teleop(params_file):
     )
 
 
-def clear_state(parameters):
-    """Forget what the rig must not remember across a start, e.g. the marks of a stack.
-
-    The section stepit_server of rig.yaml names the state file, state_file, and the
-    entries to remove from it, state_cleared_on_start: the marks of the rail are
-    counts of motor steps, which mean nothing once the motors' controller has
-    powered up again, as it does when the Pi is switched on. The rest, e.g. the
-    counts of a stack, is kept. The commander never sees state_cleared_on_start:
-    it is the rig's own, and is taken out of the parameters. Returns the entries
-    removed.
-    """
-    server = (parameters.get("stepit_server") or {}).get("ros__parameters") or {}
-    keys = server.pop("state_cleared_on_start", None) or []
-    path = server.get("state_file")
-    if not keys or not path:
-        return []
-    path = Path(os.path.expanduser(path))
-    if not path.exists():
-        return []
-    state = yaml.safe_load(path.read_text()) or {}
-    cleared = [key for key in keys if key in state]
-    if not cleared:
-        return []
-    for key in cleared:
-        del state[key]
-    # Written aside, then renamed: a crash never leaves it half written.
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(yaml.safe_dump(state, default_flow_style=None))
-    temporary.replace(path)
-    return cleared
-
-
 def launch_setup(context):
     with open(LaunchConfiguration("config").perform(context)) as file:
         arguments, parameters = split_config(yaml.safe_load(file))
-
-    # Before anything starts: the commander reads the state file when it does.
-    cleared = clear_state(parameters)
 
     # The node parameters, written to a file of their own: a ROS2 parameter file
     # cannot hold the section `launch`, which is not a node.
@@ -229,11 +195,6 @@ def launch_setup(context):
         include(context, module, arguments.get(module) or {}, params_file)
         for module in MODULES
     ]
-    if cleared:
-        actions.insert(
-            0,
-            LogInfo(msg=f"Cleared from the state file at start: {', '.join(cleared)}"),
-        )
     actions.append(ui_teleop(params_file))
     actions.append(editor(arguments.get("editor") or {}))
     actions.append(ui(arguments.get("ui") or {}))

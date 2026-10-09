@@ -20,56 +20,67 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
 
-#include <behaviortree_cpp/action_node.h>
-#include <behaviortree_ros2/ros_node_params.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <behaviortree_ros2/bt_service_node.hpp>
+#include <rcl_interfaces/srv/get_parameters.hpp>
+#include <rcl_interfaces/srv/set_parameters.hpp>
 
 namespace stepit_behaviors
 {
 
+/// @brief The node that keeps the state of the rig, see stepit_state's StackState.
+inline constexpr auto kStateNode = "/stack_state";
+
 /**
- * @brief Saves numbers under a name in a YAML file, e.g. where the user marked
- * the near end of a stack, for LoadValues to read back in a later objective.
+ * @brief Saves numbers under a name in the state of the rig, e.g. where the
+ * user marked the near end of a stack, for LoadValues to read back in a later
+ * objective, and for every page to show.
  *
- * The file is the commander's parameter `state_file`, unless the port `file`
- * names another; it holds one list per name, e.g. `near: [12.4]`, and keeps the
- * other names. It is written to a temporary file first, then renamed, so that
- * a crash never leaves it half written. It is state, not configuration: it
- * belongs outside git. The values also become the commander's parameter
- * `state.<key>`, which the pages of the rig read, see publishState.
+ * The state is the node stack_state, which keeps each value as its parameter
+ * `state.<key>`: set here through its set_parameters service. The node knows
+ * which names exist, and which it keeps across restarts, e.g. the counts of a
+ * stack, or forgets at every start, e.g. the marks. A name it does not know,
+ * or a value it cannot save, fails the node, saying why.
  */
-class SaveValues : public BT::SyncActionNode
+class SaveValues : public BT::RosServiceNode<rcl_interfaces::srv::SetParameters>
 {
 public:
   SaveValues(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
 
   static BT::PortsList providedPorts();
 
-  BT::NodeStatus tick() override;
+  bool setRequest(Request::SharedPtr& request) override;
+
+  BT::NodeStatus onResponseReceived(const Response::SharedPtr& response) override;
+
+  BT::NodeStatus onFailure(BT::ServiceNodeErrorCode error) override;
 
 private:
-  std::weak_ptr<rclcpp::Node> node_;
+  std::string key_;
 };
 
 /**
- * @brief Reads the numbers that SaveValues saved under a name. Fails, saying
- * so, when the file or the name is missing, e.g. when the user has not marked
- * that end of the stack yet.
+ * @brief Reads the numbers saved under a name in the state of the rig, the
+ * parameter `state.<key>` of stack_state, through its get_parameters service.
+ * Fails, saying so, when the name does not exist, or nothing is saved under it
+ * yet, e.g. when the user has not marked that end of the stack.
  */
-class LoadValues : public BT::SyncActionNode
+class LoadValues : public BT::RosServiceNode<rcl_interfaces::srv::GetParameters>
 {
 public:
   LoadValues(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params);
 
   static BT::PortsList providedPorts();
 
-  BT::NodeStatus tick() override;
+  bool setRequest(Request::SharedPtr& request) override;
+
+  BT::NodeStatus onResponseReceived(const Response::SharedPtr& response) override;
+
+  BT::NodeStatus onFailure(BT::ServiceNodeErrorCode error) override;
 
 private:
-  std::weak_ptr<rclcpp::Node> node_;
+  std::string key_;
 };
 
 }  // namespace stepit_behaviors

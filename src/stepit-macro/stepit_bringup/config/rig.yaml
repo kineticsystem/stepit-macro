@@ -99,22 +99,6 @@ stepit_server:
     # worm gear. Counter-clockwise is negative.
     deg_per_turn:
       joint1: 4.5
-    # The defaults of a focus stack in StepIt UI: how far the stage turns either
-    # way, in degrees from where it is when the stack starts, e.g. 17 for -17
-    # to 17; the shots of the rail; the angles of the stage. What a page sets
-    # goes into state_file, and stays across restarts.
-    focus_stack:
-      turn: 17.0
-      shots: 10
-      angles: 35
-    # Where MarkNear and MarkFar save the ends of a stack, for FocusStack: state,
-    # not configuration, in the repo's state folder, which git ignores.
-    state_file: ~/ws/state/stack.yaml
-    # What a start of the rig forgets, which rig.launch.py removes from
-    # state_file before anything starts: the marks of the rail are counts of
-    # motor steps, meaningless once the motors' controller powers up again.
-    # The commander never sees this: the launch file takes it out.
-    state_cleared_on_start: [near, far]
     # The camera's folder of pictures, where StackDone writes stack.json into
     # the folder of each finished angle, and AllStacksDone all_stacks.json into
     # the folder of each finished stack: the camera's download_directory below,
@@ -185,6 +169,29 @@ ui_teleop:
     joint4: { axis: -1, scale: 0.0 }
     joint5: { axis: -1, scale: 0.0 }
     joy_timeout: 0.5
+
+# The state of the rig that every page shares and the objectives use: the
+# node stack_state, whose parameters state.* the pages and SaveValues and
+# LoadValues read and set. See stack_state.hpp of stepit_state.
+stack_state:
+  ros__parameters:
+    # Where the saved values are kept: state, not configuration, in the repo's
+    # state folder, which git ignores.
+    state_file: ~/ws/state/stack.yaml
+    # Kept in state_file across restarts: what a page sets of a focus stack,
+    # how far the stage turns either way, in degrees from where it is when the
+    # stack starts, e.g. 17 for -17 to 17; the shots of the rail; the angles of
+    # the stage.
+    saved: [turn, shots, angles]
+    # In memory only, empty at every start of the rig: the marks of the rail,
+    # which MarkNear and MarkFar set for FocusStack. They are counts of motor
+    # steps, meaningless once the motors' controller powers up again.
+    forgotten: [near, far]
+    # The saved values while state_file has none, e.g. on a new rig.
+    defaults:
+      turn: 17.0
+      shots: 10
+      angles: 35
 
 # Switching the computer off, from StepIt UI's power button: the node power_off,
 # stepit_power/power.launch.py, with its defaults in config/power_off.yaml
