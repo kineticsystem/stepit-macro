@@ -26,6 +26,7 @@ if(BUILD_TESTING)
   find_package(rclcpp_action REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(stepit_macro_msgs REQUIRED)
   find_package(stepit_camera_msgs REQUIRED)
   find_package(trajectory_msgs REQUIRED)
 
@@ -174,6 +175,7 @@ if(BUILD_TESTING)
     ${freezer_msgs_TARGETS}
     ${sensor_msgs_TARGETS}
     ${stepit_camera_msgs_TARGETS}
+    ${stepit_macro_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
   # MoveRailBy and RotateStageBy, and so the conversions of axis_units, against a fake robot.

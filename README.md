@@ -281,6 +281,7 @@ rig's own: they live here, in [`src/plugins`](src/plugins), not in StepIt Comman
 | `stepit_objectives` | The objectives and the subtrees they are built from: BehaviorTree XML files, no code. `objectives/stepit_behaviors.xml` describes the behaviors for editors such as the StepIt Editor. |
 | `stepit_behaviors` | The behaviors the objectives are built from. The only place that knows the topics, actions and services of the robot. |
 | `stepit_tests` | Tests: the logic of the behaviors, and the objectives run end to end against a fake robot. |
+| `stepit_macro_msgs` | The messages of the rig's own topics: `StackProgress`, the pictures done and the total of a running stack, on `/focus_stack/progress`. |
 
 ### Objectives
 

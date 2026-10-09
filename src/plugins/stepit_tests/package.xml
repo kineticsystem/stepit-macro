@@ -27,6 +27,7 @@
   <test_depend>sensor_msgs</test_depend>
   <test_depend>std_msgs</test_depend>
   <test_depend>stepit_camera_msgs</test_depend>
+  <test_depend>stepit_macro_msgs</test_depend>
   <test_depend>trajectory_msgs</test_depend>
 
   <export>

@@ -24,6 +24,7 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>stepit_camera_msgs</depend>
+  <depend>stepit_macro_msgs</depend>
   <!-- The interface of a node reporting its progress, header only. -->
   <depend>stepit_server</depend>
   <depend>trajectory_msgs</depend>

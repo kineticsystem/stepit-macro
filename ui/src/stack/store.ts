@@ -24,6 +24,8 @@ const STATE = '/stack_state';
 const FLASH_MS = 700;
 /** Where FocusStack says how far it is, [taken, total], latched. */
 const PROGRESS_TOPIC = '/focus_stack/progress';
+/** The rig's own message of a stack's progress: the pictures done, of the total. */
+const PROGRESS_TYPE = 'stepit_macro_msgs/msg/StackProgress';
 
 export type End = 'near' | 'far';
 
@@ -142,8 +144,8 @@ export function followStack(): () => void {
     if (event.node === STATE) apply([...event.new_parameters, ...event.changed_parameters]);
   });
   // FocusStack's progress, latched: a page that opens mid-stack gets it at once.
-  const stopProgress = ros().subscribe<{ data: number[] }>(PROGRESS_TOPIC, 'std_msgs/msg/Int32MultiArray',
-    ({ data: [taken, total] }) => useStack.setState({ progress: { taken, total } }),
+  const stopProgress = ros().subscribe<{ done: number; total: number }>(PROGRESS_TOPIC, PROGRESS_TYPE,
+    ({ done, total }) => useStack.setState({ progress: { taken: done, total } }),
     { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
   return () => {
     unsubscribe();

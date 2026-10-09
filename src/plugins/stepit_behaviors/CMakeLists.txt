@@ -22,6 +22,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(stepit_camera_msgs REQUIRED)
+find_package(stepit_macro_msgs REQUIRED)
 find_package(stepit_server REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 
@@ -69,6 +70,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
   ${stepit_camera_msgs_TARGETS}
+  ${stepit_macro_msgs_TARGETS}
   ${trajectory_msgs_TARGETS})
 
 ######################################################
@@ -119,6 +121,7 @@ ament_export_dependencies(
   sensor_msgs
   std_msgs
   stepit_camera_msgs
+  stepit_macro_msgs
   stepit_server
   trajectory_msgs)
 

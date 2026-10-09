@@ -40,8 +40,8 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/int32_multi_array.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <stepit_macro_msgs/msg/stack_progress.hpp>
 #include <stepit_behaviors/register_nodes.hpp>
 
 #include "fake/fake_camera.hpp"
@@ -278,12 +278,12 @@ TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
 {
   mark(1.0, 2.0);
   std::mutex mutex;
-  std::vector<std::vector<int>> reports;
-  const auto subscription = node_->create_subscription<std_msgs::msg::Int32MultiArray>(
+  std::vector<std::pair<uint32_t, uint32_t>> reports;
+  const auto subscription = node_->create_subscription<stepit_macro_msgs::msg::StackProgress>(
       "/focus_stack/progress", rclcpp::QoS{ 10 }.reliable().transient_local(),
-      [&](const std_msgs::msg::Int32MultiArray& message) {
+      [&](const stepit_macro_msgs::msg::StackProgress& message) {
         const std::lock_guard<std::mutex> lock{ mutex };
-        reports.push_back({ message.data.begin(), message.data.end() });
+        reports.emplace_back(message.done, message.total);
       });
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node_);
@@ -297,9 +297,9 @@ TEST_F(FocusStackObjective, ItReportsThePicturesTakenOfHowMany)
 
   const std::lock_guard<std::mutex> lock{ mutex };
   ASSERT_EQ(reports.size(), 7u);
-  for (int i = 0; i <= 6; ++i)
+  for (uint32_t i = 0; i <= 6; ++i)
   {
-    EXPECT_EQ(reports[static_cast<std::size_t>(i)], (std::vector<int>{ i, 6 }));
+    EXPECT_EQ(reports[i], std::make_pair(i, 6u));
   }
 }
 

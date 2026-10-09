@@ -123,7 +123,7 @@ The interface the rig's own code adds to the modules':
 | `/commander/execute_objective` | action, `btcpp_ros2_interfaces/action/ExecuteTree` | The commander's: runs an objective of `stepit_objectives` by name, with a YAML payload. |
 | `/stepit_server` parameters `overshoot.<joint>`, `mm_per_turn.<joint>`, `deg_per_turn.<joint>`, `focus_stack.*`, `state_file`, `pictures_folder` | parameters | Declared on the commander's node by the plugin, from the section `stepit_server` of `rig.yaml`. |
 | `/stepit_server` parameters `state.<key>` | parameters, lists of numbers | The rig's state file, e.g. `state.near`; a page that sets one writes the file. |
-| `/focus_stack/progress` | `std_msgs/Int32MultiArray`, latched while the objective runs | `[done, total]` of a running focus stack, from `ReportProgress`. |
+| `/focus_stack/progress` | `stepit_macro_msgs/StackProgress`, latched while the objective runs | `done` and `total`, the pictures of a running focus stack, from `ReportProgress`. |
 | `/focus_stack/stack_done`, `/focus_stack/all_stacks_done` | `std_msgs/String`, latched | The folder of a finished angle, and of a finished focus stack, from `StackDone` and `AllStacksDone`. |
 | `/joy`, `/ui/joy` | `sensor_msgs/Joy`, in | The gamepad, and StepIt UI's sliders, for `gamepad_teleop` and `ui_teleop`. |
 | `/velocity_controller/commands` | `std_msgs/Float64MultiArray`, out | The joints' velocities, from both teleop nodes. |
@@ -140,6 +140,7 @@ The rig is built as three colcon workspaces and one pnpm project, each with its 
 | `plugins` | `stepit_behaviors` | The BehaviorTree.CPP nodes of the rig, one plugin; the **only** place a behavior names a robot topic, action or service. | The commander's BehaviorTree libraries, `stepit_server/progress.hpp`, the messages of the controllers, the Freezer and the camera. |
 | | `stepit_objectives` | The objectives and their subtrees, XML only, and the generated node model. | The behaviors, by name. |
 | | `stepit_tests` | Every test of the behaviors and objectives, against fakes. | Everything above. |
+| | `stepit_macro_msgs` | The messages of the rig's own topics: `StackProgress`. | Nothing. |
 | `stepit-macro` | `stepit_bringup` | `rig.launch.py` and `rig.yaml`: the only place the rig starts and configures the modules. | The modules' launch files, by package name. |
 | | `stepit_teleop` | `gamepad_teleop`: a `Joy` to velocities, a button to an objective. | `btcpp_ros2_interfaces`, built here from the commander's submodule. |
 | | `stepit_power` | `power_off`: the computer off, on request. | `std_srvs`, the commander's objective topic, by name. |
