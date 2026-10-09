@@ -18,6 +18,7 @@
   <depend>rclcpp_action</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>stepit_teleop_msgs</depend>
 
   <!-- Reads the gamepad from /dev/input/js0 and publishes /joy. -->
   <exec_depend>joy_linux</exec_depend>

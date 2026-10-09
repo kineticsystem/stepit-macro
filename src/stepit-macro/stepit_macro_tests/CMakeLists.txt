@@ -20,6 +20,7 @@ if(BUILD_TESTING)
   find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
   find_package(stepit_teleop REQUIRED)
+  find_package(stepit_teleop_msgs REQUIRED)
 
   # Driving the robot with a gamepad, against a fake commander.
   ament_add_gtest(test_gamepad_teleop tests/test_gamepad_teleop.cpp)
@@ -30,7 +31,8 @@ if(BUILD_TESTING)
     rclcpp_action::rclcpp_action
     ${btcpp_ros2_interfaces_TARGETS}
     ${sensor_msgs_TARGETS}
-    ${std_msgs_TARGETS})
+    ${std_msgs_TARGETS}
+    ${stepit_teleop_msgs_TARGETS})
 
   # Switching the computer off on request, with a command of the test's own.
   find_package(std_srvs REQUIRED)

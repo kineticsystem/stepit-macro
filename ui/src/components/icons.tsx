@@ -14,6 +14,48 @@ export function CameraIcon() {
   );
 }
 
+/** Two links of a chain, for the connection to the rig. */
+export function LinkIcon() {
+  return (
+    <svg {...common}>
+      <path d="M6.5 9.5l3-3" />
+      <path d="M7 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1" />
+      <path d="M9 11.5l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1" />
+    </svg>
+  );
+}
+
+/** A gamepad: its body, the cross on the left and two buttons on the right. */
+export function GamepadIcon() {
+  return (
+    <svg {...common}>
+      <path d="M4.5 4.5h7a3 3 0 0 1 3 3v2.5a2 2 0 0 1-3.6 1.2L10 10H6l-.9 1.2A2 2 0 0 1 1.5 10V7.5a3 3 0 0 1 3-3z" />
+      <path d="M5 6.5v2M4 7.5h2" />
+      <path d="M10.5 6.75h.01M12 8.25h.01" />
+    </svg>
+  );
+}
+
+/** A stepper motor, seen from its face: the square body, its shaft, and its mounting holes. */
+export function MotorIcon() {
+  return (
+    <svg {...common}>
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 8h0.01M4.75 4.75h0.01M11.25 4.75h0.01M4.75 11.25h0.01M11.25 11.25h0.01" />
+    </svg>
+  );
+}
+
+/** A flash of lightning, for StepIt Freezer, which fires the cameras and the flashes. */
+export function TriggerIcon() {
+  return (
+    <svg {...common}>
+      <path d="M9 1.5 3.5 9h4L6.5 14.5 12.5 7h-4z" />
+    </svg>
+  );
+}
+
 export function PowerIcon() {
   return (
     <svg {...common}>

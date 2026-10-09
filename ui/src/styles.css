@@ -159,12 +159,26 @@ button.stop { background: var(--error); border-color: var(--error); color: #fff;
 button.stop:hover:not(:disabled) { background: var(--error); filter: brightness(1.08); }
 button.stop:disabled { background: var(--panel); border-color: var(--border); color: var(--muted); font-weight: normal; }
 
-.badge { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
-.badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
-.badge-connected .dot { background: var(--ok); }
-.badge-connecting .dot { background: var(--warning); }
-.badge-disconnected { color: var(--error); }
-.badge-disconnected .dot { background: var(--error); }
+/* The connection to the rig, then the devices of the rig, by their icons:
+   struck through when lost, so that the state reads without the colour too. */
+.devices { position: relative; display: flex; align-items: center; }
+.device { position: relative; }
+.device-connected, .device-connected:hover:not(:disabled),
+.connection-connected, .connection-connected:hover:not(:disabled) { color: var(--ok); }
+.connection-connecting, .connection-connecting:hover:not(:disabled) { color: var(--warning); }
+.device-disconnected, .device-gone, .connection-disconnected,
+.device-disconnected:hover:not(:disabled), .device-gone:hover:not(:disabled),
+.connection-disconnected:hover:not(:disabled) { color: var(--error); }
+.device-disconnected::after, .device-gone::after, .connection-disconnected::after {
+  content: ''; position: absolute; left: 50%; top: 11px; bottom: 11px; width: 2px; margin-left: -1px;
+  background: currentColor; border-radius: 1px; transform: rotate(-45deg);
+}
+.device-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 15;
+  width: max-content; max-width: min(360px, calc(100vw - 24px)); padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.2);
+}
 
 .page {
   flex: 1; min-height: 0;

@@ -32,6 +32,7 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
+#include <stepit_teleop_msgs/msg/gamepad_status.hpp>
 
 namespace stepit_teleop
 {
@@ -70,6 +71,13 @@ std::vector<double> toVelocities(const std::vector<float>& axes, const std::vect
  *
  * If /joy goes silent, e.g. because the gamepad was unplugged with a stick
  * held, the node sends zero velocities once.
+ *
+ * With the parameter `device`, the joystick device, the node tells on
+ * ~/status whether the gamepad is plugged in: joy_linux_node repeats the state
+ * of an open gamepad, even untouched, so /joy coming means plugged in, and
+ * silent for joy_timeout means unplugged. Latched, published when it changes
+ * and every second. Without it, e.g. for the sliders of StepIt UI, nothing is
+ * published.
  */
 class GamepadTeleop : public rclcpp::Node
 {
@@ -84,6 +92,9 @@ private:
   void publish(const std::vector<double>& velocities);
   void stop();
   void activateTeleop();
+  /// @brief Publish the status when the gamepad came or went, and every second anyway.
+  void onStatusTimer();
+  void publishStatus();
 
   std::string controller_;
   std::string objective_;
@@ -95,6 +106,11 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr command_publisher_;
   rclcpp_action::Client<ExecuteTree>::SharedPtr commander_;
   rclcpp::TimerBase::SharedPtr watchdog_;
+  std::string device_;
+  rclcpp::Publisher<stepit_teleop_msgs::msg::GamepadStatus>::SharedPtr status_publisher_;
+  rclcpp::TimerBase::SharedPtr status_timer_;
+  bool connected_ = false;
+  std::optional<rclcpp::Time> last_status_;
 
   std::vector<double> last_velocities_;
   bool stop_button_pressed_ = false;

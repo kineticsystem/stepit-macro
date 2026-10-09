@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(stepit_teleop_msgs REQUIRED)
 
 ######################################################
 # The node, as a library, so that the tests can create it.
@@ -31,7 +32,8 @@ target_link_libraries(stepit_teleop PUBLIC
   rclcpp_action::rclcpp_action
   ${btcpp_ros2_interfaces_TARGETS}
   ${sensor_msgs_TARGETS}
-  ${std_msgs_TARGETS})
+  ${std_msgs_TARGETS}
+  ${stepit_teleop_msgs_TARGETS})
 
 add_executable(gamepad_teleop src/main.cpp)
 target_link_libraries(gamepad_teleop PRIVATE stepit_teleop)
@@ -57,6 +59,7 @@ ament_export_dependencies(
   rclcpp
   rclcpp_action
   sensor_msgs
-  std_msgs)
+  std_msgs
+  stepit_teleop_msgs)
 
 ament_package()
