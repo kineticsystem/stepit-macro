@@ -68,7 +68,7 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 
 ## StepIt UI
 
-[StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.26:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
+[StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.24:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
 
 - **The live view** of the camera, started and stopped from the page.
 - **The camera's settings**, on the first tab of the settings menu, next to Appearance and Connection: the ISO, the shutter speed, the aperture, the white balance and the exposure compensation, with the values the camera accepts right now.
