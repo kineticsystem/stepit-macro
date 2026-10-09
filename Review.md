@@ -72,7 +72,7 @@ The weak points are **between the modules**:
 
 1. **Anyone on the network can drive the rig, write objectives, and switch it off.** rosbridge, the editor's file API and the power button have no authorisation.
 2. **The rig's own contracts are untyped, and kept in step by hand across modules.** These are the progress topic, the state parameters, the joint lists, the motor limits and the objective names.
-3. **Rules are split across layers.** The proof of a shot is checked in the XML for a stack, but in StepIt UI for a test shot.
+3. **Rules are split across layers.** Which objectives must not be interrupted is a list of names, in `power_off`'s configuration and in StepIt UI, not a property of the objectives.
 4. **Nothing tests the parts together.** No test runs the plugin inside the real commander. No test starts the real launch file. No CI job builds the modules at the commits the rig pins.
 
 None of the findings is a safety issue for the motion. The stops are in the right places:
@@ -147,16 +147,15 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 **Mostly respected.** Each place where knowledge sits in the wrong part:
 
 1. **Robot interfaces in the objectives.** `CLAUDE.md` says that `stepit_behaviors` is "the **only** place the objectives name robot topics, actions and services". Yet the XML repeats `topic_name="/joint_states"` 10 times, `"/position_controller/commands"` 11 times, and the services of the controller manager 3 times. Each of these values equals the port's default. The joint list `joint1;…;joint5` appears 25 times in 8 files, 13 of them in [`focus_stack.xml`](src/plugins/stepit_objectives/objectives/focus_stack.xml), and must match `controllers.yaml` of StepIt Motors.
-2. **The proof of a shot is in two layers.** `FocusStack` wraps `Shoot` in `ExpectPicture`, so the picture proves the shot. `TakeShot` does not ([`take_shot.xml`](src/plugins/stepit_objectives/objectives/take_shot.xml)), and StepIt UI re-implements the check with a timeout of its own ([`shot/store.ts`](ui/src/shot/store.ts), `takeShot`, `PICTURE_TIMEOUT`). A test shot from any other client is not checked.
-3. **Objective names in the clients.** Several clients name objectives directly:
+2. **Objective names in the clients.** Several clients name objectives directly:
    - `power_off` refuses during `[FocusStack, Stack]`, in [`rig.yaml:202`](src/stepit-macro/stepit_bringup/config/rig.yaml);
    - StepIt UI repeats that list as `STACKS` in [`power.ts`](ui/src/power/power.ts);
    - StepIt UI disables Manual drive by matching `ActivateTeleop` and `ActivateController` ([`Toolbar.tsx:100`](ui/src/components/Toolbar.tsx)), and shows progress only while the objective is `'FocusStack'` ([`StackBar.tsx`](ui/src/components/StackBar.tsx)).
 
    The clients know the names of the policy, not its meaning, e.g. "an objective that must not be interrupted".
-4. **StepIt UI's stores talk to ROS directly**: `/freezer/set_outputs`, `/controller_manager/list_controllers`, and `/stack_state` with its parameter services. The UI's own review of 2026-10-05 reported this, and it still holds.
-5. **StackDone reaches into the camera's disk.** It rebuilds the camera's folder path itself, from `pictures_folder`, the folder and `angleFolder(index, degrees)`, then lists the camera's files ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp)). The YAML anchor `&pictures`, and `test_the_commander_writes_into_the_cameras_pictures_folder`, keep the two folders equal. It is still an implicit contract with the camera's layout of files.
-6. **The limits of the motors are known twice.** StepIt Motors makes the controller "the authority on the limits": `StepitHardware` reads them from the firmware at configure time. The plugin hard-codes them instead, in `kMotorMaxVelocity` and `kMotorMaxAcceleration` ([`trapezoidal_trajectory.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/trapezoidal_trajectory.hpp)), and so does `ui_teleop`'s `scale` in `rig.yaml`.
+3. **StepIt UI's stores talk to ROS directly**: `/freezer/set_outputs`, `/controller_manager/list_controllers`, and `/stack_state` with its parameter services. The UI's own review of 2026-10-05 reported this, and it still holds.
+4. **StackDone reaches into the camera's disk.** It rebuilds the camera's folder path itself, from `pictures_folder`, the folder and `angleFolder(index, degrees)`, then lists the camera's files ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp)). The YAML anchor `&pictures`, and `test_the_commander_writes_into_the_cameras_pictures_folder`, keep the two folders equal. It is still an implicit contract with the camera's layout of files.
+5. **The limits of the motors are known twice.** StepIt Motors makes the controller "the authority on the limits": `StepitHardware` reads them from the firmware at configure time. The plugin hard-codes them instead, in `kMotorMaxVelocity` and `kMotorMaxAcceleration` ([`trapezoidal_trajectory.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/trapezoidal_trajectory.hpp)), and so does `ui_teleop`'s `scale` in `rig.yaml`.
 
 ## SOLID
 
@@ -324,7 +323,7 @@ These are ordered from the most to the least serious.
 
 2. **A camera call that times out still runs later.** `CameraDriver::run()` throws `The camera did not answer in time` after 5 s, but its task stays queued and runs when the driver gets to it ([`camera_driver.hpp`](modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera_driver.hpp), `run`). A setting changed while a large RAW downloads is therefore refused to the caller, and the parameter keeps its old value, but the camera applies the new one afterwards: the node and the camera then disagree. `onSetParameters` also blocks the executor's thread for those 5 s.
 
-3. **The pictures go astray after a failure, and a test shot is not checked.** `FocusStack` resets the camera's folder only at its very end. A stack that fails or is stopped midway leaves the camera writing into its last angle's folder. The next picture that no objective set a folder for then lands among the stack's pictures: the Freezer's remote trigger on IN1, or a press of the camera's own shutter. `TakeShot` neither resets the folder after the shot nor waits for the picture (see [Separation of Concerns](#separation-of-concerns), item 2).
+3. **The pictures go astray after a failure.** `FocusStack` resets the camera's folder only at its very end. A stack that fails or is stopped midway leaves the camera writing into its last angle's folder. The next picture that no objective set a folder for then lands among the stack's pictures: the Freezer's remote trigger on IN1, or a press of the camera's own shutter. `TakeShot` does not reset the folder after its shot either: it stays `tests` until the next stack.
 
 4. **Each `ReportProgress` node has a publisher of its own.** [`report_progress.cpp:56`](src/plugins/stepit_behaviors/src/report_progress.cpp) creates one on the first tick, and `FocusStack` has two such nodes. A page that opens during a stack receives the latched sample of each writer, `[0, total]` and `[k, total]`, in no defined order, and the UI subscribes with `queue_length: 1`. It may show 0 until the next picture: StackBar shows the progress only while `FocusStack` runs, so the stale count lasts one shot at most. `StackDone` already solved this problem, with `latchedPublisher`.
 
@@ -360,7 +359,7 @@ These are ordered by value against effort, and each fits in one pull request.
    - Name the editor, the power button, `set_outputs` and Groot2 in the README's warning.
    - Later, if the rig ever leaves the workshop's network, bind the servers to an interface of choice.
 3. **Drop a camera task that timed out** (fixes 2). Mark the task as abandoned when `run()` gives up, and skip it in `runTasks()`. Add a test with a fake whose call outlasts the timeout.
-4. **Make the shot's proof and the folder the objectives' business** (fixes 3). Wrap `Shoot` in `ExpectPicture` in `TakeShot`, and let StepIt UI rely on the result. Reset the camera's folder on every exit of `FocusStack`, e.g. with a `Fallback` that resets it and then fails.
+4. **Reset the camera's folder at the end of every run** (fixes 3): on every exit of `FocusStack`, e.g. with a `Fallback` that resets it and then fails, and after the shot of `TakeShot`.
 5. **Create the progress publisher once, at registration**, as `StackDone` does (fixes 4). Introduce `stepit_macro_msgs` with `StackProgress` and `StackDone`, write the JSON files with `nlohmann::json`, and check `mark` in `MoveRailToMark`.
 6. **Take the robot out of the XML** (fixes 5). First, delete the 24 `topic_name` and `service_name` attributes that equal their default. Then give the joint list one home, e.g. `robot.joints` in the commander's section of `rig.yaml`, read like the other configuration of the plugin, used as the default of the behaviors' ports and read by both teleops.
 7. **Derive what can be derived.** Read the motor limits from the controller instead of `kMotorMaxVelocity`. Replace objective names in the clients by a property: e.g. an `uninterruptible` flag in an objective's `TreeNodesModel`, which the commander publishes with `~/objective`.

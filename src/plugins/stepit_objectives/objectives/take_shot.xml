@@ -8,6 +8,11 @@
   fires the node's default_sequence. The cameras download their pictures by
   themselves: StepIt Camera publishes each one on /camera/picture.
 
+  The picture proves the shot: the Freezer fires the camera through a wire
+  and cannot tell whether its shutter opened. The objective succeeds once the
+  camera has reported the picture, and fails when none comes, as each shot of
+  FocusStack does: every client that runs it learns the same.
+
   It is invoked through the commander action server:
 
     ros2 action send_goal /commander/execute_objective \
@@ -26,8 +31,10 @@
   <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
     <Sequence>
       <SetPictureFolder _description="A test shot goes into the folder tests of the pictures." folder="tests"/>
-      <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
-             sequence="{@sequence}"/>
+      <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
+        <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
+               sequence="{@sequence}"/>
+      </ExpectPicture>
     </Sequence>
   </BehaviorTree>
 
