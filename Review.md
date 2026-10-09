@@ -18,11 +18,11 @@
 
 ## Scope and Method
 
-This review describes StepIt Macro at commit `7ccf114`, with StepIt Commander moved to `c33faa6`, after a reading of the whole code base. The modules are at the commits the repo records:
+This review describes StepIt Macro at commit `7ccf114`, with StepIt Commander moved to `13ffae2`, after a reading of the whole code base. The modules are at the commits the repo records:
 
 | Module | Commit |
 |---|---|
-| StepIt Commander | `c33faa6`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
+| StepIt Commander | `13ffae2`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
 | StepIt Camera | `4402400` |
 | StepIt Freezer | `2f720fd` |
 | StepIt Editor | `e45cf90` |
