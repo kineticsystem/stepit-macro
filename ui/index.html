@@ -5,7 +5,16 @@
     <!-- No zoom on a double tap or a pinch: on a tablet, both happen while
          driving the sliders. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Installable, to open without the browser's bars: the manifest for
+         Chrome and Android (from https, or an origin Chrome treats as secure),
+         the apple-* tags for "Add to Home Screen" on an iPad. -->
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="StepIt" />
+    <meta name="theme-color" content="#14171c" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>StepIt Macro</title>
     <script>
