@@ -25,17 +25,22 @@ FocusStack
 ├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
 ├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
 ├── CommandJointPositions           to {first}, past it and back
-├── Steps  stage_from to stage_to, `angles` values, in degrees
-│   ├── DegreesToRadians            this angle
-│   ├── SetPictureFolder            {stack_folder}/angle_01_-17.0deg, and so on
-│   └── Steps  near to far, `shots` values
-│       ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
-│       ├── Sleep                   500 ms, for the vibrations to die down
-│       ├── ExpectPicture           (fails if no picture comes within 15 s: the whole stack stops)
-│       │   └── Shoot               (the Freezer's default sequence: the camera and the lights)
-│       └── ReportProgress          one more picture
-│   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
-├── AllStacksDone                   all_stacks.json in the stack's folder, and its name on /focus_stack/all_stacks_done
+├── Fallback
+│   ├── Sequence
+│   │   ├── Steps  stage_from to stage_to, `angles` values, in degrees
+│   │   │   ├── DegreesToRadians            this angle
+│   │   │   ├── SetPictureFolder            {stack_folder}/angle_01_-17.0deg, and so on
+│   │   │   ├── Steps  near to far, `shots` values
+│   │   │   │   ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
+│   │   │   │   ├── Sleep                   500 ms, for the vibrations to die down
+│   │   │   │   ├── ExpectPicture           (fails if no picture comes within 15 s: the whole stack stops)
+│   │   │   │   │   └── Shoot               (the Freezer's default sequence: the camera and the lights)
+│   │   │   │   └── ReportProgress          one more picture
+│   │   │   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
+│   │   └── AllStacksDone                   all_stacks.json in the stack's folder, and its name on /focus_stack/all_stacks_done
+│   └── Sequence                            when the stack failed
+│       ├── SetPictureFolder                "", the pictures folder itself again
+│       └── AlwaysFailure
 ├── SetPictureFolder                "", the pictures folder itself again
 └── CommandJointPositions           back to {home}
 ```
@@ -55,7 +60,7 @@ pictures/2026-10-06_15-20-04/angle_01_-17.0deg/IMG_5460.CR2 ... IMG_5469.CR2
 pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 ```
 
-`SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again. A stack that stops halfway leaves the folder set: the next stack, or a test shot, sets its own.
+`SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; when the stack ends, the pictures go to the pictures folder itself again, also when it fails, e.g. on a shot whose picture does not come, so that a later picture, from the Freezer's remote trigger or the camera's own shutter, never lands among the stack's. A stack stopped with Stop, or replaced by another objective, leaves the folder set: the commander halts the tree, and no node runs on a halt. The next stack, or a test shot, sets its own.
 
 **Each finished angle says so.** A folder of pictures that stops growing may only be waiting for its next shot: the files alone cannot tell a finished angle from one in progress. Once the last picture of an angle is saved, `StackDone` publishes the folder, relative to the pictures folder, e.g. `2026-10-06_15-20-04/angle_01_-17.0deg`, on `/focus_stack/stack_done` (`std_msgs/String`), latched, as `/focus_stack/progress` is, and writes `stack.json` into the folder. The camera reports a picture only once it is saved, and `ExpectPicture` waits for that report, so every picture of the angle is on disk when `StackDone` runs.
 

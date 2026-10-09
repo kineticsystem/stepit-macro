@@ -20,7 +20,8 @@
       "{target_tree: TakeShot, payload: '{sequence: test_shot}'}"
 
   Its picture goes into the folder tests of the camera's pictures, apart from
-  those of the stacks, as StepIt UI's Test shot is. The tree is named TakeShot,
+  those of the stacks, as StepIt UI's Test shot is; after the shot, succeeded
+  or failed, the next pictures go into the pictures folder itself again. The tree is named TakeShot,
   not Shoot: BehaviorTree.CPP does not let a tree have the name of a node.
 
   A shot that has started always runs to its end, even when another objective
@@ -31,10 +32,19 @@
   <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
     <Sequence>
       <SetPictureFolder _description="A test shot goes into the folder tests of the pictures." folder="tests"/>
-      <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
-        <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
-               sequence="{@sequence}"/>
-      </ExpectPicture>
+      <!-- Whether the shot succeeds or fails, the next pictures go into the
+           pictures folder itself again, not into tests. -->
+      <Fallback>
+        <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
+          <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
+                 sequence="{@sequence}"/>
+        </ExpectPicture>
+        <Sequence _description="The shot failed: the pictures folder again, then fail.">
+          <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
+          <AlwaysFailure/>
+        </Sequence>
+      </Fallback>
+      <SetPictureFolder _description="The next pictures go into the pictures folder itself again." folder=""/>
     </Sequence>
   </BehaviorTree>
 

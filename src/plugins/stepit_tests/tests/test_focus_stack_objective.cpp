@@ -463,6 +463,12 @@ TEST_F(FocusStackObjective, StopsWhenTheCameraIgnoresAShot)
 
   EXPECT_EQ(freezer_->fired().size(), 1u);
   EXPECT_EQ(camera_->taken(), 0);
+  // The next pictures go into the pictures folder itself again, not into the
+  // folder of the angle the stack stopped at.
+  const auto folders = camera_->folders();
+  ASSERT_EQ(folders.size(), 2u);
+  EXPECT_NE(folders[0].find("/angle_01_"), std::string::npos) << folders[0];
+  EXPECT_EQ(folders[1], "");
 }
 
 TEST_F(FocusStackObjective, NeedsBothMarks)
