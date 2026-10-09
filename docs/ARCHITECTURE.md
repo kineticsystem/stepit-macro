@@ -258,7 +258,7 @@ The commander calls `registerNodes()` again before a goal whenever its own param
 | Family | Behaviors | What they share |
 |---|---|---|
 | Joint values, pure logic | `OffsetVector`, `SetJoints`, `Steps`, `MillimetresToRadians`, `DegreesToRadians` | Read numbers through [`ports.hpp`](../src/plugins/stepit_behaviors/include/stepit_behaviors/ports.hpp): a number or a list, `getNumbers()`, `requireNumbers()`, `isGiven()`. `Steps` is a decorator, a for loop that reports its progress to the commander. |
-| Trajectories, pure logic | `TrapezoidalTrajectory`, `CubicTrajectory` | Write a `JointTrajectory` to the blackboard; the motors' limits are constants of `TrapezoidalTrajectory`. |
+| Trajectories, pure logic | `CubicTrajectory` | Writes a `JointTrajectory` to the blackboard, one waypoint reached after a given duration, for `FollowJointTrajectory`. No objective uses either today. |
 | Motion | `GetJointPositions`, `FollowJointTrajectory`, `CommandJointPositions` | The first and the last own a callback group and an executor of their own, spun when ticked. `FollowJointTrajectory` derives from the rig's [`RosActionNode`](../src/plugins/stepit_behaviors/include/stepit_behaviors/ros_action_node.hpp), which drops the exception a halt throws when its goal has just ended. |
 | Controllers | `GetActiveControllers`, `IsControllerActive`, `SwitchController` | `BT::RosServiceNode`s of the controller manager. |
 | State | `SaveValues`, `LoadValues` | The state file, see below. |
@@ -285,7 +285,6 @@ An objective is an XML file in [`stepit_objectives/objectives`](../src/plugins/s
 |---|---|---|
 | `EnsureControllers` (subtree) | the given ones | Stops every controller owning a command interface except the given ones, and starts those, best effort. Every motion objective calls it first. |
 | `ActivateController`, `ActivateTeleop`, `ToggleTeleop` | the given one, `velocity_controller` | Hand the robot to a controller, to the gamepad and the sliders, or back. |
-| `MoveJointsTo`, `OffsetJointsBy`, `SpinTest` | `joint_trajectory_controller` | `GetJointPositions`, `TrapezoidalTrajectory`, `FollowJointTrajectory`: every joint starts and stops together. |
 | `MoveJointsDirectlyTo`, `OffsetJointsDirectlyBy`, `MoveRailBy`, `RotateStageBy`, `MoveRailToMark`, `Stack`, `FocusStack` | `position_controller` | `CommandJointPositions`: each joint on the microcontroller's own profile. |
 | `MarkNear`, `MarkFar` | none | Save where the rail is in the state file; they move nothing and leave the controllers alone. |
 | `TakeShot` | none | `SetPictureFolder` `tests`, then `Shoot`. |
@@ -407,15 +406,15 @@ The objective tests run the real XML and the real behaviors against fakes of the
 | Test | What it covers |
 |---|---|
 | `test_offset_vector`, `test_set_joints`, `test_steps`, `test_ports` | The pure logic: offsets, the joints set, the loops, a number or a list. |
-| `test_cubic_trajectory`, `test_trapezoidal_trajectory` | The trajectories, their limits and their shapes. |
+| `test_cubic_trajectory`, `test_follow_joint_trajectory` | The cubic trajectory's shape; following it through the trajectory controller, and a controller that fails. |
 | `test_get_joint_positions`, `test_command_joint_positions` | Reading the joints; the direct moves, the approach against backlash, the stop on a halt or a timeout. |
 | `test_switch_controller`, `test_expect_picture`, `test_values_file` | The strictness of a switch; waiting for every file of a shot; the state file, its parameters and a page setting one. |
-| `test_*_objective`, `test_direct_objectives`, `test_axis_objectives` | Every objective but `SpinTest`, end to end: `FocusStack` alone has 17 cases. |
+| `test_*_objective`, `test_direct_objectives`, `test_axis_objectives` | Every objective, end to end: `FocusStack` alone has 17 cases. |
 | `test_nodes_model` | The committed node model matches the registration. |
 | `test_gamepad_teleop`, `test_power_off` | The sticks, the stop button, the watchdog; switching off, and the refusal during a stack, with a command of the test's own. |
 | `test_rig_config.py` | `rig.yaml` as `rig.launch.py` reads it: the sections, the clearing of the state, the measured ratios. |
 
-Not tested: the commander's own loop around the plugin, i.e. `registerNodes()` called again before a goal; `include()` of `rig.launch.py` against the modules' real launch files; `SpinTest`; and anything against the real hardware, which is checked by hand on the rig.
+Not tested: the commander's own loop around the plugin, i.e. `registerNodes()` called again before a goal; `include()` of `rig.launch.py` against the modules' real launch files; and anything against the real hardware, which is checked by hand on the rig.
 
 ## How to Extend the Rig
 

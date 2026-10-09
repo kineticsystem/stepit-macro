@@ -50,7 +50,6 @@ add_library(stepit_behaviors SHARED
   src/set_joints.cpp
   src/steps.cpp
   src/switch_controller.cpp
-  src/trapezoidal_trajectory.cpp
   src/values_file.cpp)
 
 target_include_directories(stepit_behaviors PUBLIC

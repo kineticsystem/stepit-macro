@@ -34,7 +34,7 @@ namespace stepit_tests
 {
 
 /// @brief Path of a tree shipped by stepit_objectives, e.g.
-/// treePath("objectives", "offset_joints_by.xml").
+/// treePath("objectives", "offset_joints_directly_by.xml").
 inline std::filesystem::path treePath(const std::string& folder, const std::string& file)
 {
   return std::filesystem::path{ ament_index_cpp::get_package_share_directory("stepit_objectives") } / folder / file;

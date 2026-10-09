@@ -16,7 +16,7 @@
   once the joints have arrived and stopped. Every move commands all five
   joints: joints 3, 4 and 5 are held where they were at the start, and joint 2
   goes back to its start with the next step of joint 1. 5 turns is +10π rad,
-  counter-clockwise: clockwise turns are negative, as in SpinTest. The photo is
+  counter-clockwise: clockwise turns are negative. The photo is
   not taken yet: its place is marked in the inner loop.
 -->
 <root BTCPP_format="4" main_tree_to_execute="Stack">

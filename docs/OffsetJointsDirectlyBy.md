@@ -3,9 +3,7 @@
 [`offset_joints_directly_by.xml`](../src/plugins/stepit_objectives/objectives/offset_joints_directly_by.xml)
 moves the joints **by** a signed offset, relative to where they are when the
 objective starts, through the position controller: the microcontroller plans
-each move itself, on its own trapezoid, as fast as the motors allow. It is the
-direct counterpart of [`OffsetJointsBy`](OffsetJointsBy.md), which plans a
-trajectory and sends it to the trajectory controller.
+each move itself, on its own trapezoid, as fast as the motors allow.
 
 | Parameter | Required | Meaning |
 |---|---|---|
@@ -35,4 +33,4 @@ position controller, and the hardware brakes every joint to rest: see
 It trades what [`MoveJointsDirectlyTo`](MoveJointsDirectlyTo.md) trades: the
 joints are not synchronised, the limits are those of the motors, and the joints
 left out are sent where they already are. That page also explains why it is
-faster than `OffsetJointsBy`.
+faster than a trajectory through the trajectory controller.

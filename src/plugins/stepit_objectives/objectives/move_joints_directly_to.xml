@@ -11,11 +11,10 @@
       "{target_tree: MoveJointsDirectlyTo,
         payload: '{joints: [joint1, joint2], positions: [0.0, 1.57]}'}"
 
-  It is the direct counterpart of MoveJointsTo, which plans a trajectory and
-  sends it to the trajectory controller. Here nothing is planned: there is a
-  single planner, the microcontroller's, so the motors do not trail a plan and
-  settle at its end. The price is that the joints are not synchronised, each
-  one runs its own profile, and that the limits are those of the motors.
+  Nothing is planned on the computer: there is a single planner, the
+  microcontroller's, so the motors do not trail a plan and settle at its end.
+  The price is that the joints are not synchronised, each one runs its own
+  profile, and that the limits are those of the motors.
 
   The objective succeeds once every joint is within 0.01 rad of its target and
   has stopped. Cancelling it deactivates the position controller, and the

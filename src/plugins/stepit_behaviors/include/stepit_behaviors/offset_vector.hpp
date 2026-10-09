@@ -32,8 +32,8 @@ namespace stepit_behaviors
  *
  * The offset is either a single number, added to every element, or a list with
  * one offset per element. Pure arithmetic: the node knows nothing about joints
- * or motion. OffsetJointsBy uses it to turn the current joint positions and the
- * commanded offsets into the positions to reach.
+ * or motion. OffsetJointsDirectlyBy uses it to turn the current joint positions
+ * and the commanded offsets into the positions to reach.
  */
 class OffsetVector : public BT::SyncActionNode
 {

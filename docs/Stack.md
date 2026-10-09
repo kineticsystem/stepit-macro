@@ -55,8 +55,7 @@ Five details are worth knowing:
   sequence, so a grid that is cancelled, or whose move fails, leaves the joints
   where they stopped. Cancelling deactivates the position controller, and the
   hardware brakes every joint to rest.
-- **Counter-clockwise.** 5 turns is +10π rad; clockwise turns are negative, as
-  in [SpinTest](SpinTest.md).
+- **Counter-clockwise.** 5 turns is +10π rad; clockwise turns are negative.
 
 Each step is half a turn, π rad, too short to reach the top speed: a triangle
 at the acceleration of the motors, 2 turns/s², about 1 s. Each return of joint2

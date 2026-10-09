@@ -36,8 +36,7 @@ namespace stepit_behaviors
  * cubic comes from the controller, which joins the joints' current state to the
  * waypoint with one. Every joint starts and stops at rest, and all of them
  * arrive together. The acceleration peaks only at the start and the end, and
- * the speed only halfway: TrapezoidalTrajectory is faster within the same
- * limits.
+ * the speed only halfway.
  *
  * This node moves nothing: FollowJointTrajectory sends the trajectory to the
  * controller.

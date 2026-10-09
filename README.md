@@ -172,7 +172,7 @@ From then on, the rig starts again by itself with the computer, e.g. when the Ra
 
 The rig runs on fake hardware by default: the fake motors and the fake Freezer controller; the camera driver waits for a camera. To drive the real robot and the real Freezer board, set them in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig).
 
-StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsBy`, and press **Run** to execute it on the robot. Its **Execution** tab shows every run of the commander, with the status of each node, also those started from StepIt UI or the gamepad, and a run already going when the page opens. The pictures the camera takes are saved in `pictures`, at the root of this repo.
+StepIt UI is on <http://localhost:8070>, or on port 8070 of the computer's address from a tablet, see [StepIt UI](#stepit-ui). The editor is on <http://localhost:8080>: open an objective, e.g. `OffsetJointsDirectlyBy`, and press **Run** to execute it on the robot. Its **Execution** tab shows every run of the commander, with the status of each node, also those started from StepIt UI or the gamepad, and a run already going when the page opens. The pictures the camera takes are saved in `pictures`, at the root of this repo.
 
 Follow the output of the rig. Stop following with `Ctrl+C`: the rig keeps running.
 
@@ -195,7 +195,7 @@ Open a terminal into the container, e.g. to send an objective from the command l
 ```
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
-  "{target_tree: OffsetJointsBy,
+  "{target_tree: OffsetJointsDirectlyBy,
     payload: '{joints: [joint1, joint3], offset: -6.28}'}"
 ```
 
@@ -289,14 +289,11 @@ the objective, i.e. after the `target_tree` of the command:
 
 | Objective | What it does |
 |---|---|
-| [`OffsetJointsBy`](docs/OffsetJointsBy.md) | Moves joints **by** a signed offset, relative to where they are. |
-| [`MoveJointsTo`](docs/MoveJointsTo.md) | Moves joints **to** absolute positions. |
-| [`OffsetJointsDirectlyBy`](docs/OffsetJointsDirectlyBy.md) | Like `OffsetJointsBy`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
-| [`MoveJointsDirectlyTo`](docs/MoveJointsDirectlyTo.md) | Like `MoveJointsTo`, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
+| [`OffsetJointsDirectlyBy`](docs/OffsetJointsDirectlyBy.md) | Moves joints **by** a signed offset, relative to where they are, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
+| [`MoveJointsDirectlyTo`](docs/MoveJointsDirectlyTo.md) | Moves joints **to** absolute positions, the same way. |
 | [`ActivateController`](docs/ActivateController.md) | Stops the controller driving the robot and activates another one. |
 | [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. **Manual drive** in StepIt UI runs it. |
 | [`ToggleTeleop`](docs/ToggleTeleop.md) | Runs `ActivateTeleop`, or, when the gamepad already drives the robot, hands it back to the trajectory controller. The gamepad's stop button runs it. |
-| [`SpinTest`](docs/SpinTest.md) | Hardware test: joint *k* turns *k* times clockwise at 90% of the motors' limits, then all return home. |
 | [`TakeShot`](docs/TakeShot.md) | Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence, `test_shot` on the rig, and fails when the camera reports no picture of it. |
 | [`Stack`](docs/Stack.md) | Steps joint1 and joint2 through a grid of 11 × 11 positions, 5 turns in 10 steps each, then returns every joint home; joints 3, 4 and 5 stay in place. |
 | [`MoveRailBy`](docs/MoveRailBy.md) | Moves the rail by a distance in millimetres, with its measured 1.592 mm per turn of the motor. |
@@ -310,7 +307,7 @@ Run one from a terminal in the container, opened with `./docker/dock.sh shell`, 
 ```bash
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
-  "{target_tree: OffsetJointsBy,
+  "{target_tree: OffsetJointsDirectlyBy,
     payload: '{joints: [joint1, joint3], offset: -6.28}'}"
 ```
 
@@ -322,7 +319,7 @@ on a subscription (`CommandJointPositions`), a latched publisher
 angle of a stack whose pictures are all saved, and `AllStacksDone`, a stack
 whose angles are all done), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
-(`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
+(`OffsetVector`, `SetJoints`, `CubicTrajectory`, `CurrentTime`,
 `MillimetresToRadians`, `DegreesToRadians`) and the state of the rig
 (`SaveValues`, `LoadValues`, service clients of the node `stack_state`). `Steps` is a decorator that loops over values, and
 `ExpectPicture` one that waits for the camera's picture of the shot it wraps.
@@ -345,21 +342,14 @@ What the objectives remember from one run to the next, e.g. the marks of a
 stack, is not configuration: it is the state of the rig, kept by its own node,
 see [The State of the Rig](#the-state-of-the-rig).
 
-Building a trajectory and following it are separate behaviors, and
-`FollowJointTrajectory` sends whatever trajectory it is given to the controller.
-Two nodes build one:
-
-- `CubicTrajectory`: a single waypoint, reached at rest after a given duration.
-  The controller joins it with a cubic, which reaches its peak acceleration only
-  at the start and the end, and its top speed only halfway. No objective uses
-  it; it is there for a move that must take a given time.
-- `TrapezoidalTrajectory`: as fast as the limits allow, 2.7 turns/s and 1.8
-  turns/s² by default, 90% of those of the StepIt motors: at 100% the motors
-  trail their commands and arrive late. Each joint accelerates at the limit,
-  cruises at top speed and brakes at the limit; all joints start and stop
-  together. It needs the positions the joints start from, e.g. from
-  `GetJointPositions`. Every objective that moves the robot through the
-  trajectory controller uses it.
+Every objective that moves the robot does it through the position controller,
+with `CommandJointPositions`: the microcontroller plans each move on the motors'
+own limits. Building a trajectory and following it are kept as separate
+behaviors, for a move whose joints must arrive together or that must take a
+given time: `CubicTrajectory` builds a single waypoint, reached at rest after a
+given duration, which the controller joins with a cubic, and
+`FollowJointTrajectory` sends whatever trajectory it is given to the trajectory
+controller. No objective uses them today.
 
 ### Adding an Objective
 
@@ -388,7 +378,7 @@ Two nodes build one:
 
    ```xml
    <TreeNodesModel>
-     <SubTree ID="OffsetJointsBy">
+     <SubTree ID="OffsetJointsDirectlyBy">
        <input_port name="joints">the joints to move, e.g. joint1 or [joint1, joint2]</input_port>
      </SubTree>
    </TreeNodesModel>
