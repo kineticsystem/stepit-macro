@@ -22,7 +22,7 @@ This review describes StepIt Macro at commit `cf03a80`, on 2026-10-09, with ever
 
 | Module | Commit |
 |---|---|
-| StepIt Commander | `1ad9aa9`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
+| StepIt Commander | `eb13e2b`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
 | StepIt Camera | `4402400` |
 | StepIt Freezer | `2f720fd` |
 | StepIt Editor | `e45cf90` |
