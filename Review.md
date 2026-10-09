@@ -18,11 +18,11 @@
 
 ## Scope and Method
 
-This review describes StepIt Macro at commit `519a256`, with StepIt Commander moved to `905e802`, after a reading of the whole code base. The modules are at the commits the repo records:
+This review describes StepIt Macro at commit `7ccf114`, with StepIt Commander moved to `c33faa6`, after a reading of the whole code base. The modules are at the commits the repo records:
 
 | Module | Commit |
 |---|---|
-| StepIt Commander | `905e802`, with BehaviorTree.ROS2 from our fork, see [How a run ends](#how-a-run-ends) |
+| StepIt Commander | `c33faa6`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
 | StepIt Camera | `4402400` |
 | StepIt Freezer | `2f720fd` |
 | StepIt Editor | `e45cf90` |
@@ -306,7 +306,7 @@ BehaviorTree.ROS2 ends a run in one of three ways ([`tree_execution_server.cpp`]
 |---|---|---|---|
 | The tree returns SUCCESS or FAILURE | Not needed | Yes | `""` |
 | Cancelled, or preempted by another goal | Yes | Yes | `""`, or the next objective |
-| A node throws an exception | Yes | Yes, with FAILURE | `""` |
+| An exception after `onTreeCreated`: a node during a tick, `onLoopAfterTick` or `onLoopFeedback` | Yes | Yes, once, with FAILURE | `""` |
 
 The third row is our fork's, [kineticsystem/BehaviorTree.ROS2](https://github.com/kineticsystem/BehaviorTree.ROS2), branch `humble`, which the commander builds: upstream aborts the goal of a tree that throws and returns at once, without halting the tree or calling the hook, and the fix is proposed upstream. The behaviors throw on purpose for a bad payload or a misconfigured port, so this row is easy to reach; the commander's `ATreeThatThrowsEndsItsRun` covers it. With every end published, `/stepit_server/objective` is the one answer to "what runs?": StepIt UI and `power_off` both read it.
 
