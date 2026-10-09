@@ -100,6 +100,8 @@ flowchart TB
     Bridge --- Freezer["Freezer"]
     Bridge --- CM["Controller manager"]
     Bridge --- Teleop["ui_teleop"]
+    Bridge --- State["stack_state"]
+    Bridge --- Power["power_off"]
 
     classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
 ```
@@ -515,6 +517,8 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | `lights.test.ts` | The bits of the lights on the Freezer's outputs. |
 | `power.test.ts` | Switching off: the service, the refusal passed on, when the button is off and why, the hold of 3 seconds. |
 | `shot.test.ts` | The pictures kept, and the previews of the others released. |
+| `stack.test.ts` | The plan of a focus stack: its payload, the stage's angles, and why it cannot run. |
+| `stackParameters.test.ts` | The stack as `stack_state` keeps it: its parameters read, an empty mark read as not marked, a count saved. |
 
 Every test is of the transport or of the layer of interfaces and logic. **No store is tested**, and no component: importing a store imports `settings.ts`, which touches `window` at import time and fails in Node.js. The flows that cross several stores, a shot, manual drive, a reconnection, are only checked by hand on the rig.
 
