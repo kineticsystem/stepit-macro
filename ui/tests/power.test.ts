@@ -33,11 +33,10 @@ describe('switching the rig off', () => {
     await expect(asked).resolves.toEqual({ ok: false, message: 'FocusStack is running: stop it first' });
   });
 
-  it('is off while a stack runs, disconnected, or switching off, and says why', () => {
+  it('is off while any objective runs, disconnected, or switching off, and says why', () => {
     expect(powerProblem(true, '', false)).toBeUndefined();
-    expect(powerProblem(true, 'TakeShot', false)).toBeUndefined();
+    expect(powerProblem(true, 'TakeShot', false)).toBe('TakeShot is running: stop it first');
     expect(powerProblem(true, 'FocusStack', false)).toBe('FocusStack is running: stop it first');
-    expect(powerProblem(true, 'Stack', false)).toBe('Stack is running: stop it first');
     expect(powerProblem(false, '', false)).toBe('Not connected to the rig');
     expect(powerProblem(true, '', true)).toBe('The rig is switching off');
   });

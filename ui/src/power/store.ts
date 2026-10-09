@@ -12,7 +12,7 @@ const HINT_MS = 2500;
 interface PowerState {
   /** power_off said yes: the rig is switching off, and the page will lose it. */
   switchingOff: boolean;
-  /** Why the last request failed, e.g. a stack runs, or the system refused. */
+  /** Why the last request failed, e.g. an objective runs, or the system refused. */
   failure?: string;
   /** Shown a moment after a tap: a tablet has no tooltip. */
   hint?: string;

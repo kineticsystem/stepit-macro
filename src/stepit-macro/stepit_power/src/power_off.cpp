@@ -23,7 +23,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <utility>
@@ -104,7 +103,6 @@ PowerOff::PowerOff(const rclcpp::NodeOptions& options, RunCommand run)
   : rclcpp::Node("power_off", options), run_(std::move(run))
 {
   command_ = declare_parameter<std::vector<std::string>>("command", kPowerOff);
-  refuse_during_ = declare_parameter<std::vector<std::string>>("refuse_during", { "FocusStack", "Stack" });
   const auto topic = declare_parameter<std::string>("objective_topic", "/stepit_server/objective");
 
   // Latched: the objective running reaches this node however late it starts.
@@ -127,7 +125,7 @@ void PowerOff::onPowerOff(const std::shared_ptr<std_srvs::srv::Trigger::Request>
     const std::lock_guard<std::mutex> lock{ mutex_ };
     objective = objective_;
   }
-  if (std::find(refuse_during_.begin(), refuse_during_.end(), objective) != refuse_during_.end())
+  if (!objective.empty())
   {
     response->success = false;
     response->message = objective + " is running: stop it first";

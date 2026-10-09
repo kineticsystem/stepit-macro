@@ -50,9 +50,11 @@ CommandResult runCommand(const std::vector<std::string>& command);
  * @brief Switches the computer off, on request: the service `~/power_off`,
  * std_srvs/Trigger, e.g. from a page's power button.
  *
- * It refuses while an objective of `refuse_during` runs, FocusStack and Stack
- * by default, as the commander publishes it on `objective_topic`: switching
- * off would leave a stack half shot. Otherwise it runs `command`, by default
+ * It refuses while any objective runs, as the commander publishes it on
+ * `objective_topic`: whoever wants to switch off stops it first, so this node
+ * knows nothing of the objectives. Until the commander has said anything, e.g.
+ * when it failed to start, nothing runs through it, and switching off is
+ * allowed. Otherwise it runs `command`, by default
  * busctl asking systemd-logind to power off over the system's D-Bus, which
  * stops every service cleanly, this rig among them. The answer says whether
  * the computer is switching off, or why not: what the command printed, e.g.
@@ -72,7 +74,6 @@ private:
 
   RunCommand run_;
   std::vector<std::string> command_;
-  std::vector<std::string> refuse_during_;
   std::mutex mutex_;
   std::string objective_;  ///< The objective running, as the commander last said: empty when none.
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr objective_subscription_;
