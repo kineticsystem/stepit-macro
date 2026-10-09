@@ -43,6 +43,7 @@ add_library(stepit_behaviors SHARED
   src/picture_folder.cpp
   src/cubic_trajectory.cpp
   src/expect_picture.cpp
+  src/restore_picture_folder.cpp
   src/ports.cpp
   src/shoot.cpp
   src/stack_done.cpp

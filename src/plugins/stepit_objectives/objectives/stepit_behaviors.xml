@@ -90,6 +90,9 @@
             <input_port name="done" type="BT::AnyTypeAllowed">how much is done, e.g. the pictures taken</input_port>
             <input_port name="topic_name" type="std::string" default="/focus_stack/progress">the latched topic of the progress</input_port>
         </Action>
+        <Decorator ID="RestorePictureFolder">
+            <input_port name="service_name" type="std::string" default="/camera/set_parameters">the set_parameters service of the camera, whose parameter folder is reset</input_port>
+        </Decorator>
         <Action ID="SaveValues">
             <input_port name="key" type="std::string">the name to save the values under, e.g. near</input_port>
             <input_port name="values" type="BT::AnyTypeAllowed">the numbers to save: a number, or a list</input_port>

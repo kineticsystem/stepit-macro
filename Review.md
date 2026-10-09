@@ -162,7 +162,7 @@ The workspaces are layered in the direction of the dependencies. CI builds `src/
 |---|---|---|
 | `stepit_camera::Camera` | [`camera.hpp`](modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera.hpp) | Good. It is pure virtual and documented for threading and errors (`CameraError::isFatal`). `CameraDriver` owns the single thread that libgphoto2 needs, and `run()` marshals calls onto it with a `packaged_task`. One flaw, finding 2: a call that times out stays queued. |
 | `freezer_driver::Driver` | [`driver.hpp`](modules/stepit-freezer/src/freezer_driver/include/freezer_driver/driver.hpp) | Good. One request gives one response. `SynchronizedDriver` adds locking as a decorator. `ShotRunner` knows nothing of ROS, and takes its clock and its sleep, so a test runs a shot instantly on the fake's clock. |
-| `stepit_driver::Driver` | [`driver.hpp`](modules/stepit-motors/src/stepit_driver/include/stepit_driver/driver.hpp) | Good layering under `StepitHardware`. Its methods that write to the serial port are `const`, which forces `FakeDriver` to make its motors `mutable`. Three abstract factories inject one fake. Less defensive than the Freezer's driver, from the same template: see finding 6. |
+| `stepit_driver::Driver` | [`driver.hpp`](modules/stepit-motors/src/stepit_driver/include/stepit_driver/driver.hpp) | Good layering under `StepitHardware`. Its methods that write to the serial port are `const`, which forces `FakeDriver` to make its motors `mutable`. Three abstract factories inject one fake. Less defensive than the Freezer's driver, from the same template: see finding 5. |
 | `stepit_server::ProgressReporter` | [`progress.hpp`](modules/stepit-commander/src/stepit_server/include/stepit_server/progress.hpp) | Good. It is header-only, optional (found with `dynamic_cast`), and a plugin needs nothing else of the server. |
 | `stepit_behaviors::RosActionNode` | [`ros_action_node.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/ros_action_node.hpp) | Good. One narrow fix to a third-party base class, in one place, explained. |
 | `stepit_state::StackState` | [`stack_state.hpp`](src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp) | Good. Its interface is the parameter services every ROS node has, so the behaviors and StepIt UI need no type of their own. What it keeps and forgets is configuration, read-only. One executor thread makes it the file's only writer. |
@@ -191,7 +191,7 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 | **Single responsibility** | Good in the rig and in most classes. Strained in two places. | The behaviors are small and do one thing each. `rig.launch.py` is a set of small functions, the Freezer's recipes are pure functions, and `ShotRunner` only runs a shot. Against it: [`freezer_node.cpp`](modules/stepit-freezer/src/freezer_node/src/freezer_node.cpp), 823 lines. It holds the schema of the sequences' parameters, the connection and the reconnect thread, the action server, the watching of the trigger with its reconciliation of shot ids, and the outputs, behind about 15 synchronisation fields. |
 | **Open/closed** | Good. | A new objective is an XML file, with no build. A new behavior is one line in `registerNodes`. A new module is an entry in `MODULES` and a section in `rig.yaml`. A new camera setting is a row of `SETTINGS`, a new Freezer recipe a struct with `build()`, and a new editor check a `Rule`. The commander gained progress reporting without knowing any rig node. |
 | **Liskov substitution** | Good, where it applies: the device interfaces. | The fakes are substitutable enough that every test runs on them. They mirror the firmware's refusals: `FakeDriver::configure` validates "mirroring the firmware", and the Freezer's fake reproduces `Busy`, `NoTable` and a reset during a shot. One gap: the `const` methods of `stepit_driver::Driver` promise no side effect, and every implementation has one. |
-| **Interface segregation** | Good. | `ProgressReporter` has one method, and the behaviors take only the ports they use. `Camera` is wide (preview, settings, capture, files), but it is one device used by one driver. One API forces too much on its clients: `SetOutputs` of the Freezer sets all 16 lines, so a client that wants to switch the lights must read and write back the other 14 (finding 7). |
+| **Interface segregation** | Good. | `ProgressReporter` has one method, and the behaviors take only the ports they use. `Camera` is wide (preview, settings, capture, files), but it is one device used by one driver. One API forces too much on its clients: `SetOutputs` of the Freezer sets all 16 lines, so a client that wants to switch the lights must read and write back the other 14 (finding 6). |
 | **Dependency inversion** | Good in C++. Weak at the system level and in the UI stores. | `FreezerNode(options, driver)` and `StepitHardware(DriverFactory)` take their abstraction. `CameraNode` picks its implementation inside ([`camera_node.cpp`](modules/stepit-camera/src/stepit_camera/src/camera_node.cpp), the `fake_camera` parameter). At the system level, every client depends on concrete names: topics, parameters and objectives. StepIt UI's stores take the shared rosbridge connection from the global `ros()` instead of receiving it, which makes them hard to test. |
 
 ## API Design
@@ -208,7 +208,7 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 - The `payload` is YAML in a string, and errors surface only when a port is read, as an exception.
 - The feedback and `~/execution` are JSON in a string, documented in comments on both sides: the commander's [`execution_status.hpp`](modules/stepit-commander/src/stepit_server/include/stepit_server/execution_status.hpp) and the editor's [`execution.ts`](modules/stepit-editor/src/client/execution.ts).
 - The editor even parses the text of BehaviorTree.CPP's exceptions, `/Exception in node '[^']*::(\d+)'/` (`failedNodeUid`), to find the node that failed.
-- Each change publishes a whole snapshot on `~/execution`, including the XML of the tree, at up to 20 Hz (`onLoopFeedback`): see finding 8.
+- Each change publishes a whole snapshot on `~/execution`, including the XML of the tree, at up to 20 Hz (`onLoopFeedback`): see finding 7.
 
 **The rig's own contracts are the weakest API in the system:**
 
@@ -252,7 +252,7 @@ Neither has authorisation: see finding 1.
 | A reconnect loop | `CameraDriver::loop`, `FreezerNode::reconnect_loop` | Low. They live in independent modules. |
 | A private executor for a subscription | three behaviors | Medium. The threading is subtle. |
 | Looking up a joint in a `JointState` | `GetJointPositions::read`, `CommandJointPositions::positionsOf` and `::arrived` | Low. |
-| Writing to a temporary file, then renaming | [`stack_state.cpp`](src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 10). |
+| Writing to a temporary file, then renaming | [`stack_state.cpp`](src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 9). |
 | `jsonString` | the camera's `web_server.cpp` and the plugin's `stack_done.cpp`, identical | Low. |
 | Expanding `~/` in a path | the plugin's `parameters.cpp`, `stack_state.cpp`, the camera's `settings.cpp` | Low. |
 | An objective is the `main_tree_to_execute` of its file | `TreeLoader::mainTree` in C++ (a regex) and the editor in TypeScript | Low, and documented. |
@@ -271,7 +271,7 @@ Neither has authorisation: see finding 1.
 | StepIt UI | The transport, against `FakeSocket`; pure functions; the commander and power interfaces. | Good below the stores. **No store is tested**: `settings.ts:76` calls `window.matchMedia` at import time. |
 | Camera | Driver, node, fake, settings and web server: 56 tests. | Good. Not tested: a `run()` that times out (finding 2). |
 | Freezer | Driver, `ShotRunner` on the fake's clock, recipes, sequence, and the node. | Good. |
-| Motors | `test_stepit_hardware.cpp` alone has 1,374 lines, plus driver and fake motor tests: 49 tests. | Good. Not tested: malformed responses to the default driver (finding 6). |
+| Motors | `test_stepit_hardware.cpp` alone has 1,374 lines, plus driver and fake motor tests: 49 tests. | Good. Not tested: malformed responses to the default driver (finding 5). |
 | Editor | API, store, actions, validation, execution and the ROS client, including a test against the real native validator. | Good. |
 
 **What is not tested:**
@@ -350,21 +350,19 @@ These are ordered from the most to the least serious.
 
 2. **A camera call that times out still runs later.** `CameraDriver::run()` throws `The camera did not answer in time` after 5 s, but its task stays queued and runs when the driver gets to it ([`camera_driver.hpp`](modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera_driver.hpp), `run`). A setting changed while a large RAW downloads is therefore refused to the caller, and the parameter keeps its old value, but the camera applies the new one afterwards: the node and the camera then disagree. `onSetParameters` also blocks the executor's thread for those 5 s.
 
-3. **A stopped stack leaves the camera's folder set.** `FocusStack` and `TakeShot` send the next pictures to the pictures folder again however they end, succeeded or failed, through a `Fallback` ([`focus_stack.xml`](src/plugins/stepit_objectives/objectives/focus_stack.xml), [`take_shot.xml`](src/plugins/stepit_objectives/objectives/take_shot.xml)). Stop, or another objective, halts the tree instead, and no node runs on a halt: the camera keeps saving into the folder of the angle the stack stopped at. The next picture that no objective sets a folder for then lands among the stack's: the Freezer's remote trigger on IN1, or a press of the camera's own shutter. The next stack or test shot sets its own folder.
+3. **The robot's shape is duplicated in the XML.** A sixth joint, or a renamed controller, means editing eight XML files, `rig.yaml`, the gamepad's config and default, and StepIt Motors.
 
-4. **The robot's shape is duplicated in the XML.** A sixth joint, or a renamed controller, means editing eight XML files, `rig.yaml`, the gamepad's config and default, and StepIt Motors.
+4. **`FreezerNode` carries too many responsibilities** for its locking to be reviewed easily: three threads (the executor, which also runs the watch timer, the shot's worker, and the reconnector) and flags shared between them. Its tests are thorough (538 lines). The risk is in future changes, e.g. a race between `watch()` disconnecting and the reconnector connecting, which today heals itself after three failed polls.
 
-5. **`FreezerNode` carries too many responsibilities** for its locking to be reviewed easily: three threads (the executor, which also runs the watch timer, the shot's worker, and the reconnector) and flags shared between them. Its tests are thorough (538 lines). The risk is in future changes, e.g. a race between `watch()` disconnecting and the reconnector connecting, which today heals itself after three failed polls.
+5. **StepIt Motors' default driver trusts the length of every response.** `configure`, `set_position` and `set_velocity` read `out[0]` without checking that `out` is empty. `get_status` reads 13 bytes per motor while `i < out.size()`, without checking that 13 remain ([`default_driver.cpp`](modules/stepit-motors/src/stepit_driver/src/default_driver.cpp)). The Freezer's driver, from the same template, checks every length (`check_length`). The CRC of the framing makes a short frame unlikely; a firmware of another version is caught by the handshake.
 
-6. **StepIt Motors' default driver trusts the length of every response.** `configure`, `set_position` and `set_velocity` read `out[0]` without checking that `out` is empty. `get_status` reads 13 bytes per motor while `i < out.size()`, without checking that 13 remain ([`default_driver.cpp`](modules/stepit-motors/src/stepit_driver/src/default_driver.cpp)). The Freezer's driver, from the same template, checks every length (`check_length`). The CRC of the framing makes a short frame unlikely; a firmware of another version is caught by the handshake.
+6. **`SetOutputs` sets all 16 lines.** A client that wants to switch one jack must know and write back the other 15 bits: StepIt UI's `withLights(get().outputs ?? 0, on)` in [`lights.ts`](ui/src/freezer/lights.ts). Two clients switching different jacks at once can undo each other. A set-and-clear mask would make the operation safe.
 
-7. **`SetOutputs` sets all 16 lines.** A client that wants to switch one jack must know and write back the other 15 bits: StepIt UI's `withLights(get().outputs ?? 0, on)` in [`lights.ts`](ui/src/freezer/lights.ts). Two clients switching different jacks at once can undo each other. A set-and-clear mask would make the operation safe.
+7. **`~/execution` republishes the whole run on every change.** `snapshot()` includes the XML of the expanded tree and every status, and `onLoopFeedback` publishes it whenever feedback is due, up to 20 times a second. For `FocusStack` that is tens of kilobytes per message, through rosbridge, to every open editor, from a Raspberry Pi.
 
-8. **`~/execution` republishes the whole run on every change.** `snapshot()` includes the XML of the expanded tree and every status, and `onLoopFeedback` publishes it whenever feedback is due, up to 20 times a second. For `FocusStack` that is tens of kilobytes per message, through rosbridge, to every open editor, from a Raspberry Pi.
+8. **The firmware's serial layer is copied across two repositories**, identically today; see [Coupling and Duplication](#coupling-and-duplication).
 
-9. **The firmware's serial layer is copied across two repositories**, identically today; see [Coupling and Duplication](#coupling-and-duplication).
-
-10. **Smaller issues:**
+9. **Smaller issues:**
     - Every workspace, the Pi's included, is built with `-DCMAKE_BUILD_TYPE=Debug` (`bin/*/build.sh`).
     - The camera's `savePicture` writes the final file in place, so its web server's listing can show a picture half written. The listing hides only dotfiles, "a file still being written under a temporary name".
     - `StepitHardware::on_init` swallows its exception without a log.
@@ -389,17 +387,16 @@ These are ordered by value against effort, and each fits in one pull request.
    - Name the editor, the power button, `set_outputs` and Groot2 in the README's warning.
    - Later, if the rig ever leaves the workshop's network, bind the servers to an interface of choice.
 3. **Drop a camera task that timed out** (fixes 2). Mark the task as abandoned when `run()` gives up, and skip it in `runTasks()`. Add a test with a fake whose call outlasts the timeout.
-4. **Reset the camera's folder on a halt too** (fixes 3): e.g. a decorator around the stack that, when it is halted, asks the camera for the folder `""` without waiting for the answer, since a halt cannot wait. Test it by halting a stack midway and reading the camera's folder.
-5. **Give `StackDone` and `AllStacksDone` a message of `stepit_macro_msgs`**, as the progress has, and write the JSON files with `nlohmann::json`.
-6. **Take the robot out of the XML** (fixes 4). First, delete the 21 `topic_name` and `service_name` attributes that equal their default. Then give the joint list one home, e.g. `robot.joints` in the commander's section of `rig.yaml`, read like the other configuration of the plugin, used as the default of the behaviors' ports and read by both teleops.
-7. **Derive what can be derived.** Check `ui_teleop`'s scale against StepIt Motors' limits in a test. Remove `Stack`, or make it shoot.
-8. **Build and test the rig as it runs, in CI** (closes the test gaps).
+4. **Give `StackDone` and `AllStacksDone` a message of `stepit_macro_msgs`**, as the progress has, and write the JSON files with `nlohmann::json`.
+5. **Take the robot out of the XML** (fixes 3). First, delete the 21 `topic_name` and `service_name` attributes that equal their default. Then give the joint list one home, e.g. `robot.joints` in the commander's section of `rig.yaml`, read like the other configuration of the plugin, used as the default of the behaviors' ports and read by both teleops.
+6. **Derive what can be derived.** Check `ui_teleop`'s scale against StepIt Motors' limits in a test. Remove `Stack`, or make it shoot.
+7. **Build and test the rig as it runs, in CI** (closes the test gaps).
     - Add a job that runs `bin/modules/build.sh`, with `check_shared_libraries`, and the modules' tests at the pinned commits.
     - Add a launch smoke test that starts `rig.launch.py` on fake hardware and waits for the commander's action.
     - Have `dock.sh build` warn when `git submodule status` shows a module off its recorded commit.
-9. **Harden the motors' default driver** (fixes 6), with the Freezer's `read_header` and `check_length`, and add a set-and-clear mask to `SetOutputs` (fixes 7). Both are module changes, each in its own repository.
-10. **Lighten `~/execution`** (fixes 8). Publish the tree once per run, and only the changed statuses afterwards, with a sequence number. Alternatively, keep the snapshot but limit it to a few Hz.
-11. **Share the firmware's serial layer**, and a header of each protocol's constants, as `framed-serial` is shared on the host (fixes 9).
-12. **Split `FreezerNode`** into the action server, a `Connection` that owns the reconnect loop, and a `TriggerWatcher` (fixes 5), the next time the node changes.
-13. **Carry on with the UI review's own list.** Move the theme out of `settings.ts` so the stores can be tested, then test them. Give the subscriptions one owner, and each device an interface module. Then share one rosbridge client between the four web clients, and port the picture-size fix to the camera's test page.
-14. **Tidy up** (fixes 10): build in `RelWithDebInfo`, save pictures through a temporary name, log in `on_init`, compute `CubicTrajectory`'s time with `rclcpp::Duration::from_seconds()`, remove the parameter file when the launch ends, and fix the drifted documents.
+8. **Harden the motors' default driver** (fixes 5), with the Freezer's `read_header` and `check_length`, and add a set-and-clear mask to `SetOutputs` (fixes 6). Both are module changes, each in its own repository.
+9. **Lighten `~/execution`** (fixes 7). Publish the tree once per run, and only the changed statuses afterwards, with a sequence number. Alternatively, keep the snapshot but limit it to a few Hz.
+10. **Share the firmware's serial layer**, and a header of each protocol's constants, as `framed-serial` is shared on the host (fixes 8).
+11. **Split `FreezerNode`** into the action server, a `Connection` that owns the reconnect loop, and a `TriggerWatcher` (fixes 4), the next time the node changes.
+12. **Carry on with the UI review's own list.** Move the theme out of `settings.ts` so the stores can be tested, then test them. Give the subscriptions one owner, and each device an interface module. Then share one rosbridge client between the four web clients, and port the picture-size fix to the camera's test page.
+13. **Tidy up** (fixes 9): build in `RelWithDebInfo`, save pictures through a temporary name, log in `on_init`, compute `CubicTrajectory`'s time with `rclcpp::Duration::from_seconds()`, remove the parameter file when the launch ends, and fix the drifted documents.

@@ -166,6 +166,14 @@ if(BUILD_TESTING)
     ${freezer_msgs_TARGETS}
     ${stepit_camera_msgs_TARGETS})
 
+  # The camera's folder restored however a part of an objective ends, halted included.
+  ament_add_gtest(test_restore_picture_folder tests/test_restore_picture_folder.cpp)
+  target_include_directories(test_restore_picture_folder PRIVATE tests)
+  target_link_libraries(test_restore_picture_folder
+    stepit_behaviors::stepit_behaviors
+    rclcpp::rclcpp
+    ${stepit_camera_msgs_TARGETS})
+
   # MarkNear, MarkFar and FocusStack, against the fakes of the whole rig.
   ament_add_gtest(test_focus_stack_objective
     tests/test_focus_stack_objective.cpp

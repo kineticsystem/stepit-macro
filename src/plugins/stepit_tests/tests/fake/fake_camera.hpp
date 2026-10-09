@@ -21,6 +21,8 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -133,6 +135,25 @@ public:
   {
     const std::lock_guard<std::mutex> lock{ mutex_ };
     return folders_;
+  }
+
+  /**
+   * @brief Every folder it was given, once there are `count` of them, or after
+   * `timeout`: RestorePictureFolder sends the last one without waiting for it.
+   */
+  std::vector<std::string> folders(std::size_t count,
+                                   std::chrono::milliseconds timeout = std::chrono::milliseconds{ 3000 }) const
+  {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (std::chrono::steady_clock::now() < deadline)
+    {
+      if (folders().size() >= count)
+      {
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+    }
+    return folders();
   }
 
   /// @brief Where each picture went, under the pictures folder, in order.
