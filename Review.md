@@ -49,7 +49,7 @@ Every finding names the file it rests on. Those marked *verified* were reproduce
 The weak points are **between the modules**:
 
 1. **Anyone on the network can drive the rig, write objectives, and switch it off.** rosbridge, the editor's file API, Groot2 and the power button have no authorisation.
-2. **The rig's own contracts are untyped, and kept in step by hand across modules.** These are the progress topic, the state parameters, the joint lists, the motor limits and the objective names.
+2. **The rig's own contracts are untyped, and kept in step by hand across modules.** These are the topics of the finished stacks, the state parameters, the joint lists, the motor limits and the objective names.
 3. **Nothing tests the parts together.** No test runs the plugin inside the real commander. No test starts the real launch file. No CI job builds the modules at the commits the rig pins.
 
 None of the findings is a safety issue for the motion. The stops are:
@@ -214,7 +214,7 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 
 | Contract | Type | Problem |
 |---|---|---|
-| `/focus_stack/progress` | `std_msgs/Int32MultiArray`, `[taken, total]` | The meaning is positional, and each `ReportProgress` node has its own publisher (finding 4). |
+| `/focus_stack/progress` | `stepit_macro_msgs/StackProgress` | Typed. Each `ReportProgress` node has its own publisher, though (finding 4). |
 | `/focus_stack/stack_done`, `/focus_stack/all_stacks_done` | `std_msgs/String` | A relative folder, with no type of its own. |
 | `state.*` parameters of `/stack_state` | `double[]`, `[]` for not set | Named by convention: the names in `saved` and `forgotten` of `rig.yaml`, the keys of `SaveValues` and `LoadValues` in the objectives, and StepIt UI's `STACK_PARAMETERS` must agree. A name the node does not keep fails, at least. |
 | `stack.json`, `all_stacks.json` | JSON written by hand ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), `jsonString`) | No schema, and an escaping function copied from the camera's [`web_server.cpp`](modules/stepit-camera/src/stepit_camera/src/web_server.cpp), while `nlohmann::json` is at hand. |
@@ -393,7 +393,7 @@ These are ordered by value against effort, and each fits in one pull request.
    - Later, if the rig ever leaves the workshop's network, bind the servers to an interface of choice.
 3. **Drop a camera task that timed out** (fixes 2). Mark the task as abandoned when `run()` gives up, and skip it in `runTasks()`. Add a test with a fake whose call outlasts the timeout.
 4. **Reset the camera's folder at the end of every run** (fixes 3): on every exit of `FocusStack`, e.g. with a `Fallback` that resets it and then fails, and after the shot of `TakeShot`.
-5. **Create the progress publisher once, at registration**, as `StackDone` does (fixes 4). Introduce `stepit_macro_msgs` with `StackProgress` and `StackDone`, and write the JSON files with `nlohmann::json`.
+5. **Create the progress publisher once, at registration**, as `StackDone` does (fixes 4). Give `StackDone` a message of `stepit_macro_msgs` too, as `StackProgress` has, and write the JSON files with `nlohmann::json`.
 6. **Take the robot out of the XML** (fixes 5). First, delete the 21 `topic_name` and `service_name` attributes that equal their default. Then give the joint list one home, e.g. `robot.joints` in the commander's section of `rig.yaml`, read like the other configuration of the plugin, used as the default of the behaviors' ports and read by both teleops.
 7. **Derive what can be derived.** Check `ui_teleop`'s scale against StepIt Motors' limits in a test. Remove `Stack`, or make it shoot.
 8. **Build and test the rig as it runs, in CI** (closes the test gaps).

@@ -96,7 +96,7 @@ Both topics exist from the moment the commander loads the plugin, not from the f
 
 `stacks` lists the folders of the angles, each with its `stack.json`. A stack that stops halfway is never announced and gets no `all_stacks.json`: its finished angles keep theirs. When the file cannot be written, `AllStacksDone` logs why and still announces the stack.
 
-**Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `[done, total]`, on `/focus_stack/progress` (`std_msgs/Int32MultiArray`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
+**Every page shows how far it is.** `ReportProgress` publishes the pictures taken and the total, `done` and `total`, on `/focus_stack/progress` (`stepit_macro_msgs/StackProgress`), latched: a page opened on any device while the stack runs gets the current value at once, and StepIt UI shows it as a progress bar, whichever page started the stack.
 
 **The marks are counts of motor steps.** The controller of the motors counts from 0 when it powers up, so marks saved before it restarts point somewhere else after: mark both ends again for every subject.
 

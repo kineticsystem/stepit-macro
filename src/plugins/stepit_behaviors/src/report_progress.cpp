@@ -20,12 +20,23 @@
 
 #include "stepit_behaviors/report_progress.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include "stepit_behaviors/ports.hpp"
 
 namespace stepit_behaviors
 {
+
+namespace
+{
+/// @brief A number of pictures: rounded, and never below 0.
+uint32_t count(double value)
+{
+  return static_cast<uint32_t>(std::max(0L, std::lround(value)));
+}
+}  // namespace
 
 ReportProgress::ReportProgress(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
   : BT::SyncActionNode(name, config), node_(params.nh)
@@ -52,12 +63,12 @@ BT::NodeStatus ReportProgress::tick()
       throw BT::RuntimeError("ReportProgress: the ROS node went out of scope");
     }
     // Latched: the last value reaches a page that subscribes later.
-    publisher_ =
-        node->create_publisher<std_msgs::msg::Int32MultiArray>(topic, rclcpp::QoS{ 1 }.reliable().transient_local());
+    publisher_ = node->create_publisher<stepit_macro_msgs::msg::StackProgress>(
+        topic, rclcpp::QoS{ 1 }.reliable().transient_local());
   }
-  std_msgs::msg::Int32MultiArray message;
-  message.data = { static_cast<int>(std::lround(requireNumbers(*this, "done").front())),
-                   static_cast<int>(std::lround(requireNumbers(*this, "total").front())) };
+  stepit_macro_msgs::msg::StackProgress message;
+  message.done = count(requireNumbers(*this, "done").front());
+  message.total = count(requireNumbers(*this, "total").front());
   publisher_->publish(message);
   return BT::NodeStatus::SUCCESS;
 }

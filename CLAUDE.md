@@ -97,6 +97,7 @@ restart of the rig (`./docker/dock.sh stop && ./docker/dock.sh start`).
 | `stepit_objectives` | XML only, no code: objectives, the subtrees they reuse, the generated node models, all in `objectives/`. |
 | `stepit_behaviors` | The **only** place the objectives name robot topics, actions and services. |
 | `stepit_tests` | All tests of the behaviors and objectives; the other packages carry none. |
+| `stepit_macro_msgs` | The messages of the rig's own topics, e.g. `StackProgress` of `/focus_stack/progress`: a new topic of the rig gets a message here, not a `std_msgs` array. |
 
 **`src/stepit-macro`** holds the rig's own programs, ROS nodes that run on their own rather than
 inside the commander, and the launch file of the rig. It also builds `btcpp_ros2_interfaces` from

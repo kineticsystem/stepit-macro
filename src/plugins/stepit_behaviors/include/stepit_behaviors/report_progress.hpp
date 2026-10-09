@@ -26,14 +26,14 @@
 #include <behaviortree_cpp/action_node.h>
 #include <behaviortree_ros2/ros_node_params.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/int32_multi_array.hpp>
+#include <stepit_macro_msgs/msg/stack_progress.hpp>
 
 namespace stepit_behaviors
 {
 
 /**
  * @brief Publishes how far an objective is, e.g. the pictures a stack took of
- * how many, as [done, total], on a latched topic: a page that subscribes
+ * how many, as a stepit_macro_msgs/StackProgress, on a latched topic: a page that subscribes
  * while the objective runs gets the last value at once, so every page shows
  * the same, whichever started it.
  *
@@ -51,7 +51,7 @@ public:
 
 private:
   std::weak_ptr<rclcpp::Node> node_;
-  rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr publisher_;
+  rclcpp::Publisher<stepit_macro_msgs::msg::StackProgress>::SharedPtr publisher_;
 };
 
 }  // namespace stepit_behaviors
