@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  ACTION, cancelAll, EXECUTE_TREE, followObjective, followObjectives, objectiveRuns, runObjective,
+  ACTION, cancelAll, EXECUTE_TREE, followObjective, objectiveRuns, runObjective,
 } from '../src/commander/commander';
 import { Rosbridge } from '../src/ros/rosbridge';
 import { FakeSocket } from './fakeSocket';
@@ -54,22 +54,6 @@ describe('the commander over rosbridge', () => {
     await expect(stop).resolves.toBeUndefined();
   });
 
-  it('tells whether an objective runs, from the status of the action', () => {
-    const running = vi.fn();
-    followObjectives(ros, running);
-    expect(socket.lastSent('subscribe')).toMatchObject({
-      topic: '/commander/execute_objective/_action/status', qos: { durability: 'transient_local' },
-    });
-    const status = (statuses: number[]) => socket.receive({
-      op: 'publish', topic: '/commander/execute_objective/_action/status',
-      msg: { status_list: statuses.map((s) => ({ status: s })) },
-    });
-    status([4, 2]);
-    status([4, 6]);
-    status([]);
-    expect(running.mock.calls).toEqual([[true], [false], [false]]);
-  });
-
   // A page opened on any device knows what runs, whoever sent it: the
   // commander's latched topic gives the current name at once.
   it('follows the name of the running objective, latched', () => {
@@ -86,21 +70,11 @@ describe('the commander over rosbridge', () => {
 
 describe('whether an objective runs', () => {
   it('is not known until the commander said, which counts as running for Stop', () => {
-    expect(objectiveRuns(undefined, undefined)).toEqual({ busy: false, known: false });
+    expect(objectiveRuns(undefined)).toEqual({ busy: false, known: false });
   });
 
-  it('knows from the latched objective alone, as after a restart, before any goal', () => {
-    expect(objectiveRuns(undefined, '')).toEqual({ busy: false, known: true });
-    expect(objectiveRuns(undefined, 'FocusStack')).toEqual({ busy: true, known: true });
-  });
-
-  it('knows from the status of the action alone', () => {
-    expect(objectiveRuns(false, undefined)).toEqual({ busy: false, known: true });
-    expect(objectiveRuns(true, undefined)).toEqual({ busy: true, known: true });
-  });
-
-  it('believes the status once it came: the objective keeps the name of a tree that threw', () => {
-    expect(objectiveRuns(true, '')).toEqual({ busy: true, known: true });
-    expect(objectiveRuns(false, 'FocusStack')).toEqual({ busy: false, known: true });
+  it('knows from the latched objective of the commander', () => {
+    expect(objectiveRuns('')).toEqual({ busy: false, known: true });
+    expect(objectiveRuns('FocusStack')).toEqual({ busy: true, known: true });
   });
 });

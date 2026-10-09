@@ -237,7 +237,7 @@ A store that follows a topic subscribes through `ros()`, and subscribes again on
 
 | Module | Where its interface is | What the page uses |
 |---|---|---|
-| StepIt Commander | [`commander/commander.ts`](../src/commander/commander.ts) | `runObjective` (the action `/commander/execute_objective`), `cancelAll` (its `cancel_goal` service, with a goal of zeros), `followObjectives` (its status topic, transient local), `followObjective` (the name of the running objective, `/stepit_server/objective`, transient local). |
+| StepIt Commander | [`commander/commander.ts`](../src/commander/commander.ts) | `runObjective` (the action `/commander/execute_objective`), `cancelAll` (its `cancel_goal` service, with a goal of zeros), `followObjective` (the name of the running objective, `/stepit_server/objective`, transient local, which the commander empties at every end of a run, a tree that throws included). |
 | The rig's stack | [`stack/store.ts`](../src/stack/store.ts), [`stack/parameters.ts`](../src/stack/parameters.ts) | The parameters `state.*` of the rig's node `stack_state` (the marks, in memory, and the counts, in its state file), with `get_parameters`, `set_parameters` and `/parameter_events`; FocusStack's progress, `/focus_stack/progress`, transient local. |
 | The camera's driver | [`camera/camera.ts`](../src/camera/camera.ts), the class `Camera` | `get_settings`, `set_parameters`, `start_streaming`, `stop_streaming`, the topic `picture`; the URLs of the live view and of a picture. |
 | The camera's web server | [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts) | A picture's size with `HEAD`, a RAW's JPEG preview with two `Range` requests. |
@@ -252,7 +252,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 
 | Store | Holds | Kept up to date by | Uses |
 |---|---|---|---|
-| `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `objective` (the one running, whoever sent it, from the commander's latched `/stepit_server/objective`), `failure`; `run()`, `stop()` | `followCommander`: the status topic of the action, and the objective's; `objectiveRuns()` combines them: the status wins once it came, the objective tells until then, e.g. after a restart, when the commander has published no status yet | — |
+| `useCommander` | `busy` (an objective runs, whoever sent it), `known`, `running` (the objective this page runs), `objective` (the one running, whoever sent it, from the commander's latched `/stepit_server/objective`), `failure`; `run()`, `stop()` | `followCommander`: the objective's latched topic, which the commander empties at every end of a run, a tree that throws included; `objectiveRuns()` tells whether it runs, and whether the page knows yet | — |
 | `useCamera` | the settings, the ones `changing` and `refused`, `streaming`, the errors; `refresh()`, `change()`, `setStreaming()` | `followCamera`: reads the settings every 3 s, unless a task runs; starts the live view again after a reconnection | `useCommander` (`busy`), `useSettings` |
 | `useShot` | the state of the shot, its message, the latest two pictures; `takeShot()`, `show()` | `followPictures`: shows every picture on `/camera/picture`, whoever fired it | `useCamera`, `useCommander`, `useSettings` |
 | `useLights` | the outputs of the board, `switching`, `error`; `setLights()` | `followLights`: `/freezer/outputs` | — |

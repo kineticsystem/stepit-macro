@@ -17,8 +17,7 @@ export function TaskStatus() {
   const stack = useStack();
   const connected = useStatus() === 'connected';
 
-  // The commander names what runs, whichever page or device sent it; a tree
-  // that threw may leave its name behind, so only while something runs.
+  // The commander names what runs, whichever page or device sent it.
   let text: string | undefined;
   const name = running || objective;
   if (busy || running) text = name ? `Running ${name}` : 'A task is running';
