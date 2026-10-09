@@ -59,6 +59,13 @@ if(BUILD_TESTING)
     ${sensor_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
+  # The progress of a stack: one latched publisher for every node and every run.
+  ament_add_gtest(test_report_progress tests/test_report_progress.cpp)
+  target_link_libraries(test_report_progress
+    stepit_behaviors::stepit_behaviors
+    rclcpp::rclcpp
+    ${stepit_macro_msgs_TARGETS})
+
   # Reading the joint positions, against a fake robot.
   ament_add_gtest(test_get_joint_positions tests/test_get_joint_positions.cpp)
   target_include_directories(test_get_joint_positions PRIVATE tests)
