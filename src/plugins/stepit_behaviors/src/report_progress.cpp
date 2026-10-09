@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 #include "stepit_behaviors/ports.hpp"
 
@@ -38,15 +40,22 @@ uint32_t count(double value)
 }
 }  // namespace
 
-ReportProgress::ReportProgress(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
-  : BT::SyncActionNode(name, config), node_(params.nh)
+ProgressPublisher progressPublisher(rclcpp::Node& node, const std::string& topic)
+{
+  return node.create_publisher<stepit_macro_msgs::msg::StackProgress>(topic,
+                                                                      rclcpp::QoS{ 1 }.reliable().transient_local());
+}
+
+ReportProgress::ReportProgress(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params,
+                               ProgressPublisher publisher)
+  : BT::SyncActionNode(name, config), node_(params.nh), publisher_(std::move(publisher))
 {
 }
 
 BT::PortsList ReportProgress::providedPorts()
 {
   return {
-    BT::InputPort<std::string>("topic_name", "/focus_stack/progress", "the latched topic of the progress"),
+    BT::InputPort<std::string>("topic_name", kProgressTopic, "the latched topic of the progress"),
     BT::InputPort<BT::AnyTypeAllowed>("done", "how much is done, e.g. the pictures taken"),
     BT::InputPort<BT::AnyTypeAllowed>("total", "of how much"),
   };
@@ -54,17 +63,15 @@ BT::PortsList ReportProgress::providedPorts()
 
 BT::NodeStatus ReportProgress::tick()
 {
-  if (!publisher_)
+  const auto topic = getInput<std::string>("topic_name").value_or(kProgressTopic);
+  if (!publisher_ || publisher_->get_topic_name() != topic)
   {
-    const auto topic = getInput<std::string>("topic_name").value_or("/focus_stack/progress");
     const auto node = node_.lock();
     if (!node)
     {
       throw BT::RuntimeError("ReportProgress: the ROS node went out of scope");
     }
-    // Latched: the last value reaches a page that subscribes later.
-    publisher_ = node->create_publisher<stepit_macro_msgs::msg::StackProgress>(
-        topic, rclcpp::QoS{ 1 }.reliable().transient_local());
+    publisher_ = progressPublisher(*node, topic);
   }
   stepit_macro_msgs::msg::StackProgress message;
   message.done = count(requireNumbers(*this, "done").front());

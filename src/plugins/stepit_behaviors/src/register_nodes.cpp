@@ -74,19 +74,21 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   camera_params.default_port_value = "/camera/set_parameters";
   factory.registerNodeType<SetPictureFolder>("SetPictureFolder", camera_params);
   factory.registerNodeType<CurrentTime>("CurrentTime");
-  factory.registerNodeType<ReportProgress>("ReportProgress", params);
 
-  // The topics of the finished stacks, created once, for every run: see latchedPublisher. Here,
-  // after the other nodes: BehaviorTree.ROS2 calls registerNodes again after a change of the
-  // commander's parameters, and the first registration then throws, as the node is registered
-  // already, before any publisher is made.
+  // The topics of the progress and of the finished stacks, created once, for every run: see
+  // progressPublisher and latchedPublisher. Here, after the other nodes: BehaviorTree.ROS2 calls
+  // registerNodes again after a change of the commander's parameters, and the first registration
+  // then throws, as the node is registered already, before any publisher is made.
+  ProgressPublisher progress;
   LatchedPublisher stack_done;
   LatchedPublisher all_stacks_done;
   if (const auto node = params.nh.lock())
   {
+    progress = progressPublisher(*node, kProgressTopic);
     stack_done = latchedPublisher(*node, kStackDoneTopic);
     all_stacks_done = latchedPublisher(*node, kAllStacksDoneTopic);
   }
+  factory.registerNodeType<ReportProgress>("ReportProgress", params, progress);
   factory.registerNodeType<StackDone>("StackDone", params, stack_done);
   factory.registerNodeType<AllStacksDone>("AllStacksDone", params, all_stacks_done);
 }
