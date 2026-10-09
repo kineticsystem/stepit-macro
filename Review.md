@@ -22,7 +22,7 @@ This review describes StepIt Macro at commit `cf03a80`, on 2026-10-09, with ever
 
 | Module | Commit |
 |---|---|
-| StepIt Commander | `13ffae2`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
+| StepIt Commander | `1ad9aa9`, with BehaviorTree.ROS2 from our fork at `b0ae01d`, see [How a run ends](#how-a-run-ends) |
 | StepIt Camera | `4402400` |
 | StepIt Freezer | `2f720fd` |
 | StepIt Editor | `e45cf90` |
@@ -208,7 +208,7 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 - The `payload` is YAML in a string, and errors surface only when a port is read, as an exception.
 - The feedback and `~/execution` are JSON in a string, documented in comments on both sides: the commander's [`execution_status.hpp`](modules/stepit-commander/src/stepit_server/include/stepit_server/execution_status.hpp) and the editor's [`execution.ts`](modules/stepit-editor/src/client/execution.ts).
 - The editor even parses the text of BehaviorTree.CPP's exceptions, `/Exception in node '[^']*::(\d+)'/` (`failedNodeUid`), to find the node that failed.
-- Each change publishes a whole snapshot on `~/execution`, including the XML of the tree, at up to 20 Hz (`onLoopFeedback`): see finding 7.
+- Each snapshot on `~/execution` holds the whole run, the XML of the tree included; `SnapshotPacer` publishes one at most every `execution_period`, 0.2 s by default.
 
 **The rig's own contracts are the weakest API in the system:**
 
@@ -252,7 +252,7 @@ Neither has authorisation: see finding 1.
 | A reconnect loop | `CameraDriver::loop`, `FreezerNode::reconnect_loop` | Low. They live in independent modules. |
 | A private executor for a subscription | three behaviors | Medium. The threading is subtle. |
 | Looking up a joint in a `JointState` | `GetJointPositions::read`, `CommandJointPositions::positionsOf` and `::arrived` | Low. |
-| Writing to a temporary file, then renaming | [`stack_state.cpp`](src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 9). |
+| Writing to a temporary file, then renaming | [`stack_state.cpp`](src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 8). |
 | `jsonString` | the camera's `web_server.cpp` and the plugin's `stack_done.cpp`, identical | Low. |
 | Expanding `~/` in a path | the plugin's `parameters.cpp`, `stack_state.cpp`, the camera's `settings.cpp` | Low. |
 | An objective is the `main_tree_to_execute` of its file | `TreeLoader::mainTree` in C++ (a regex) and the editor in TypeScript | Low, and documented. |
@@ -358,11 +358,9 @@ These are ordered from the most to the least serious.
 
 6. **`SetOutputs` sets all 16 lines.** A client that wants to switch one jack must know and write back the other 15 bits: StepIt UI's `withLights(get().outputs ?? 0, on)` in [`lights.ts`](ui/src/freezer/lights.ts). Two clients switching different jacks at once can undo each other. A set-and-clear mask would make the operation safe.
 
-7. **`~/execution` republishes the whole run on every change.** `snapshot()` includes the XML of the expanded tree and every status, and `onLoopFeedback` publishes it whenever feedback is due, up to 20 times a second. For `FocusStack` that is tens of kilobytes per message, through rosbridge, to every open editor, from a Raspberry Pi.
+7. **The firmware's serial layer is copied across two repositories**, identically today; see [Coupling and Duplication](#coupling-and-duplication).
 
-8. **The firmware's serial layer is copied across two repositories**, identically today; see [Coupling and Duplication](#coupling-and-duplication).
-
-9. **Smaller issues:**
+8. **Smaller issues:**
     - Every workspace, the Pi's included, is built with `-DCMAKE_BUILD_TYPE=Debug` (`bin/*/build.sh`).
     - The camera's `savePicture` writes the final file in place, so its web server's listing can show a picture half written. The listing hides only dotfiles, "a file still being written under a temporary name".
     - `StepitHardware::on_init` swallows its exception without a log.
@@ -395,8 +393,7 @@ These are ordered by value against effort, and each fits in one pull request.
     - Add a launch smoke test that starts `rig.launch.py` on fake hardware and waits for the commander's action.
     - Have `dock.sh build` warn when `git submodule status` shows a module off its recorded commit.
 8. **Harden the motors' default driver** (fixes 5), with the Freezer's `read_header` and `check_length`, and add a set-and-clear mask to `SetOutputs` (fixes 6). Both are module changes, each in its own repository.
-9. **Lighten `~/execution`** (fixes 7). Publish the tree once per run, and only the changed statuses afterwards, with a sequence number. Alternatively, keep the snapshot but limit it to a few Hz.
-10. **Share the firmware's serial layer**, and a header of each protocol's constants, as `framed-serial` is shared on the host (fixes 8).
-11. **Split `FreezerNode`** into the action server, a `Connection` that owns the reconnect loop, and a `TriggerWatcher` (fixes 4), the next time the node changes.
-12. **Carry on with the UI review's own list.** Move the theme out of `settings.ts` so the stores can be tested, then test them. Give the subscriptions one owner, and each device an interface module. Then share one rosbridge client between the four web clients, and port the picture-size fix to the camera's test page.
-13. **Tidy up** (fixes 9): build in `RelWithDebInfo`, save pictures through a temporary name, log in `on_init`, compute `CubicTrajectory`'s time with `rclcpp::Duration::from_seconds()`, remove the parameter file when the launch ends, and fix the drifted documents.
+9. **Share the firmware's serial layer**, and a header of each protocol's constants, as `framed-serial` is shared on the host (fixes 7).
+10. **Split `FreezerNode`** into the action server, a `Connection` that owns the reconnect loop, and a `TriggerWatcher` (fixes 4), the next time the node changes.
+11. **Carry on with the UI review's own list.** Move the theme out of `settings.ts` so the stores can be tested, then test them. Give the subscriptions one owner, and each device an interface module. Then share one rosbridge client between the four web clients, and port the picture-size fix to the camera's test page.
+12. **Tidy up** (fixes 8): build in `RelWithDebInfo`, save pictures through a temporary name, log in `on_init`, compute `CubicTrajectory`'s time with `rclcpp::Duration::from_seconds()`, remove the parameter file when the launch ends, and fix the drifted documents.
