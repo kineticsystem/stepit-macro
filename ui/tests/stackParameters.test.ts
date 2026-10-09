@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { countParameter, numberOf, stackOf } from '../src/stack/parameters';
 
-describe('the stack the rig keeps, in the commander parameters', () => {
+describe('the stack the rig keeps, in the parameters of stack_state', () => {
   it('reads the marks, the counts and the stage turn', () => {
     expect(stackOf([
       { name: 'state.turn', value: { type: 8, double_array_value: [17] } },
@@ -18,6 +18,14 @@ describe('the stack the rig keeps, in the commander parameters', () => {
       { name: 'state.near', value: { type: 0 } },
       { name: 'focus_stack.turn', value: { type: 3, double_value: 17 } },
     ])).toEqual({});
+  });
+
+  // stack_state declares the marks as empty lists while they are not made.
+  it('reads an empty mark as not marked', () => {
+    expect(stackOf([
+      { name: 'state.near', value: { type: 8, double_array_value: [] } },
+      { name: 'state.far', value: { type: 8, double_array_value: [111.15] } },
+    ])).toEqual({ near: undefined, far: 111.15 });
   });
 
   it('takes the first number of a list', () => {

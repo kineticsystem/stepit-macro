@@ -13,11 +13,11 @@ ros2 action send_goal /commander/execute_objective \
 ```
 MarkNear
 ├── GetJointPositions   joint2, the rail   -> {rail}
-└── SaveValues          near               (in the state file)
+└── SaveValues          near               (state.near of stack_state)
 ```
 
 **It moves nothing, and switches no controller.** It only reads the joint states, so the gamepad keeps driving the robot: we can mark one end, drive to the other and mark it, without handing the robot over again.
 
-**The mark is saved in the state file**, the parameter `state_file` in the section `stepit_server` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml), `~/ws/state/stack.yaml`: the folder `state` of the repo, which git ignores. It holds one list per name, e.g. `near: [12.4]`, with the far mark if there is one.
+**The mark is saved in the state of the rig**, the parameter `state.near` of the node `stack_state`, e.g. `[12.4]`, which every page shows, see [The State of the Rig](../README.md#the-state-of-the-rig). `[]` means not marked.
 
-**A mark is a count of motor steps** since the controller of the motors powered up, which means nothing once it powers up again, as it does when the Pi is switched on. So a start of the rig forgets the marks: `rig.launch.py` removes them from the state file before anything starts, as `state_cleared_on_start` in the section `stepit_server` of `rig.yaml` says. Mark both ends again for every subject.
+**A mark is a count of motor steps** since the controller of the motors powered up, which means nothing once it powers up again, as it does when the Pi is switched on. So the marks are kept in memory only, never in a file, and a start of the rig forgets them: `forgotten` in the section `stack_state` of [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml). Mark both ends again for every subject.

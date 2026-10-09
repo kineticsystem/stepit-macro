@@ -36,6 +36,7 @@ is consistent and synchronized with each capture.
   - [Tests](#tests)
 - [The Rig's Own Programs](#the-rigs-own-programs)
   - [The Gamepad](#the-gamepad)
+  - [The State of the Rig](#the-state-of-the-rig)
   - [Switching the Rig Off](#switching-the-rig-off)
   - [The Workspaces](#the-workspaces)
 - [Working on a Module](#working-on-a-module)
@@ -74,11 +75,11 @@ Each module is a project of its own, with its own container, tests, CI, fake har
 - **Test shot**: the objective [`TakeShot`](docs/TakeShot.md), which StepIt Freezer fires through the camera's jack, with the lights. A shot stops the live view, and the last picture then takes its place. The files stay on the rig, in the folder `pictures` of the repo: a test shot in `pictures/tests`, a stack in a folder named after when it started, with one folder per angle, e.g. `pictures/2026-10-06_15-20-04/angle_01_-17.0deg`.
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
-- **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is, when **held** for 0.6 s, so that a thumb brushing it at the end of a drag marks nothing: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button turns green, **Marked**, and flashes at every new mark. Once both ends are marked, a **tap** goes back to one, [`MoveRailToMark`](docs/MoveRailToMark.md), to check the focus there. A start of the rig forgets the marks: they are counts of motor steps. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), the number of shots, how far the stage turns either way, **Turn ±**, e.g. 17° for −17° to 17°, from where it is when the stack starts, and the number of angles, with the angle between two of them; the rig keeps these in its state file, `focus_stack` of `rig.yaml` being their defaults, so that they can change with no restart; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
+- **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is, when **held** for 0.6 s, so that a thumb brushing it at the end of a drag marks nothing: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button turns green, **Marked**, and flashes at every new mark. Once both ends are marked, a **tap** goes back to one, [`MoveRailToMark`](docs/MoveRailToMark.md), to check the focus there. A start of the rig forgets the marks: they are counts of motor steps. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), the number of shots, how far the stage turns either way, **Turn ±**, e.g. 17° for −17° to 17°, from where it is when the stack starts, and the number of angles, with the angle between two of them; the rig keeps these, in its node `stack_state` and its state file, the `defaults` of its section in `rig.yaml` until a page sets them, so that they survive a restart; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 - **Switch the rig off**, at the bottom of the settings menu, away from the buttons a thumb uses all the time: **held for 3 seconds**, it switches the rig's computer off, filling while it is held; letting go sooner cancels, and a tap only says to hold. It is off, and the rig refuses, while a stack is shot, `FocusStack` or `Stack`, see [Switching the Rig Off](#switching-the-rig-off).
 
-**Every page shows the same, whichever device opened it, and when.** What runs comes from the commander, which publishes the name of the running objective, latched; the marks and the counts of a stack from the rig's state file, through the commander's parameters; the progress of a stack from `/focus_stack/progress`, latched; and every picture the camera takes shows on every page, whoever fired it. Only the live view is a page's own: it streams to the page that turned it on.
+**Every page shows the same, whichever device opened it, and when.** What runs comes from the commander, which publishes the name of the running objective, latched; the marks and the counts of a stack from the rig's node `stack_state`, through its parameters `state.*`; the progress of a stack from `/focus_stack/progress`, latched; and every picture the camera takes shows on every page, whoever fired it. Only the live view is a page's own: it streams to the page that turned it on.
 
 **Only the robot's tasks go through the commander**: a shot, handing the robot to the user, marking and shooting a stack. Configuring the rig, the camera's settings, the live view and the lights, goes straight to the drivers, so that it never replaces a running objective. While an objective runs, the page locks the settings and the lights, so that a shoot is not changed halfway through.
 
@@ -255,7 +256,7 @@ launch:
 
 ### The Parameters of the Nodes
 
-Every other section is the parameters of a node, as in any ROS2 parameter file. `rig.launch.py` writes them to a parameter file of their own and gives it to the commander, the camera and the Freezer as their `params_file`, loaded after the module's own: only the values that differ from the module's need to be in `rig.yaml`. A launch argument that sets the same parameter, e.g. the Freezer's `usb_port`, wins over it.
+Every other section is the parameters of a node, as in any ROS2 parameter file. `rig.launch.py` writes them to a parameter file of their own and gives it to every launch file that takes one, e.g. the commander's, the camera's and the Freezer's, as its `params_file`, loaded after the module's own: only the values that differ from the module's need to be in `rig.yaml`. A launch argument that sets the same parameter, e.g. the Freezer's `usb_port`, wins over it.
 
 | Node | What the rig sets |
 |---|---|
@@ -263,6 +264,7 @@ Every other section is the parameters of a node, as in any ROS2 parameter file. 
 | `camera` | `download_directory`: the folder of the pictures, `~/ws/pictures`. The settings of the camera, e.g. `iso`, can be added here. |
 | `web_server` | The camera's web server: the same `download_directory`, from which StepIt UI loads the pictures. |
 | `freezer` | `baudrate`, and the sequences of the rig, by the jacks of the board: `test_shot`, the default one, fires the camera on OUT8 with the lights on OUT1, see [`TakeShot`](docs/TakeShot.md). |
+| `stack_state` | The state of the rig: `state_file`, the file of the values it keeps across restarts, `~/ws/state/stack.yaml`; `saved`, those values, the counts of a stack; `forgotten`, the values it forgets at every start, the marks; and `defaults`, the counts of a new rig. See [The State of the Rig](#the-state-of-the-rig). |
 | `ui_teleop` | The sliders of StepIt UI: which axis drives which joint, and how fast at the ends: 4.71 rad/s, 0.75 turns/s, for the rotary stage, and 18.85 rad/s, the motors' limit, for the rail. |
 
 See the README of each module for the parameters it takes.
@@ -321,25 +323,27 @@ angle of a stack whose pictures are all saved, and `AllStacksDone`, a stack
 whose angles are all done), a parameter of another
 node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 (`OffsetVector`, `SetJoints`, `TrapezoidalTrajectory`, `CurrentTime`,
-`MillimetresToRadians`, `DegreesToRadians`) and a file (`SaveValues`,
-`LoadValues`). `Steps` is a decorator that loops over values, and
+`MillimetresToRadians`, `DegreesToRadians`) and the state of the rig
+(`SaveValues`, `LoadValues`, service clients of the node `stack_state`). `Steps` is a decorator that loops over values, and
 `ExpectPicture` one that waits for the camera's picture of the shot it wraps.
 
 Some behaviors read parameters of their own from the commander's section of
-`rig.yaml`, which the plugin declares on the commander's node when it loads:
-the overshoot of each motor against backlash, `overshoot.<joint>`, which
-`CommandJointPositions` uses when given an approach; the millimetres a linear
-axis travels per turn of its motor, `mm_per_turn.<joint>`, and the degrees a
-rotary axis turns, `deg_per_turn.<joint>`, which `MillimetresToRadians` and
-`DegreesToRadians` convert with; `focus_stack.*`, the defaults of a stack,
-which StepIt UI reads; and `state_file`, where `SaveValues` and `LoadValues`
-keep what the objectives remember, e.g. the marks of a stack; and
+`rig.yaml`: the overshoot of each motor against backlash, `overshoot.<joint>`,
+which `CommandJointPositions` uses when given an approach; the millimetres a
+linear axis travels per turn of its motor, `mm_per_turn.<joint>`, and the
+degrees a rotary axis turns, `deg_per_turn.<joint>`, which
+`MillimetresToRadians` and `DegreesToRadians` convert with; and
 `pictures_folder`, the camera's folder of pictures, where `StackDone` writes
 `stack.json` into each finished angle, and `AllStacksDone` `all_stacks.json`
-into each finished stack. The plugin shows
-that file as the parameters `state.*`, and writes into it what a page sets
-there, e.g. the number of shots. `rig.launch.py` removes from it, at every
-start of the rig, what `state_cleared_on_start` lists: the marks. The commander itself knows nothing about them.
+into each finished stack. They are configuration, which the plugin reads from
+the commander's parameter file without declaring them on its node: the
+commander itself knows nothing about them, and BehaviorTree.ROS2 registers
+every plugin and tree again after any change of the node's parameters, a
+declaration included.
+
+What the objectives remember from one run to the next, e.g. the marks of a
+stack, is not configuration: it is the state of the rig, kept by its own node,
+see [The State of the Rig](#the-state-of-the-rig).
 
 Building a trajectory and following it are separate behaviors, and
 `FollowJointTrajectory` sends whatever trajectory it is given to the controller.
@@ -437,6 +441,29 @@ A Logitech Dual Action gamepad drives the robot by hand: its sticks set the velo
 
 It belongs to StepIt Macro, not to StepIt Motors, because it needs the commander: the stop button runs the objective [`ToggleTeleop`](docs/ToggleTeleop.md), which the commander runs in place of the running objective, and which switches the controllers. See [Driving the Robot with a Gamepad](docs/Gamepad.md), which also tells how to test the gamepad with `jstest-gtk`.
 
+### The State of the Rig
+
+What every page shares and the objectives remember from one run to the next is
+kept by one node, `stack_state`, in the package
+[`stepit_state`](src/stepit-macro/stepit_state), as its parameters `state.*`,
+each a list of numbers:
+
+| Value | Set by | Kept |
+|---|---|---|
+| `state.near`, `state.far` | `MarkNear` and `MarkFar`, through `SaveValues` | In memory only: empty, `[]`, at every start of the rig, as they are counts of motor steps, which mean nothing once the motors' controller powers up again. |
+| `state.shots`, `state.angles`, `state.turn` | StepIt UI, the bar of the stack | In the state file, `~/ws/state/stack.yaml`, i.e. `state/stack.yaml` of this repo, which git ignores: they survive a restart. The `defaults` of `rig.yaml` until a page sets them. |
+
+`SaveValues` and `LoadValues` set and read them through the node's
+`set_parameters` and `get_parameters` services, StepIt UI the same way over
+rosbridge, and every page follows them on `/parameter_events`. A name the node
+does not keep does not exist, and a value it cannot save is refused. Only this
+node writes the file. Which values it keeps, and which it forgets, is the
+section `stack_state` of `rig.yaml`: read-only while the rig runs.
+
+It is a node of its own, and not the commander's parameters: BehaviorTree.ROS2
+registers every plugin and tree of the commander again after any change of the
+commander's parameters, which drops the objectives added since the last build.
+
 ### Switching the Rig Off
 
 The power button of StepIt UI switches off the computer that runs the rig, e.g. the Raspberry Pi, cleanly: every service stops, the rig among them, whose ROS nodes shut down as on `Ctrl+C`. It calls the service `/power_off/power_off` (`std_srvs/Trigger`) of the node `power_off`, in the package [`stepit_power`](src/stepit-macro/stepit_power), which:
@@ -486,6 +513,7 @@ The packages of `src/stepit-macro`:
 | `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad, the sliders of StepIt UI, the editor and StepIt UI, with the configuration of `config/rig.yaml`. |
 | `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ToggleTeleop`. |
 | `stepit_power` | Switching the computer off: `power_off`, the service of StepIt UI's power button, refused while a stack is shot. |
+| `stepit_state` | The state of the rig: `stack_state`, the marks and the counts of a stack, which every page shares, see [The State of the Rig](#the-state-of-the-rig). |
 | `stepit_macro_tests` | Tests of the packages above, e.g. the gamepad against a fake commander, and `rig.yaml`. |
 
 A new program goes into `src/stepit-macro` as a package with a launch file, and into `MODULES` in [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), with its section in `rig.yaml`.
@@ -531,7 +559,7 @@ git commit -m "Update the modules"
 The container mounts this repo at `~/ws` and the whole of `/dev`, for the serial ports, the camera and the gamepad, which can then be unplugged and plugged in again while the rig runs. Its command runs one launch file, [`rig.launch.py`](src/stepit-macro/stepit_bringup/launch/rig.launch.py), which:
 
 - reads [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), and writes its node parameters to a parameter file of their own;
-- includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py`, `stepit_teleop/teleop.launch.py` and `stepit_power/power.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
+- includes the launch file of each module, `robot_bringup/launch.py`, `stepit_server/commander.launch.py`, `stepit_camera/camera.launch.py`, `freezer_node/freezer.launch.py`, `stepit_teleop/teleop.launch.py`, `stepit_power/power.launch.py` and `stepit_state/state.launch.py`, with its arguments of `rig.yaml`, and the parameter file as `params_file` for those that take one. Each is included in a group of its own, so that the arguments of one module, e.g. `usb_port`, never reach the next;
 - starts `ui_teleop`, the second `gamepad_teleop`, which reads the sliders of StepIt UI on `/ui/joy`;
 - starts the editor's server on the rig's objectives, and serves StepIt UI, as built in `ui/dist`.
 

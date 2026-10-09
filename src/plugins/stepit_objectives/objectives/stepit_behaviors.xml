@@ -71,9 +71,9 @@
             <input_port name="service_name" type="std::string" default="">Service name</input_port>
         </Action>
         <Action ID="LoadValues">
-            <input_port name="file" type="std::string" default="">the YAML file; by default the commander's parameter state_file</input_port>
-            <output_port name="values" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers saved, always a list</output_port>
             <input_port name="key" type="std::string">the name the values were saved under, e.g. near</input_port>
+            <output_port name="values" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers saved, always a list</output_port>
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
         </Action>
         <Action ID="MillimetresToRadians">
             <output_port name="radians" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the same, in radians of the motor, always a list</output_port>
@@ -91,9 +91,9 @@
             <input_port name="topic_name" type="std::string" default="/focus_stack/progress">the latched topic of the progress</input_port>
         </Action>
         <Action ID="SaveValues">
-            <input_port name="file" type="std::string" default="">the YAML file; by default the commander's parameter state_file</input_port>
-            <input_port name="values" type="BT::AnyTypeAllowed">the numbers to save: a number, or a list</input_port>
             <input_port name="key" type="std::string">the name to save the values under, e.g. near</input_port>
+            <input_port name="values" type="BT::AnyTypeAllowed">the numbers to save: a number, or a list</input_port>
+            <input_port name="service_name" type="std::string" default="">Service name</input_port>
         </Action>
         <Action ID="SetJoints">
             <output_port name="output" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the positions of every joint, these set</output_port>

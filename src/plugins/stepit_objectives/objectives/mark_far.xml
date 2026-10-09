@@ -11,10 +11,11 @@
       btcpp_ros2_interfaces/action/ExecuteTree \
       "{target_tree: MarkFar, payload: ''}"
 
-  The position is saved as "far" in the commander's state_file, e.g.
-  ~/ws/state/stack.yaml, with the near end if marked. It is a count of motor
-  steps since the controller powered up: it means nothing after the
-  controller restarts, so mark both ends again for every subject.
+  The position is saved as "far" in the state of the rig, the parameter
+  state.far of the node stack_state, which every page shows. It is a count of
+  motor steps since the controller powered up: it means nothing after the
+  controller restarts, so stack_state forgets it at every start of the rig,
+  and both ends are marked again for every subject.
 
   It reads the joint states only: it moves nothing, and does not switch the
   controllers, so the gamepad keeps driving the robot.

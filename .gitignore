@@ -18,8 +18,8 @@ __pycache__
 # The pictures the camera downloads, see rig.yaml.
 pictures
 
-# What the objectives save while the rig runs, e.g. the marks of a stack: see
-# state_file in rig.yaml.
+# The values of the rig's state that survive a restart, e.g. the counts of a
+# stack: see state_file in the section stack_state of rig.yaml.
 state
 
 # pnpm's store of the packages of the web pages, which pnpm keeps at the root

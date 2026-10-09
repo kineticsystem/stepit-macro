@@ -19,7 +19,7 @@ ros2 action send_goal /commander/execute_objective \
 FocusStack
 ├── SubTree EnsureControllers       (position_controller only)
 ├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
-├── LoadValues  near, far           (the marks, from the state file)
+├── LoadValues  near, far           (the marks, from stack_state)
 ├── CurrentTime                     -> {stack_folder}, e.g. 2026-10-06_15-20-04
 ├── ReportProgress                  0 of shots × angles, on /focus_stack/progress
 ├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1

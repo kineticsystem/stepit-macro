@@ -42,6 +42,13 @@ if(BUILD_TESTING)
     ${std_msgs_TARGETS}
     ${std_srvs_TARGETS})
 
+  # The state of the rig, on a state file of the test's own.
+  find_package(stepit_state REQUIRED)
+  ament_add_gtest(test_stack_state tests/test_stack_state.cpp)
+  target_link_libraries(test_stack_state
+    stepit_state::stepit_state
+    rclcpp::rclcpp)
+
   # The configuration of the rig, rig.yaml, as rig.launch.py reads it.
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_rig_config tests/test_rig_config.py)

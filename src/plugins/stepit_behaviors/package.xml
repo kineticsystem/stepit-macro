@@ -27,7 +27,6 @@
   <!-- The interface of a node reporting its progress, header only. -->
   <depend>stepit_server</depend>
   <depend>trajectory_msgs</depend>
-  <depend>yaml-cpp</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

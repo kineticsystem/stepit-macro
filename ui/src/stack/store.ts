@@ -1,6 +1,6 @@
 // A focus stack: the ends of the rail, the stage's turn, the counts, and the
 // run. The rig keeps all of it, never this browser, so that every page shows
-// the same: the commander's parameters state.* show the rig's state file.
+// the same: the parameters state.* of its node stack_state.
 //
 // The rail's ends are marked by the rig, the objectives MarkNear and MarkFar,
 // which save them in the state file, where FocusStack reads them; a rig start
@@ -18,8 +18,8 @@ import type { RunResult } from '../commander/commander';
 import { countParameter, STACK_PARAMETERS, stackOf, type Parameter, type ParameterValue, type PlanKey } from './parameters';
 import { DEFAULT_PLAN, payloadOf, type StackPlan, stageOf } from './plan';
 
-/** The commander, whose parameters hold the stack. */
-const COMMANDER = '/stepit_server';
+/** The rig's node whose parameters hold the stack. */
+const STATE = '/stack_state';
 /** How long a new mark shows, in milliseconds. */
 const FLASH_MS = 700;
 /** Where FocusStack says how far it is, [taken, total], latched. */
@@ -77,7 +77,7 @@ export const useStack = create<StackState>((set, get) => ({
     const parameters = Object.entries(change).map(([key, value]) => countParameter(key as PlanKey, value));
     try {
       const { results } = await ros().callService<{ results: { successful: boolean; reason: string }[] }>(
-        `${COMMANDER}/set_parameters`, 'rcl_interfaces/srv/SetParameters', { parameters });
+        `${STATE}/set_parameters`, 'rcl_interfaces/srv/SetParameters', { parameters });
       const refused = results.find((r) => !r.successful);
       if (refused) set({ error: refused.reason });
     } catch (e) {
@@ -113,24 +113,14 @@ export const useStack = create<StackState>((set, get) => ({
   },
 }));
 
-/**
- * Reads the stack from the commander's parameters. Only those that exist: the
- * commander answers nothing at all to a request naming one it lacks, e.g. a
- * mark a rig start has forgotten. A missing mark is unmarked.
- */
+/** Reads the stack from the parameters of stack_state, which declares every one of them. */
 async function readStack() {
   try {
-    const { result } = await ros().callService<{ result: { names: string[] } }>(
-      `${COMMANDER}/list_parameters`, 'rcl_interfaces/srv/ListParameters', { prefixes: ['state'], depth: 0 });
-    const names = STACK_PARAMETERS.filter((name) => result.names.includes(name));
-    const { values } = names.length
-      ? await ros().callService<{ values: ParameterValue[] }>(
-        `${COMMANDER}/get_parameters`, 'rcl_interfaces/srv/GetParameters', { names })
-      : { values: [] };
-    useStack.setState({ near: undefined, far: undefined });
-    apply(names.map((name, i) => ({ name, value: values[i] })));
+    const { values } = await ros().callService<{ values: ParameterValue[] }>(
+      `${STATE}/get_parameters`, 'rcl_interfaces/srv/GetParameters', { names: STACK_PARAMETERS });
+    apply(STACK_PARAMETERS.map((name, i) => ({ name, value: values[i] })));
   } catch {
-    // No commander yet: the next connection asks again, with the defaults meanwhile.
+    // No rig yet: the next connection asks again, with the defaults meanwhile.
   }
 }
 
@@ -149,7 +139,7 @@ export function followStack(): () => void {
   void readStack();
   const unsubscribe = onConnected(() => void readStack());
   const stopEvents = ros().subscribe<ParameterEvent>('/parameter_events', 'rcl_interfaces/msg/ParameterEvent', (event) => {
-    if (event.node === COMMANDER) apply([...event.new_parameters, ...event.changed_parameters]);
+    if (event.node === STATE) apply([...event.new_parameters, ...event.changed_parameters]);
   });
   // FocusStack's progress, latched: a page that opens mid-stack gets it at once.
   const stopProgress = ros().subscribe<{ data: number[] }>(PROGRESS_TOPIC, 'std_msgs/msg/Int32MultiArray',

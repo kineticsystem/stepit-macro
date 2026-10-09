@@ -100,38 +100,32 @@ def test_the_stage_turns_on_an_80_to_1_gear():
     assert commander["deg_per_turn"]["joint1"] == 360 / 80
 
 
-def test_a_stack_turns_the_stage_17_degrees_either_way():
+def test_a_stack_turns_the_stage_17_degrees_either_way_by_default():
+    _, parameters = rig.split_config(load_config())
+    state = parameters["stack_state"]["ros__parameters"]
+    assert state["defaults"] == {"turn": 17.0, "shots": 10, "angles": 35}
+
+
+def test_the_counts_survive_a_restart_and_the_marks_do_not():
+    _, parameters = rig.split_config(load_config())
+    state = parameters["stack_state"]["ros__parameters"]
+    assert set(state["saved"]) == {"turn", "shots", "angles"}
+    assert set(state["forgotten"]) == {"near", "far"}
+
+
+def test_the_state_is_saved_in_the_state_folder():
+    _, parameters = rig.split_config(load_config())
+    state = parameters["stack_state"]["ros__parameters"]
+    assert state["state_file"].startswith("~/ws/state/")
+
+
+def test_the_commander_holds_no_state():
+    # BehaviorTree.ROS2 registers the plugins and the trees again after any
+    # change of the commander's parameters: state that changes while the rig
+    # runs belongs to stack_state.
     _, parameters = rig.split_config(load_config())
     commander = parameters["stepit_server"]["ros__parameters"]
-    assert commander["focus_stack"] == {"turn": 17.0, "shots": 10, "angles": 35}
-
-
-def test_a_start_of_the_rig_forgets_the_marks_and_keeps_the_counts(tmp_path):
-    state = tmp_path / "stack.yaml"
-    state.write_text("near: [12.5]\nfar: [15.0]\nshots: [40.0]\n")
-    _, parameters = rig.split_config(load_config())
-    parameters["stepit_server"]["ros__parameters"]["state_file"] = str(state)
-
-    assert rig.clear_state(parameters) == ["near", "far"]
-    assert yaml.safe_load(state.read_text()) == {"shots": [40.0]}
-    # The commander never sees it.
-    assert (
-        "state_cleared_on_start" not in parameters["stepit_server"]["ros__parameters"]
-    )
-
-
-def test_a_start_without_a_state_file_clears_nothing(tmp_path):
-    _, parameters = rig.split_config(load_config())
-    parameters["stepit_server"]["ros__parameters"]["state_file"] = str(
-        tmp_path / "missing.yaml"
-    )
-    assert rig.clear_state(parameters) == []
-
-
-def test_the_marks_of_a_stack_are_saved_in_the_state_folder():
-    _, parameters = rig.split_config(load_config())
-    commander = parameters["stepit_server"]["ros__parameters"]
-    assert commander["state_file"].startswith("~/ws/state/")
+    assert not {"state_file", "focus_stack", "state_cleared_on_start"} & set(commander)
 
 
 def test_the_camera_and_its_web_server_share_the_pictures_folder():

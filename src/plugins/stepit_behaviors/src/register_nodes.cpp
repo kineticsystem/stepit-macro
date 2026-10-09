@@ -27,7 +27,6 @@
 #include "stepit_behaviors/get_joint_positions.hpp"
 #include "stepit_behaviors/is_controller_active.hpp"
 #include "stepit_behaviors/offset_vector.hpp"
-#include "stepit_behaviors/parameters.hpp"
 #include "stepit_behaviors/picture_folder.hpp"
 #include "stepit_behaviors/report_progress.hpp"
 #include "stepit_behaviors/shoot.hpp"
@@ -45,11 +44,6 @@ namespace stepit_behaviors
 
 void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& params)
 {
-  if (const auto node = params.nh.lock())
-  {
-    declareParameters(*node);
-  }
-
   factory.registerNodeType<OffsetVector>("OffsetVector");
   factory.registerNodeType<Steps>("Steps");
   factory.registerNodeType<CubicTrajectory>("CubicTrajectory");
@@ -63,8 +57,13 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<SetJoints>("SetJoints");
   factory.registerNodeType<MillimetresToRadians>("MillimetresToRadians", params);
   factory.registerNodeType<DegreesToRadians>("DegreesToRadians", params);
-  factory.registerNodeType<SaveValues>("SaveValues", params);
-  factory.registerNodeType<LoadValues>("LoadValues", params);
+  // The state of the rig, the node stack_state, unless the tree names another service in service_name.
+  BT::RosNodeParams save_params = params;
+  save_params.default_port_value = std::string(kStateNode) + "/set_parameters";
+  factory.registerNodeType<SaveValues>("SaveValues", save_params);
+  BT::RosNodeParams load_params = params;
+  load_params.default_port_value = std::string(kStateNode) + "/get_parameters";
+  factory.registerNodeType<LoadValues>("LoadValues", load_params);
   factory.registerNodeType<ExpectPicture>("ExpectPicture", params);
 
   // The Freezer node's action, unless the tree names another in action_name.
@@ -80,8 +79,9 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   factory.registerNodeType<ReportProgress>("ReportProgress", params);
 
   // The topics of the finished stacks, created once, for every run: see latchedPublisher. Here,
-  // after the other nodes: the commander calls registerNodes again for every goal, and the first
-  // registration then throws, as the node is registered already, before any publisher is made.
+  // after the other nodes: BehaviorTree.ROS2 calls registerNodes again after a change of the
+  // commander's parameters, and the first registration then throws, as the node is registered
+  // already, before any publisher is made.
   LatchedPublisher stack_done;
   LatchedPublisher all_stacks_done;
   if (const auto node = params.nh.lock())

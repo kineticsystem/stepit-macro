@@ -13,7 +13,7 @@ ros2 action send_goal /commander/execute_objective \
 ```
 MarkFar
 ├── GetJointPositions   joint2, the rail   -> {rail}
-└── SaveValues          far                (in the state file)
+└── SaveValues          far                (state.far of stack_state)
 ```
 
 [`FocusStack`](FocusStack.md) always shoots from the near mark to the far one, whichever is the larger motor position.

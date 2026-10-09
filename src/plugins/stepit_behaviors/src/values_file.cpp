@@ -20,12 +20,8 @@
 
 #include "stepit_behaviors/values_file.hpp"
 
-#include <filesystem>
 #include <vector>
 
-#include <yaml-cpp/yaml.h>
-
-#include "stepit_behaviors/parameters.hpp"
 #include "stepit_behaviors/ports.hpp"
 
 namespace stepit_behaviors
@@ -33,30 +29,7 @@ namespace stepit_behaviors
 namespace
 {
 
-BT::PortsList::value_type filePort()
-{
-  auto port = BT::InputPort<std::string>("file", "the YAML file; by default the commander's parameter state_file");
-  port.second.setDefaultValue(std::string());
-  return port;
-}
-
-/// @brief The file of the node's port `file`, or the commander's `state_file`.
-std::filesystem::path fileOf(const BT::TreeNode& tree_node, const std::weak_ptr<rclcpp::Node>& weak)
-{
-  const auto file = tree_node.getInput<std::string>("file");
-  if (file && !file.value().empty())
-  {
-    return file.value();
-  }
-  const auto node = weak.lock();
-  return node ? stateFileParameter(*node) : std::string(kDefaultStateFile);
-}
-
-rclcpp::Logger loggerOf(const std::weak_ptr<rclcpp::Node>& weak)
-{
-  const auto node = weak.lock();
-  return node ? node->get_logger() : rclcpp::get_logger("stepit_behaviors");
-}
+constexpr auto kStatePrefix = "state.";
 
 std::string requireKey(const BT::TreeNode& node)
 {
@@ -71,100 +44,90 @@ std::string requireKey(const BT::TreeNode& node)
 }  // namespace
 
 SaveValues::SaveValues(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
-  : BT::SyncActionNode(name, config), node_(params.nh)
+  : BT::RosServiceNode<rcl_interfaces::srv::SetParameters>(name, config, params)
 {
 }
 
 BT::PortsList SaveValues::providedPorts()
 {
-  return {
-    BT::InputPort<std::string>("key", "the name to save the values under, e.g. near"),
-    BT::InputPort<BT::AnyTypeAllowed>("values", "the numbers to save: a number, or a list"),
-    filePort(),
-  };
+  return providedBasicPorts({
+      BT::InputPort<std::string>("key", "the name to save the values under, e.g. near"),
+      BT::InputPort<BT::AnyTypeAllowed>("values", "the numbers to save: a number, or a list"),
+  });
 }
 
-BT::NodeStatus SaveValues::tick()
+bool SaveValues::setRequest(Request::SharedPtr& request)
 {
-  const auto key = requireKey(*this);
-  const auto values = requireNumbers(*this, "values");
-  const auto path = fileOf(*this, node_);
-  const auto logger = loggerOf(node_);
+  key_ = requireKey(*this);
+  rcl_interfaces::msg::Parameter parameter;
+  parameter.name = kStatePrefix + key_;
+  parameter.value.type = rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE_ARRAY;
+  parameter.value.double_array_value = requireNumbers(*this, "values");
+  request->parameters = { parameter };
+  return true;
+}
 
-  try
+BT::NodeStatus SaveValues::onResponseReceived(const Response::SharedPtr& response)
+{
+  if (response->results.empty() || !response->results.front().successful)
   {
-    writeStateValues(path, key, values);
-  }
-  catch (const std::exception& error)
-  {
-    RCLCPP_ERROR(logger, "%s: cannot save %s in %s: %s", name().c_str(), key.c_str(), path.c_str(), error.what());
+    RCLCPP_ERROR(logger(), "%s: cannot save %s: %s", name().c_str(), key_.c_str(),
+                 response->results.empty() ? "no answer" : response->results.front().reason.c_str());
     return BT::NodeStatus::FAILURE;
   }
-
-  RCLCPP_INFO(logger, "%s: saved %s in %s", name().c_str(), key.c_str(), path.c_str());
-  if (const auto node = node_.lock())
-  {
-    publishState(*node, key, values);
-  }
+  RCLCPP_INFO(logger(), "%s: saved %s", name().c_str(), key_.c_str());
   return BT::NodeStatus::SUCCESS;
 }
 
+BT::NodeStatus SaveValues::onFailure(BT::ServiceNodeErrorCode error)
+{
+  RCLCPP_ERROR(logger(), "%s: cannot save %s: %s, is stack_state running?", name().c_str(), key_.c_str(), toStr(error));
+  return BT::NodeStatus::FAILURE;
+}
+
 LoadValues::LoadValues(const std::string& name, const BT::NodeConfig& config, const BT::RosNodeParams& params)
-  : BT::SyncActionNode(name, config), node_(params.nh)
+  : BT::RosServiceNode<rcl_interfaces::srv::GetParameters>(name, config, params)
 {
 }
 
 BT::PortsList LoadValues::providedPorts()
 {
-  return {
-    BT::InputPort<std::string>("key", "the name the values were saved under, e.g. near"),
-    BT::OutputPort<std::vector<double>>("values", "the numbers saved, always a list"),
-    filePort(),
-  };
+  return providedBasicPorts({
+      BT::InputPort<std::string>("key", "the name the values were saved under, e.g. near"),
+      BT::OutputPort<std::vector<double>>("values", "the numbers saved, always a list"),
+  });
 }
 
-BT::NodeStatus LoadValues::tick()
+bool LoadValues::setRequest(Request::SharedPtr& request)
 {
-  const auto key = requireKey(*this);
-  const auto path = fileOf(*this, node_);
-  const auto logger = loggerOf(node_);
+  key_ = requireKey(*this);
+  request->names = { kStatePrefix + key_ };
+  return true;
+}
 
-  std::vector<double> values;
-  try
+BT::NodeStatus LoadValues::onResponseReceived(const Response::SharedPtr& response)
+{
+  // A name the node does not know gets no value at all.
+  if (response->values.empty() ||
+      response->values.front().type != rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE_ARRAY)
   {
-    if (!std::filesystem::exists(path))
-    {
-      RCLCPP_ERROR(logger, "%s: nothing saved yet: %s is missing", name().c_str(), path.c_str());
-      return BT::NodeStatus::FAILURE;
-    }
-    const auto entry = YAML::LoadFile(path.string())[key];
-    if (!entry)
-    {
-      RCLCPP_ERROR(logger, "%s: no %s saved in %s", name().c_str(), key.c_str(), path.c_str());
-      return BT::NodeStatus::FAILURE;
-    }
-    if (entry.IsSequence())
-    {
-      values = entry.as<std::vector<double>>();
-    }
-    else
-    {
-      values = { entry.as<double>() };
-    }
-  }
-  catch (const std::exception& error)
-  {
-    RCLCPP_ERROR(logger, "%s: cannot read %s from %s: %s", name().c_str(), key.c_str(), path.c_str(), error.what());
+    RCLCPP_ERROR(logger(), "%s: the state of the rig has no %s", name().c_str(), key_.c_str());
     return BT::NodeStatus::FAILURE;
   }
-
+  const auto& values = response->values.front().double_array_value;
   if (values.empty())
   {
-    RCLCPP_ERROR(logger, "%s: %s in %s holds no value", name().c_str(), key.c_str(), path.c_str());
+    RCLCPP_ERROR(logger(), "%s: nothing saved as %s yet", name().c_str(), key_.c_str());
     return BT::NodeStatus::FAILURE;
   }
   setOutput("values", values);
   return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus LoadValues::onFailure(BT::ServiceNodeErrorCode error)
+{
+  RCLCPP_ERROR(logger(), "%s: cannot read %s: %s, is stack_state running?", name().c_str(), key_.c_str(), toStr(error));
+  return BT::NodeStatus::FAILURE;
 }
 
 }  // namespace stepit_behaviors
