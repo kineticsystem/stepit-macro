@@ -52,7 +52,7 @@ The page is made for a tablet held in both hands, sideways or upright: the slide
 
 ## Running the Application
 
-StepIt UI is part of StepIt Macro, in its folder `ui`: the rig's container builds it into `ui/dist` and serves it on port 8070, see the rig's [README](../README.md). From a tablet on the same network, open port 8070 of the rig's computer, e.g. `http://192.168.100.26:8070`.
+StepIt UI is part of StepIt Macro, in its folder `ui`: the rig's container builds it into `ui/dist` and serves it on port 8070, see the rig's [README](../README.md). From a tablet on the same network, open port 8070 of the rig's computer, e.g. `http://192.168.100.24:8070`.
 
 The page reaches the rig on the computer that served it:
 
@@ -69,7 +69,7 @@ In a browser tab, the address bar and the tabs take room from the live view, and
 Chrome installs a web app only from a secure origin, https or `localhost`, and the rig serves the page over plain http. On an Android tablet, you tell Chrome once to trust the rig's address:
 
 1. Open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
-2. Enter the rig's address with its port, e.g. `http://192.168.100.26:8070`, set the flag to **Enabled**, and press **Relaunch**.
+2. Enter the rig's address with its port, e.g. `http://192.168.100.24:8070`, set the flag to **Enabled**, and press **Relaunch**.
 3. Open the page, then choose **⋮** → **Install app**.
 
 The flag holds for that address only: if the rig's computer gets another address, add the new one. On a desktop, Chrome installs from `http://localhost:8070` without the flag.
