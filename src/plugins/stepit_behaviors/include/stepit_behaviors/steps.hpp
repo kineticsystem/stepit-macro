@@ -36,7 +36,7 @@ namespace stepit_behaviors
  *
  * Before each iteration it writes the value on the blackboard, through the
  * output port [value], for the child to use, e.g. as the positions of a
- * TrapezoidalTrajectory. The values are either
+ * CommandJointPositions. The values are either
  *
  * - evenly spaced from [start] to [end], [count] of them, both ends included:
  *   start and end are a number, or a list with one per joint, and every value is

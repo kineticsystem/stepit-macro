@@ -12,9 +12,9 @@
       "{target_tree: OffsetJointsDirectlyBy,
         payload: '{joints: [joint1, joint2], offset: -6.28}'}"
 
-  It is the direct counterpart of OffsetJointsBy, which plans a trajectory and
-  sends it to the trajectory controller. The offset carries its own sign: it is
-  negative when the StepIt motors turn clockwise. The joints are not
+  Nothing is planned on the computer: the microcontroller plans each move. The
+  offset carries its own sign: it is negative when the StepIt motors turn
+  clockwise. The joints are not
   synchronised, each one runs its own profile, and the limits are those of the
   motors.
 

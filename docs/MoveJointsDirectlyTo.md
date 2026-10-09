@@ -3,8 +3,7 @@
 [`move_joints_directly_to.xml`](../src/plugins/stepit_objectives/objectives/move_joints_directly_to.xml)
 moves the joints **to** the given positions through the position controller:
 the microcontroller plans each move itself, on its own trapezoid, as fast as the
-motors allow. It is the direct counterpart of [`MoveJointsTo`](MoveJointsTo.md),
-which plans a trajectory and sends it to the trajectory controller.
+motors allow.
 
 | Parameter | Required | Meaning |
 |---|---|---|
@@ -35,8 +34,8 @@ at speed cannot stop there, it brakes past it and comes back. After a cancel no
 controller drives the robot, until the next objective activates the one it
 needs, as every motion objective does first.
 
-Why a second way to move: through the trajectory controller, two planners run
-one after the other. The controller sends a new setpoint every cycle, 30 times a
+Why not the trajectory controller: through it, two planners run one after the
+other. The controller sends a new setpoint every cycle, 30 times a
 second, and the microcontroller plans a trapezoid to each one as if it were the
 last, so the motors trail the plan and settle only after it ends, some 0.6 s
 after a long move. Here there is a single planner, the microcontroller's, which
@@ -46,7 +45,8 @@ What it costs:
 
 - **The joints are not synchronised.** Each one runs its own profile at the
   limits of the motors, so a long and a short move started together end at
-  different times. `MoveJointsTo` makes them arrive together.
+  different times. A trajectory, sent with `FollowJointTrajectory`, would make
+  them arrive together.
 - **The limits are those of the motors.** The position controller carries no
   speed, so there is no `max_velocity` nor `max_acceleration`.
 - **Every joint of the controller is commanded.** The position controller takes

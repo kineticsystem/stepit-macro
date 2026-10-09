@@ -58,7 +58,7 @@ three top scripts run last; it builds into `ui/dist`, which the rig serves.
 ~/ws/bin/plugins/test.sh    # on ROS domain 77 (or STEPIT_TEST_DOMAIN_ID): never a plain colcon test
 ros2 action send_goal /commander/execute_objective \
   btcpp_ros2_interfaces/action/ExecuteTree \
-  "{target_tree: OffsetJointsBy, payload: '{joints: [joint1], offset: -6.28}'}"
+  "{target_tree: OffsetJointsDirectlyBy, payload: '{joints: [joint1], offset: -6.28}'}"
 ```
 
 **Configuration.** `rig.yaml` has a section `launch`, the launch arguments of each module's launch
@@ -174,14 +174,13 @@ position and a velocity interface, so the controller manager would leave both co
 active. These are measured constraints, not preferences — see `docs/ActivateController.md`
 before changing them.
 
-**Motion** is built in two steps: a node writes a `trajectory_msgs/JointTrajectory` to the
-blackboard, and `FollowJointTrajectory` sends it to the trajectory controller. Every objective
-that moves uses `TrapezoidalTrajectory` (as fast as the limits allow, 90% of the motors' by
-default); `CubicTrajectory` (one waypoint after a given duration) is kept for a timed move.
-The direct objectives, `MoveJointsDirectlyTo` and `OffsetJointsDirectlyBy`, skip the trajectory:
-`CommandJointPositions` sends every joint of `position_controller` its target (the others where
+**Motion** goes through `position_controller`: every objective that moves uses
+`CommandJointPositions`, which sends every joint of the controller its target (the others where
 they are) and waits on `/joint_states` until the moved ones have arrived and stopped, so the
-microcontroller plans each move alone. Faster, not synchronised. A halt deactivates
+microcontroller plans each move alone, with the motors' own limits. Fast, not synchronised.
+`FollowJointTrajectory` sends a `trajectory_msgs/JointTrajectory` from the blackboard to the
+trajectory controller, and `CubicTrajectory` builds one waypoint reached after a given duration:
+no objective uses them today; they are kept for a synchronised or timed move. A halt deactivates
 `position_controller` (asynchronously), and `StepitHardware` sends velocity 0 to the released
 joints; never stop by sending the current positions, a moving joint brakes past them and comes back.
 Velocity 0, from a release or from `/velocity_controller/commands`, is a smooth stop: the firmware

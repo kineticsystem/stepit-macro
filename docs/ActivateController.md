@@ -24,10 +24,10 @@ ActivateController                        (the objective: reads the payload)
 The objective itself is only an adapter: it forwards `{@controllers}` from the
 payload into the `EnsureControllers` subtree, which holds the actual work. Any
 objective that needs a given controller calls the same subtree with a fixed
-name, as [`OffsetJointsBy`](OffsetJointsBy.md) does:
+name, as [`FocusStack`](FocusStack.md) does:
 
 ```xml
-<SubTree ID="EnsureControllers" controllers="joint_trajectory_controller"/>
+<SubTree ID="EnsureControllers" controllers="position_controller"/>
 ```
 
 The tree first asks the controller manager which controllers are running, and

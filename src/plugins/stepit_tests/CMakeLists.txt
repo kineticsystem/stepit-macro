@@ -45,11 +45,17 @@ if(BUILD_TESTING)
     stepit_behaviors::stepit_behaviors
     ${trajectory_msgs_TARGETS})
 
-  # The fastest trajectory the limits allow.
-  ament_add_gtest(test_trapezoidal_trajectory tests/test_trapezoidal_trajectory.cpp)
-  target_link_libraries(test_trapezoidal_trajectory
+  # Following a trajectory through the trajectory controller, against a fake robot.
+  ament_add_gtest(test_follow_joint_trajectory tests/test_follow_joint_trajectory.cpp)
+  target_include_directories(test_follow_joint_trajectory PRIVATE tests)
+  target_link_libraries(test_follow_joint_trajectory
+    ament_index_cpp::ament_index_cpp
     stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
     rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${control_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
   # Reading the joint positions, against a fake robot.
@@ -91,33 +97,6 @@ if(BUILD_TESTING)
     NODES_MODEL_FILE="${CMAKE_CURRENT_SOURCE_DIR}/../stepit_objectives/objectives/stepit_behaviors.xml")
 
   # The objectives, run end to end against a fake robot.
-  ament_add_gtest(test_offset_joints_by_objective tests/test_offset_joints_by_objective.cpp)
-  target_include_directories(test_offset_joints_by_objective PRIVATE tests)
-  target_link_libraries(test_offset_joints_by_objective
-    ament_index_cpp::ament_index_cpp
-    stepit_behaviors::stepit_behaviors
-    stepit_server::stepit_server
-    rclcpp::rclcpp
-    rclcpp_action::rclcpp_action
-    ${control_msgs_TARGETS}
-    ${controller_manager_msgs_TARGETS}
-    ${sensor_msgs_TARGETS}
-    ${trajectory_msgs_TARGETS})
-
-  ament_add_gtest(test_move_joints_to_objective
-    tests/test_move_joints_to_objective.cpp)
-  target_include_directories(test_move_joints_to_objective PRIVATE tests)
-  target_link_libraries(test_move_joints_to_objective
-    ament_index_cpp::ament_index_cpp
-    stepit_behaviors::stepit_behaviors
-    stepit_server::stepit_server
-    rclcpp::rclcpp
-    rclcpp_action::rclcpp_action
-    ${control_msgs_TARGETS}
-    ${controller_manager_msgs_TARGETS}
-    ${sensor_msgs_TARGETS}
-    ${trajectory_msgs_TARGETS})
-
   ament_add_gtest(test_stack_objective
     tests/test_stack_objective.cpp
     TIMEOUT 300)
