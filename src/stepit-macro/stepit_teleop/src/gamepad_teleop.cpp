@@ -33,6 +33,9 @@ constexpr auto kCommanderAction = "/commander/execute_objective";
 /// @brief How long a switch may take before the stop button is allowed to ask again.
 constexpr std::chrono::seconds kSwitchTimeout{ 5 };
 
+/// @brief How often the status is published, even when it does not change.
+constexpr std::chrono::seconds kStatusPeriod{ 1 };
+
 bool isMoving(const std::vector<double>& velocities)
 {
   return std::any_of(velocities.cbegin(), velocities.cend(), [](double v) { return v != 0.0; });
@@ -82,6 +85,15 @@ GamepadTeleop::GamepadTeleop(const rclcpp::NodeOptions& options) : rclcpp::Node(
       kJoyTopic, 10, [this](const sensor_msgs::msg::Joy::SharedPtr msg) { onJoy(*msg); });
   commander_ = rclcpp_action::create_client<ExecuteTree>(this, kCommanderAction);
   watchdog_ = create_wall_timer(std::chrono::milliseconds{ 100 }, [this]() { onWatchdog(); });
+
+  device_ = declare_parameter<std::string>("device", "");
+  if (!device_.empty())
+  {
+    status_publisher_ = create_publisher<stepit_teleop_msgs::msg::GamepadStatus>(
+        "~/status", rclcpp::QoS{ 1 }.reliable().transient_local());
+    publishStatus();
+    status_timer_ = create_wall_timer(std::chrono::milliseconds{ 100 }, [this]() { onStatusTimer(); });
+  }
 }
 
 void GamepadTeleop::onJoy(const sensor_msgs::msg::Joy& msg)
@@ -116,6 +128,27 @@ void GamepadTeleop::onWatchdog()
                 std::chrono::duration<double>{ joy_timeout_ }.count());
     publish(std::vector<double>(joints_.size(), 0.0));
   }
+}
+
+void GamepadTeleop::onStatusTimer()
+{
+  const bool connected = last_joy_ && now() - *last_joy_ <= rclcpp::Duration{ joy_timeout_ };
+  if (connected != connected_ || !last_status_ || now() - *last_status_ >= rclcpp::Duration{ kStatusPeriod })
+  {
+    connected_ = connected;
+    publishStatus();
+  }
+}
+
+void GamepadTeleop::publishStatus()
+{
+  stepit_teleop_msgs::msg::GamepadStatus status;
+  status.stamp = now();
+  status.connected = connected_;
+  status.device = device_;
+  status.message = connected_ ? "" : "No gamepad on " + device_;
+  status_publisher_->publish(status);
+  last_status_ = status.stamp;
 }
 
 void GamepadTeleop::publish(const std::vector<double>& velocities)

@@ -25,6 +25,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,6 +37,7 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <stepit_teleop/gamepad_teleop.hpp>
+#include <stepit_teleop_msgs/msg/gamepad_status.hpp>
 
 #include "fake/fake_commander.hpp"
 
@@ -47,6 +49,8 @@ using stepit_teleop::JointAxis;
 using stepit_teleop::toVelocities;
 
 constexpr auto kStopButton = 1;
+constexpr auto kDevice = "/dev/input/js9";
+using GamepadStatus = stepit_teleop_msgs::msg::GamepadStatus;
 
 /// @brief Wait until the condition holds, or two seconds have passed.
 bool waitFor(const std::function<bool()>& condition)
@@ -95,7 +99,8 @@ protected:
                                   { "joint2.axis", 3 },
                                   { "joint2.scale", -1.0 },
                                   { "stop_button", kStopButton },
-                                  { "joy_timeout", 0.3 } });
+                                  { "joy_timeout", 0.3 },
+                                  { "device", kDevice } });
     teleop_ = std::make_shared<stepit_teleop::GamepadTeleop>(options);
 
     node_ = std::make_shared<rclcpp::Node>("stepit_tests_gamepad");
@@ -106,6 +111,12 @@ protected:
           commands_.push_back(msg->data);
         });
     client_ = rclcpp_action::create_client<FakeCommander::ExecuteTree>(node_, "/commander/execute_objective");
+    status_subscription_ = node_->create_subscription<GamepadStatus>("/gamepad_teleop/status",
+                                                                     rclcpp::QoS{ 1 }.reliable().transient_local(),
+                                                                     [this](const GamepadStatus::SharedPtr msg) {
+                                                                       const std::lock_guard<std::mutex> lock{ mutex_ };
+                                                                       statuses_.push_back(*msg);
+                                                                     });
 
     // Created here, after rclcpp::init: an executor needs the context.
     executor_ = std::make_unique<rclcpp::executors::MultiThreadedExecutor>();
@@ -144,6 +155,29 @@ protected:
     return commands_;
   }
 
+  std::vector<GamepadStatus> statuses() const
+  {
+    const std::lock_guard<std::mutex> lock{ mutex_ };
+    return statuses_;
+  }
+
+  std::optional<GamepadStatus> lastStatus() const
+  {
+    const auto all = statuses();
+    return all.empty() ? std::nullopt : std::optional<GamepadStatus>{ all.back() };
+  }
+
+  /// @brief Send /joy as joy_linux_node does for an open gamepad, 20 times a second, for the given time.
+  void sendJoyFor(std::chrono::milliseconds duration)
+  {
+    const auto end = std::chrono::steady_clock::now() + duration;
+    while (std::chrono::steady_clock::now() < end)
+    {
+      sendJoy({ 0.0F, 0.0F, 0.0F, 0.0F });
+      std::this_thread::sleep_for(std::chrono::milliseconds{ 50 });
+    }
+  }
+
   /// @brief Whether the commander was asked to hand the robot to the gamepad.
   bool activated() const
   {
@@ -166,6 +200,8 @@ protected:
 
   mutable std::mutex mutex_;
   std::vector<std::vector<double>> commands_;
+  rclcpp::Subscription<GamepadStatus>::SharedPtr status_subscription_;
+  std::vector<GamepadStatus> statuses_;
 
   std::unique_ptr<rclcpp::executors::MultiThreadedExecutor> executor_;
   std::thread spinner_;
@@ -240,6 +276,46 @@ TEST_F(GamepadTeleopTest, TheJointsStopWhenTheGamepadGoesSilent)
   EXPECT_EQ(commands().back(), (std::vector<double>{ 2.0, 0.0 }));
 
   ASSERT_TRUE(waitFor([this]() { return commands().back() == std::vector<double>{ 0.0, 0.0 }; }));
+}
+
+// Before /joy comes, the gamepad is not there, and the status says so.
+TEST_F(GamepadTeleopTest, TheStatusSaysThereIsNoGamepadUntilJoyComes)
+{
+  ASSERT_TRUE(waitFor([this]() { return lastStatus().has_value(); }));
+  EXPECT_FALSE(lastStatus()->connected);
+  EXPECT_EQ(lastStatus()->device, kDevice);
+  EXPECT_EQ(lastStatus()->message, std::string{ "No gamepad on " } + kDevice);
+}
+
+// An untouched gamepad still sends /joy, repeated by joy_linux_node; an unplugged one does not.
+TEST_F(GamepadTeleopTest, TheStatusFollowsTheGamepad)
+{
+  sendJoyFor(std::chrono::milliseconds{ 400 });
+  ASSERT_TRUE(waitFor([this]() { return lastStatus() && lastStatus()->connected; }));
+  EXPECT_EQ(lastStatus()->message, "");
+
+  // Unplugged: /joy stops, and the status turns once joy_timeout, 0.3 s, has passed.
+  ASSERT_TRUE(waitFor([this]() { return lastStatus() && !lastStatus()->connected; }));
+
+  sendJoyFor(std::chrono::milliseconds{ 300 });
+  EXPECT_TRUE(waitFor([this]() { return lastStatus() && lastStatus()->connected; }));
+}
+
+// The status comes every second, so that a page knows the node still runs.
+TEST_F(GamepadTeleopTest, TheStatusIsPublishedEverySecond)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds{ 2500 });
+  EXPECT_GE(statuses().size(), 3U);
+}
+
+// Without a device, e.g. the sliders of StepIt UI, the node has no status.
+TEST_F(GamepadTeleopTest, WithoutADeviceThereIsNoStatus)
+{
+  rclcpp::NodeOptions options;
+  options.arguments({ "--ros-args", "-r", "__node:=sliders", "-r", "/joy:=/sliders/joy" });
+  const auto sliders = std::make_shared<stepit_teleop::GamepadTeleop>(options);
+  std::this_thread::sleep_for(std::chrono::milliseconds{ 300 });
+  EXPECT_EQ(node_->count_publishers("/sliders/status"), 0U);
 }
 
 }  // namespace stepit_tests

@@ -57,7 +57,9 @@ def generate_launch_description():
                         "dev": LaunchConfiguration("dev"),
                         "deadzone": 0.1,
                         # Repeat the state while nothing changes, so that
-                        # gamepad_teleop can tell a held stick from a lost gamepad.
+                        # gamepad_teleop can tell a held stick from a lost gamepad,
+                        # and an untouched gamepad from an unplugged one on its
+                        # ~/status.
                         "autorepeat_rate": 20.0,
                     }
                 ],
@@ -66,7 +68,11 @@ def generate_launch_description():
                 package="stepit_teleop",
                 executable="gamepad_teleop",
                 name="gamepad_teleop",
-                parameters=[LaunchConfiguration("config")],
+                # The device names the gamepad on ~/status.
+                parameters=[
+                    LaunchConfiguration("config"),
+                    {"device": LaunchConfiguration("dev")},
+                ],
             ),
         ]
     )

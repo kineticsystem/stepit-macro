@@ -160,6 +160,12 @@ sequenceDiagram
 
 **If the gamepad goes silent, the joints stop.** `joy_linux_node` repeats its message 20 times a second even when nothing changes. When no message comes for `joy_timeout`, e.g. because the gamepad was unplugged with a stick pushed, the node sends velocity 0 once, and the joints brake to a stop.
 
+**The node tells whether the gamepad is plugged in** on `/gamepad_teleop/status` (`stepit_teleop_msgs/msg/GamepadStatus`), which StepIt UI shows as the gamepad's icon in its top bar. The same repeat tells it: `/joy` coming means a gamepad is open, touched or not, and no message for `joy_timeout` means it was unplugged. The status says which device it reads, and `No gamepad on /dev/input/js0` when there is none. It keeps its last message for a client that subscribes late, and comes again every second, so that a client that stops receiving it knows the node has stopped. A wireless gamepad shows as plugged in while its receiver is, even switched off.
+
+```
+ros2 topic echo /gamepad_teleop/status --qos-durability transient_local
+```
+
 > [!WARNING]
 > The stop button is not an emergency stop. It goes through ROS, the commander and the controller manager: if the commander is not running, the button only sends velocity 0, which stops nothing but the velocity controller. An emergency stop must cut the power of the motors.
 
@@ -175,7 +181,8 @@ The parameters of the node `gamepad_teleop` are in [`config/logitech_dual_action
 | `joints` | `[joint1, joint2, joint3, joint4, joint5]` | The joints of the controller, in the order of its configuration in the driver's `controllers.yaml`: the controller takes one velocity per joint, by position. |
 | `<joint>.axis` | `-1` | The index of the axis that drives the joint. A joint with no axis is held at 0. |
 | `<joint>.scale` | `0.0` | The velocity of the joint at full deflection, in rad/s. A negative scale reverses the direction. |
-| `joy_timeout` | `0.5` | The time without a message on `/joy`, in seconds, after which the joints are stopped. |
+| `joy_timeout` | `0.5` | The time without a message on `/joy`, in seconds, after which the joints are stopped and the gamepad counts as unplugged. |
+| `device` | empty | The joystick device, which names the gamepad on `~/status`; empty publishes no status, as for `ui_teleop`, the sliders of StepIt UI. `teleop.launch.py` sets it from `dev`. |
 
 The configuration maps the joints as follows; the motors allow up to 18.85 rad/s, 3 turns/s:
 
@@ -193,10 +200,10 @@ A stick pushed up, or left, is positive: `joy_linux_node` turns the Linux joysti
 
 | Argument | Default | Description |
 |---|---|---|
-| `dev` | `/dev/input/js0` | The joystick device of the gamepad. |
+| `dev` | `/dev/input/js0` | The joystick device of the gamepad, read by `joy_linux_node` and named by `gamepad_teleop` on its status. |
 | `config` | the installed `logitech_dual_action.yaml` | The parameters of `gamepad_teleop`. |
 
-`joy_linux_node` runs with a dead zone of `0.1`, so that a stick at rest reads exactly 0, and repeats its message 20 times a second.
+`joy_linux_node` runs with a dead zone of `0.1`, so that a stick at rest reads exactly 0, and repeats its message 20 times a second: without the repeat, an untouched gamepad would look unplugged.
 
 ## Another Gamepad
 
@@ -214,7 +221,7 @@ The numbers are those of the Linux joystick interface, which `jstest-gtk` and `j
 
 **The log says `The commander is not running`.** The button found no commander to run `ToggleTeleop`. The commander runs in the rig: look at `./docker/dock.sh logs` for why it stopped.
 
-**The log says `Couldn't open joystick /dev/input/js0`.** The gamepad is not plugged in, or it is not the first joystick. `ls /dev/input/js*` on the host lists the joysticks; pass another one with the launch argument `dev`.
+**The log says `Couldn't open joystick /dev/input/js0`, and the gamepad's icon in StepIt UI is red.** The gamepad is not plugged in, or it is not the first joystick. `joy_linux_node` tries again every second, so a gamepad plugged in later works, and turns its icon green, with no restart. `ls /dev/input/js*` on the host lists the joysticks; pass another one with the launch argument `dev`.
 
 **The log says `ToggleTeleop failed`.** The objective could not switch the controllers, e.g. because the driver is not running; `./docker/dock.sh logs` says why.
 

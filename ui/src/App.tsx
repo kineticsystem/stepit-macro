@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { followCamera } from './camera/store';
 import { followCommander } from './commander/store';
-import { ConnectionBadge } from './components/ConnectionBadge';
+import { followDevices } from './devices/store';
+import { DeviceStatus } from './components/DeviceStatus';
 import { LiveView } from './components/LiveView';
 import { RailMark } from './components/RailMark';
 import { RailIcon, RotateIcon } from './components/icons';
@@ -26,6 +27,7 @@ export function App() {
   useEffect(() => {
     const stops = [
       followCommander(), followCamera(), followLights(), followMotion(), followStack(), followPictures(), followPower(),
+      followDevices(),
     ];
     return () => stops.forEach((stop) => stop());
   }, []);
@@ -36,7 +38,7 @@ export function App() {
         <span className="brand">StepIt Macro</span>
         <TaskStatus />
         <span className="row-spacer" />
-        <ConnectionBadge />
+        <DeviceStatus />
         <SettingsMenu />
       </header>
       <main className="page">

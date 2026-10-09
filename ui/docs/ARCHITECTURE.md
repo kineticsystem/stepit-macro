@@ -120,8 +120,8 @@ The source code lives in [`src`](../src), one folder per device of the rig, plus
 |---|---|---|
 | Transport | [`ros/rosbridge.ts`](../src/ros/rosbridge.ts) | The rosbridge protocol. Nothing of the rig. |
 | Connection | [`ros/connection.ts`](../src/ros/connection.ts), [`settings.ts`](../src/settings.ts) | The one connection of the page, its status, and where the servers are. |
-| Interfaces and logic | [`commander/commander.ts`](../src/commander/commander.ts), [`camera/camera.ts`](../src/camera/camera.ts), [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts), [`camera/format.ts`](../src/camera/format.ts), [`freezer/outputs.ts`](../src/freezer/outputs.ts), [`shot/pictures.ts`](../src/shot/pictures.ts), [`stack/plan.ts`](../src/stack/plan.ts), [`stack/parameters.ts`](../src/stack/parameters.ts), [`motion/axis.ts`](../src/motion/axis.ts), [`motion/joy.ts`](../src/motion/joy.ts), [`power/power.ts`](../src/power/power.ts) | The ROS interface of one module, given a `Rosbridge`, or pure computation. No React, no store, no global. |
-| State | [`commander/store.ts`](../src/commander/store.ts), [`camera/store.ts`](../src/camera/store.ts), [`shot/store.ts`](../src/shot/store.ts), [`stack/store.ts`](../src/stack/store.ts), [`freezer/lights.ts`](../src/freezer/lights.ts), [`motion/store.ts`](../src/motion/store.ts), [`power/store.ts`](../src/power/store.ts) | One zustand store per device: what the page shows, and the actions the views call. |
+| Interfaces and logic | [`commander/commander.ts`](../src/commander/commander.ts), [`camera/camera.ts`](../src/camera/camera.ts), [`camera/picture.ts`](../src/camera/picture.ts), [`camera/raw.ts`](../src/camera/raw.ts), [`camera/format.ts`](../src/camera/format.ts), [`freezer/outputs.ts`](../src/freezer/outputs.ts), [`shot/pictures.ts`](../src/shot/pictures.ts), [`stack/plan.ts`](../src/stack/plan.ts), [`stack/parameters.ts`](../src/stack/parameters.ts), [`motion/axis.ts`](../src/motion/axis.ts), [`motion/joy.ts`](../src/motion/joy.ts), [`power/power.ts`](../src/power/power.ts), [`devices/devices.ts`](../src/devices/devices.ts) | The ROS interface of one module, given a `Rosbridge`, or pure computation. No React, no store, no global. |
+| State | [`commander/store.ts`](../src/commander/store.ts), [`camera/store.ts`](../src/camera/store.ts), [`shot/store.ts`](../src/shot/store.ts), [`stack/store.ts`](../src/stack/store.ts), [`freezer/lights.ts`](../src/freezer/lights.ts), [`motion/store.ts`](../src/motion/store.ts), [`power/store.ts`](../src/power/store.ts), [`devices/store.ts`](../src/devices/store.ts) | One zustand store per device: what the page shows, and the actions the views call. |
 | Views | [`components`](../src/components), [`App.tsx`](../src/App.tsx) | What the user sees and does. |
 
 The dependencies are meant to point down only. The diagram shows the imports as they are; the dashed arrows skip the layer of interfaces, see [Are the Layers Respected?](#are-the-layers-respected).
@@ -183,7 +183,7 @@ config:
 ---
 flowchart TD
     Views["Views<br/>components, App.tsx"]
-    Stores["State<br/>commander, camera, shot, stack, lights, motion, power"]
+    Stores["State<br/>commander, camera, shot, stack, lights, motion, power, devices"]
     Interfaces["Interfaces and logic<br/>commander.ts, camera.ts, picture.ts, joy.ts, outputs.ts…"]
     Connection["Connection<br/>connection.ts, settings.ts"]
     Transport["Transport<br/>rosbridge.ts"]
@@ -243,6 +243,7 @@ A store that follows a topic subscribes through `ros()`, and subscribes again on
 | The controller manager | in the store, [`motion/store.ts`](../src/motion/store.ts) | `/controller_manager/list_controllers`, every 2 s. |
 | ui_teleop | [`motion/joy.ts`](../src/motion/joy.ts), `JoyPublisher` | `sensor_msgs/Joy` on `/ui/joy`, at 20 Hz while a slider is held. |
 | power_off | [`power/power.ts`](../src/power/power.ts) | `/power_off/power_off`, `std_srvs/Trigger`: switches the rig's computer off, or says why not. |
+| The devices | [`devices/devices.ts`](../src/devices/devices.ts) | The status of each device, from its own module: `/motors/status` (StepIt Motors), `/freezer/status` (StepIt Freezer), `<camera node>/status` (StepIt Camera), `/gamepad_teleop/status` (the rig's `stepit_teleop`), each transient local, on a change and every second. A device whose node says nothing for 3.5 s, `SILENCE_MS`, counts as gone. |
 
 ## The Stores
 
@@ -257,6 +258,7 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useMotion` | `enabled` (the velocity controller runs), the axes; `enable()`, `disable()`, `setAxis()`, `release()` | `followMotion`: lists the controllers every 2 s; lets the sliders go when the page is hidden | `useCommander` |
 | `useStack` | the rail's marks, the counts and the stage's turn either way, from the rig's `stack_state`; `marking`, `progress`, from the rig; `setPlan()`, which sets the counts on the rig, `mark()`, `goToMark()`, `start()`; `flashed`, the end just marked. Nothing in `localStorage`; the payload and the checks are in [`stack/plan.ts`](../src/stack/plan.ts), the parameters in [`stack/parameters.ts`](../src/stack/parameters.ts), which the tests import | `followStack`: reads the `state.*` of `stack_state` on every connection, which declares them all, an empty list for a mark not made, follows `/parameter_events` and the latched `/focus_stack/progress` | `useCommander`, `useCamera` |
 | `usePower` | `switchingOff`, `failure`, `hint`; `switchOff()`, `showHint()` | `followPower`: a new connection is a rig on again, which clears them | — |
+| `useDevices` | the last status of each device and when it came, `since` (when the page connected), `now`, ticking every 0.5 s to see a node gone silent | `followDevices`: the four status topics, again on every connection and when the camera node of the settings changes | `useSettings` |
 | `useSettings` | the preferences of the browser, in `localStorage` | — | — |
 
 ```mermaid
@@ -487,7 +489,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | Component | Where | Responsibility | Reads |
 |---|---|---|---|
 | [`TaskStatus`](../src/components/TaskStatus.tsx) | Top bar | The task that runs, and why the last one of this page failed; before them, *Switching off…*, why the rig refused to, or the hint to hold the power button. | `useCommander`, `usePower` |
-| [`ConnectionBadge`](../src/components/ConnectionBadge.tsx) | Top bar | Whether the page reaches rosbridge. | `useStatus`, `useSettings` |
+| [`DeviceStatus`](../src/components/DeviceStatus.tsx) | Top bar | First, the link to the rig: whether the page reaches rosbridge, green, orange while connecting, red and struck through when disconnected. It says nothing of the devices, as rosbridge runs on while a device is lost, so an icon per device follows, camera, motors, Freezer and gamepad: green when its node talks to it, red and struck through when it does not or its node is silent, grey when the page cannot tell. A tap tells why, as a tablet has no tooltip. | `useDevices`, `useStatus`, `useSettings` |
 | [`SettingsMenu`](../src/components/SettingsMenu.tsx) | Top bar | On three tabs: the camera's settings, the theme, the servers; under them, `PowerButton`. | `useSettings` |
 | [`PowerButton`](../src/components/PowerButton.tsx) | Settings menu, under the tabs | Switches the rig off: hold for 3 seconds, `POWER_HOLD_MS`, with [`hold.ts`](../src/components/hold.ts), filling in red; off while disconnected or any objective runs, saying why under it, as a tablet has no tooltip. Away from the top bar, next to which a thumb reaches for Mark. | `useStatus`, `useCommander`, `usePower` |
 | [`CameraSettings`](../src/components/CameraSettings.tsx) | Settings menu | One list per setting of the camera, locked while a task runs. | `useCamera`, `useCommander` |
@@ -517,6 +519,7 @@ The screen is laid out in [`App.tsx`](../src/App.tsx): the top bar, a slider at 
 | `stack.test.ts` | The plan of a focus stack: its payload, the stage's angles, and why it cannot run. |
 | `stackParameters.test.ts` | The stack as `stack_state` keeps it: its parameters read, an empty mark read as not marked, a count saved. |
 | `hold.test.ts` | A press told apart: a tap, a hold, a press abandoned. |
+| `devices.test.ts` | The state of a device from its last status and the clock, its text and the connection's, and the subscriptions to the four status topics. |
 
 Every test is of the transport or of the layer of interfaces and logic. **No store is tested**, and no component: importing a store imports `settings.ts`, which touches `window` at import time and fails in Node.js. The flows that cross several stores, a shot, manual drive, a reconnection, are only checked by hand on the rig.
 
@@ -592,8 +595,8 @@ Each component can still be changed alone; what cannot is a rule that spans them
 | What | Where | Weight |
 |---|---|---|
 | **The rosbridge client and the camera's code, copied across modules.** | `ros/rosbridge.ts` exists in StepIt Camera's test page, StepIt Freezer's board page and here, each different (121 and 370 lines of `diff` against this one). `camera/format.ts` is an identical copy; `camera/raw.ts` differs by one function, `camera/camera.ts` by 34 lines, `camera/picture.ts` by 21. | High: the fixes do not travel. This page reads the size of a picture first, to step around cpp-httplib 0.14; the camera's test page still reads 64 KB from the start of every file, the case that fails for a small JPEG. |
-| Following a topic across connections: subscribe, then again on every `onConnected`. | `followCommander`, `followLights`, `followPictures`; `followStack` does not. | High: one store forgot it, see issue 2, and the others overlap the client's own re-subscription, see issue 3. |
-| The QoS of a latched topic, `reliable`, `transient_local`, `keep_last`, 1. | Twice in [`commander.ts`](../src/commander/commander.ts), in [`lights.ts`](../src/freezer/lights.ts) and [`stack/store.ts`](../src/stack/store.ts). | Low. |
+| Following a topic across connections: subscribe, then again on every `onConnected`. | `followCommander`, `followLights`, `followPictures`, `followDevices`; `followStack` does not. | High: one store forgot it, see issue 2, and the others overlap the client's own re-subscription, see issue 3. |
+| The QoS of a latched topic, `reliable`, `transient_local`, `keep_last`, 1. | Twice in [`commander.ts`](../src/commander/commander.ts), in [`lights.ts`](../src/freezer/lights.ts), [`stack/store.ts`](../src/stack/store.ts) and [`devices.ts`](../src/devices/devices.ts). | Low. |
 | `connected`, `busy` in the views. | Six files, see above. | Medium. |
 | The values of the rig. | `SLIDERS`, `STATE`, see above. | Medium: kept in step with `rig.yaml` by hand. |
 | The theme: its storage key and how `auto` resolves. | [`index.html`](../index.html), before the first paint, and [`settings.ts`](../src/settings.ts). | Low, and deliberate. |

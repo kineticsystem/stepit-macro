@@ -24,6 +24,7 @@
   <test_depend>std_msgs</test_depend>
   <test_depend>stepit_bringup</test_depend>
   <test_depend>stepit_teleop</test_depend>
+  <test_depend>stepit_teleop_msgs</test_depend>
   <test_depend>stepit_power</test_depend>
   <test_depend>stepit_state</test_depend>
   <test_depend>std_srvs</test_depend>

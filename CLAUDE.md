@@ -81,7 +81,10 @@ objective needs it, not because the UI uses it. The sliders never publish veloci
 sends `sensor_msgs/Joy` on `/ui/joy` at 20 Hz while one is held, and `ui_teleop`, a second
 `gamepad_teleop` (section `ui_teleop` of `rig.yaml`), turns it into velocities and stops the joints
 when it stops coming for 0.5 s; never bypass that watchdog. Every page uses the commander's
-rosbridge (9090): it knows every message of the rig. The image is `ros:jazzy-ros-base` (amd64 and
+rosbridge (9090): it knows every message of the rig. The icons of the top bar show whether each
+device is connected, from the status topic its own module publishes, latched and every second:
+`/motors/status`, `/camera/status`, `/freezer/status`, and `/gamepad_teleop/status` from the
+rig's own `gamepad_teleop`; the hardware of the robot is therefore named `motors`. The image is `ros:jazzy-ros-base` (amd64 and
 arm64, for the Raspberry Pi 5), not a desktop image: rosdep installs the rest, RViz included.
 
 The commander loads the folders listed in the section `stepit_server` of `rig.yaml`,
@@ -108,6 +111,7 @@ tests go in `stepit_macro_tests`. A new program needs a launch file, an entry in
 | Package | Rule |
 |---|---|
 | `stepit_bringup` | `rig.launch.py` and `config/rig.yaml`: the only place the rig starts and configures the modules. Installed as links (`--symlink-install`): the launch file finds the repo from its source. |
+| `stepit_teleop_msgs` | `GamepadStatus`, of `/gamepad_teleop/status`. The rig's programs build on ROS alone, without `stepit_macro_msgs` of `src/plugins`: their messages go in a package of their own here. |
 | `stepit_teleop` | The gamepad (`gamepad_teleop`): sticks to `/velocity_controller/commands`; stop button to the objective named by its `objective` parameter, `ToggleTeleop`, which the commander runs in place of the running one: `ActivateTeleop`, or the trajectory controller back when the gamepad already drives the robot. The switching logic lives in that objective, not in the node. See `docs/Gamepad.md`. |
 | `stepit_power` | `power_off`: the service `~/power_off` behind StepIt UI's power button. It switches the computer off with `busctl` (systemd-logind, over the host's `/run/dbus`, mounted by `docker-compose.yml`), refused while any objective runs, as the commander publishes it on `/stepit_server/objective`: stop it first. It names no objective. logind allows it only with `docker/polkit/50-stepit-power-off.rules` installed on the rig's computer: never on a development PC, and never let a test run the real command (tests pass a command of their own). |
 | `stepit_state` | `stack_state`: the state of the rig, its parameters `state.*`. The only writer of the state file. |
