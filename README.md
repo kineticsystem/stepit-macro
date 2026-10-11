@@ -66,6 +66,102 @@ StepIt Macro runs the whole rig with one command, in one Docker container, `step
 
 Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt UI is not: it is the rig's own page, which works only against the rig, and lives in this repo. In the rig, it replaces the test pages of the camera and of the Freezer, which `rig.yaml` turns off. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
 
+The whole system, from the pages to the hardware, and the two projects that use the pictures afterwards:
+
+```mermaid
+---
+config:
+  theme: base
+  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
+  flowchart:
+    padding: 20
+    nodeSpacing: 40
+    rankSpacing: 50
+  class:
+    padding: 16
+  sequence:
+    boxMargin: 12
+    boxTextMargin: 8
+    noteMargin: 28
+    messageMargin: 40
+    actorMargin: 60
+    labelBoxWidth: 56
+    labelBoxHeight: 28
+  themeVariables:
+    primaryColor: "#3b6fb6"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#2c5590"
+    lineColor: "#8b949e"
+    textColor: "#4d86d6"
+    actorBkg: "#3b6fb6"
+    actorBorder: "#2c5590"
+    actorTextColor: "#ffffff"
+    actorLineColor: "#8b949e"
+    signalColor: "#8b949e"
+    signalTextColor: "#4d86d6"
+    noteBkgColor: "#3b6fb6"
+    noteTextColor: "#ffffff"
+    noteBorderColor: "#2c5590"
+    secondaryColor: "#3b6fb6"
+    tertiaryColor: "#3b6fb6"
+    clusterBkg: "transparent"
+    clusterBorder: "#8b949e"
+    titleColor: "#4d86d6"
+    edgeLabelBackground: "#3b6fb6"
+    classText: "#ffffff"
+    labelBoxBkgColor: "#3b6fb6"
+    labelBoxBorderColor: "#2c5590"
+    labelTextColor: "#ffffff"
+    loopTextColor: "#4d86d6"
+    mainBkg: "#3b6fb6"
+    nodeBorder: "#2c5590"
+    nodeTextColor: "#ffffff"
+    secondaryBorderColor: "#2c5590"
+    secondaryTextColor: "#ffffff"
+    tertiaryBorderColor: "#2c5590"
+    tertiaryTextColor: "#ffffff"
+    errorBkgColor: "#3b6fb6"
+    errorTextColor: "#ffffff"
+---
+flowchart TB
+    UI["StepIt UI<br/>tablet, port 8070"]
+    Editor["StepIt Editor<br/>port 8080"]
+
+    subgraph Rig["Raspberry Pi 5: one container"]
+        Commander["StepIt Commander<br/>behavior trees"]
+        Plugin["Rig's behaviors and objectives<br/>src/plugins"]
+        Motors["StepIt Motors<br/>ros2_control"]
+        Camera["StepIt Camera<br/>libgphoto2"]
+        Freezer["StepIt Freezer<br/>driver"]
+    end
+
+    Teensy["Teensy<br/>stepper motors"]
+    Nano["Freezer board<br/>Arduino Nano"]
+    DSLR["Canon 5D Mark II"]
+
+    subgraph After["After the rig"]
+        Stacker["StepIt Stacker<br/>develop, merge, quilt"]
+        Holo["HoloPi<br/>Looking Glass Portrait"]
+    end
+
+    UI -- "objectives" --> Commander
+    Editor -- "edits and runs" --> Commander
+    Commander --- Plugin
+    Plugin --> Motors
+    Plugin --> Freezer
+    Plugin --> Camera
+    Motors -- "serial" --> Teensy
+    Freezer -- "serial" --> Nano
+    Nano -- "shutter jack" --> DSLR
+    Camera -- "USB" --> DSLR
+    Camera -- "pictures" --> Stacker
+    Stacker -- "quilt" --> Holo
+
+    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
+```
+
+The modules run in one container on the rig's Raspberry Pi 5, and each driver owns its hardware: StepIt Motors talks to the Teensy that drives the stepper motors, StepIt Freezer to the Freezer board, which fires the camera through its shutter jack, and StepIt Camera to the camera over USB, to download the pictures. What happens to the pictures is left to other projects, on other computers: [StepIt Stacker](https://github.com/kineticsystem/stepit-stacker) merges each focus stack into one sharp image per angle and makes a hologram of the angles, and [HoloPi](https://github.com/kineticsystem/holo-pi) shows it on a Looking Glass Portrait. The rig needs neither.
+
 ## StepIt UI
 
 [StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.24:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
