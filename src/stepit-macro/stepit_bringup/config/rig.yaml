@@ -157,14 +157,15 @@ freezer:
 # slider are the rail's top speed, the motors' limit, 3 turns/s, and a quarter of
 # it, 0.75 turns/s, for the rotary stage, which the subject turns on. When the
 # page stops sending for joy_timeout seconds during a move, e.g. when the
-# tablet loses the network, the joints stop.
+# tablet loses the network, the joints stop. The rail's motor turns the other
+# way round: its negative scale turns it around, as on the gamepad.
 ui_teleop:
   ros__parameters:
     stop_button: -1  # none: the page runs ActivateTeleop through the commander
     controller: velocity_controller
     joints: [joint1, joint2, joint3, joint4, joint5]
     joint1: { axis: 0, scale: 4.7124 }   # the rotary stage, in rad/s: 0.75 turns/s
-    joint2: { axis: 1, scale: 18.8496 }  # the rail, in rad/s of its motor: 3 turns/s
+    joint2: { axis: 1, scale: -18.8496 }  # the rail, in rad/s of its motor: 3 turns/s
     joint3: { axis: -1, scale: 0.0 }
     joint4: { axis: -1, scale: 0.0 }
     joint5: { axis: -1, scale: 0.0 }

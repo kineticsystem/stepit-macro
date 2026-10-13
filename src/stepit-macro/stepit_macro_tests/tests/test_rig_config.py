@@ -184,7 +184,7 @@ def test_the_ui_sliders_drive_the_stage_at_a_quarter_of_the_rail_speed():
     teleop = parameters["ui_teleop"]["ros__parameters"]
     assert teleop["stop_button"] == -1
     assert teleop["joint1"] == {"axis": 0, "scale": pytest.approx(4.7124, abs=1e-3)}
-    assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(18.8496, abs=1e-3)}
+    assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(-18.8496, abs=1e-3)}
     for joint in ("joint3", "joint4", "joint5"):
         assert teleop[joint]["axis"] == -1
 
