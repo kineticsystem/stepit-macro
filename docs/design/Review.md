@@ -43,8 +43,8 @@ Every finding names the file it rests on. Those marked *verified* were reproduce
   - `StepitHardware` tracks which controller owns each joint, with atomics, and resets commands to NaN when a controller takes a joint;
   - the camera's parameters are read-only where they should be, and its folder parameter refuses `..`.
 - **The state every page shares has one owner**, the node `stack_state`, off the commander's node, whose parameters BehaviorTree.ROS2 watches: see [Background](#background-the-commanders-parameters-and-the-end-of-a-run).
-- **The rules are written down**, in `CLAUDE.md`, with the measurements behind them in `docs/`, e.g. the controller switching in [`ActivateController.md`](docs/ActivateController.md).
-- **The policy lives on the rig.** `TakeShot` fails without a picture, with `ExpectPicture`, as every shot of a stack does, and StepIt UI only shows its result ([`take_shot.xml`](src/plugins/stepit_objectives/objectives/take_shot.xml), [`shot/store.ts`](ui/src/shot/store.ts)).
+- **The rules are written down**, in `CLAUDE.md`, with the measurements behind them in `docs/`, e.g. the controller switching in [`ActivateController.md`](../../docs/ActivateController.md).
+- **The policy lives on the rig.** `TakeShot` fails without a picture, with `ExpectPicture`, as every shot of a stack does, and StepIt UI only shows its result ([`take_shot.xml`](../../src/plugins/stepit_objectives/objectives/take_shot.xml), [`shot/store.ts`](../../ui/src/shot/store.ts)).
 
 The weak points are **between the modules**:
 
@@ -160,17 +160,17 @@ The workspaces are layered in the direction of the dependencies. CI builds `src/
 
 | Interface | Where | Judgement |
 |---|---|---|
-| `stepit_camera::Camera` | [`camera.hpp`](modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera.hpp) | Good. It is pure virtual and documented for threading and errors (`CameraError::isFatal`). `CameraDriver` owns the single thread that libgphoto2 needs, and `run()` marshals calls onto it with a `packaged_task`. One flaw, finding 2: a call that times out stays queued. |
-| `freezer_driver::Driver` | [`driver.hpp`](modules/stepit-freezer/src/freezer_driver/include/freezer_driver/driver.hpp) | Good. One request gives one response. `SynchronizedDriver` adds locking as a decorator. `ShotRunner` knows nothing of ROS, and takes its clock and its sleep, so a test runs a shot instantly on the fake's clock. |
-| `stepit_driver::Driver` | [`driver.hpp`](modules/stepit-motors/src/stepit_driver/include/stepit_driver/driver.hpp) | Good layering under `StepitHardware`. Its methods that write to the serial port are `const`, which forces `FakeDriver` to make its motors `mutable`. Three abstract factories inject one fake. Less defensive than the Freezer's driver, from the same template: see finding 5. |
-| `stepit_server::ProgressReporter` | [`progress.hpp`](modules/stepit-commander/src/stepit_server/include/stepit_server/progress.hpp) | Good. It is header-only, optional (found with `dynamic_cast`), and a plugin needs nothing else of the server. |
-| `stepit_behaviors::RosActionNode` | [`ros_action_node.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/ros_action_node.hpp) | Good. One narrow fix to a third-party base class, in one place, explained. |
-| `stepit_state::StackState` | [`stack_state.hpp`](src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp) | Good. Its interface is the parameter services every ROS node has, so the behaviors and StepIt UI need no type of their own. What it keeps and forgets is configuration, read-only. One executor thread makes it the file's only writer. |
-| `RunCommand` of `stepit_power` | [`power_off.hpp`](src/stepit-macro/stepit_power/include/stepit_power/power_off.hpp) | Good. A `std::function` seam, so no test can switch the computer off. |
-| `Rule` of the editor's validation | [`validate.ts`](modules/stepit-editor/src/shared/validate.ts) | Good. Each check is an object with hooks per level, and adding one means adding it to `RULES`. |
+| `stepit_camera::Camera` | [`camera.hpp`](../../modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera.hpp) | Good. It is pure virtual and documented for threading and errors (`CameraError::isFatal`). `CameraDriver` owns the single thread that libgphoto2 needs, and `run()` marshals calls onto it with a `packaged_task`. One flaw, finding 2: a call that times out stays queued. |
+| `freezer_driver::Driver` | [`driver.hpp`](../../modules/stepit-freezer/src/freezer_driver/include/freezer_driver/driver.hpp) | Good. One request gives one response. `SynchronizedDriver` adds locking as a decorator. `ShotRunner` knows nothing of ROS, and takes its clock and its sleep, so a test runs a shot instantly on the fake's clock. |
+| `stepit_driver::Driver` | [`driver.hpp`](../../modules/stepit-motors/src/stepit_driver/include/stepit_driver/driver.hpp) | Good layering under `StepitHardware`. Its methods that write to the serial port are `const`, which forces `FakeDriver` to make its motors `mutable`. Three abstract factories inject one fake. Less defensive than the Freezer's driver, from the same template: see finding 5. |
+| `stepit_server::ProgressReporter` | [`progress.hpp`](../../modules/stepit-commander/src/stepit_server/include/stepit_server/progress.hpp) | Good. It is header-only, optional (found with `dynamic_cast`), and a plugin needs nothing else of the server. |
+| `stepit_behaviors::RosActionNode` | [`ros_action_node.hpp`](../../src/plugins/stepit_behaviors/include/stepit_behaviors/ros_action_node.hpp) | Good. One narrow fix to a third-party base class, in one place, explained. |
+| `stepit_state::StackState` | [`stack_state.hpp`](../../src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp) | Good. Its interface is the parameter services every ROS node has, so the behaviors and StepIt UI need no type of their own. What it keeps and forgets is configuration, read-only. One executor thread makes it the file's only writer. |
+| `RunCommand` of `stepit_power` | [`power_off.hpp`](../../src/stepit-macro/stepit_power/include/stepit_power/power_off.hpp) | Good. A `std::function` seam, so no test can switch the computer off. |
+| `Rule` of the editor's validation | [`validate.ts`](../../modules/stepit-editor/src/shared/validate.ts) | Good. Each check is an object with hooks per level, and adding one means adding it to `RULES`. |
 | The rig's topics and parameters | `/focus_stack/*`, `state.*`, `/stepit_server/objective` | Weak. Nothing defines them: a C++ publisher and a TypeScript reader agree by convention. |
 
-The behaviors have **no shared abstraction for "a node that listens to a topic"**. `GetJointPositions`, `CommandJointPositions` and `ExpectPicture` each build the same private callback group, single-threaded executor and subscription ([`get_joint_positions.cpp:70`](src/plugins/stepit_behaviors/src/get_joint_positions.cpp), [`command_joint_positions.cpp:95`](src/plugins/stepit_behaviors/src/command_joint_positions.cpp), [`expect_picture.cpp:57`](src/plugins/stepit_behaviors/src/expect_picture.cpp)).
+The behaviors have **no shared abstraction for "a node that listens to a topic"**. `GetJointPositions`, `CommandJointPositions` and `ExpectPicture` each build the same private callback group, single-threaded executor and subscription ([`get_joint_positions.cpp:70`](../../src/plugins/stepit_behaviors/src/get_joint_positions.cpp), [`command_joint_positions.cpp:95`](../../src/plugins/stepit_behaviors/src/command_joint_positions.cpp), [`expect_picture.cpp:57`](../../src/plugins/stepit_behaviors/src/expect_picture.cpp)).
 
 **The error policy of the behaviors is consistent.** A misconfigured or badly typed port **throws** `BT::RuntimeError`; a failure at runtime returns `FAILURE`. The tests pin this down, e.g. `AWrongNumberOfOffsetsAbortsTheObjective` expects a throw. A throw is how a bad payload aborts a goal with a readable message, and the commander ends such a run like any other: see [How a run ends](#how-a-run-ends).
 
@@ -178,35 +178,35 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 
 **Mostly respected.** Each place where knowledge sits in the wrong part:
 
-1. **Robot interfaces in the objectives.** `CLAUDE.md` says that `stepit_behaviors` is "the **only** place the objectives name robot topics, actions and services". Yet the XML names 21 robot topics, services and actions in 11 files: `topic_name="/joint_states"` 7 times, `"/position_controller/commands"` 11 times, the services of the controller manager 3 times; each of these values equals the port's default. The joint list `joint1;…;joint5` appears 25 times in 7 files, 13 of them in [`focus_stack.xml`](src/plugins/stepit_objectives/objectives/focus_stack.xml), and must match `controllers.yaml` of StepIt Motors.
-2. **Objective names in StepIt UI.** The page disables Manual drive by matching `ActivateTeleop` and `ActivateController` ([`Toolbar.tsx:100`](ui/src/components/Toolbar.tsx)), and shows progress only while the objective is `'FocusStack'` ([`StackBar.tsx`](ui/src/components/StackBar.tsx)). A renamed objective breaks the page silently.
-3. **Three of StepIt UI's stores name ROS topics and services themselves**, without an interface module like the commander's or the camera's. Everything goes through rosbridge, but the names sit in the stores: `/freezer/set_outputs` and `/freezer/outputs` in [`lights.ts`](ui/src/freezer/lights.ts), `/controller_manager/list_controllers` in [`motion/store.ts`](ui/src/motion/store.ts), and `/stack_state`'s parameter services, `/parameter_events` and `/focus_stack/progress` in [`stack/store.ts`](ui/src/stack/store.ts). StepIt UI's own review reports it too.
-4. **StackDone reaches into the camera's disk.** It rebuilds the camera's folder path itself, from `pictures_folder`, the folder and `angleFolder(index, degrees)`, then lists the camera's files ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp)). The YAML anchor `&pictures`, and `test_the_commander_writes_into_the_cameras_pictures_folder`, keep the two folders equal. It is still an implicit contract with the camera's layout of files.
+1. **Robot interfaces in the objectives.** `CLAUDE.md` says that `stepit_behaviors` is "the **only** place the objectives name robot topics, actions and services". Yet the XML names 21 robot topics, services and actions in 11 files: `topic_name="/joint_states"` 7 times, `"/position_controller/commands"` 11 times, the services of the controller manager 3 times; each of these values equals the port's default. The joint list `joint1;…;joint5` appears 25 times in 7 files, 13 of them in [`focus_stack.xml`](../../src/plugins/stepit_objectives/objectives/focus_stack.xml), and must match `controllers.yaml` of StepIt Motors.
+2. **Objective names in StepIt UI.** The page disables Manual drive by matching `ActivateTeleop` and `ActivateController` ([`Toolbar.tsx:100`](../../ui/src/components/Toolbar.tsx)), and shows progress only while the objective is `'FocusStack'` ([`StackBar.tsx`](../../ui/src/components/StackBar.tsx)). A renamed objective breaks the page silently.
+3. **Three of StepIt UI's stores name ROS topics and services themselves**, without an interface module like the commander's or the camera's. Everything goes through rosbridge, but the names sit in the stores: `/freezer/set_outputs` and `/freezer/outputs` in [`lights.ts`](../../ui/src/freezer/lights.ts), `/controller_manager/list_controllers` in [`motion/store.ts`](../../ui/src/motion/store.ts), and `/stack_state`'s parameter services, `/parameter_events` and `/focus_stack/progress` in [`stack/store.ts`](../../ui/src/stack/store.ts). StepIt UI's own review reports it too.
+4. **StackDone reaches into the camera's disk.** It rebuilds the camera's folder path itself, from `pictures_folder`, the folder and `angleFolder(index, degrees)`, then lists the camera's files ([`stack_done.cpp`](../../src/plugins/stepit_behaviors/src/stack_done.cpp)). The YAML anchor `&pictures`, and `test_the_commander_writes_into_the_cameras_pictures_folder`, keep the two folders equal. It is still an implicit contract with the camera's layout of files.
 5. **The limits of the motors are known twice.** StepIt Motors makes the controller "the authority on the limits": `StepitHardware` reads them from the firmware at configure time. `ui_teleop`'s `scale` in `rig.yaml` hard-codes the top speed instead, 18.8496 rad/s.
 
 ## SOLID
 
 | Principle | Verdict | Evidence |
 |---|---|---|
-| **Single responsibility** | Good in the rig and in most classes. Strained in two places. | The behaviors are small and do one thing each. `rig.launch.py` is a set of small functions, the Freezer's recipes are pure functions, and `ShotRunner` only runs a shot. Against it: [`freezer_node.cpp`](modules/stepit-freezer/src/freezer_node/src/freezer_node.cpp), 823 lines. It holds the schema of the sequences' parameters, the connection and the reconnect thread, the action server, the watching of the trigger with its reconciliation of shot ids, and the outputs, behind about 15 synchronisation fields. |
+| **Single responsibility** | Good in the rig and in most classes. Strained in two places. | The behaviors are small and do one thing each. `rig.launch.py` is a set of small functions, the Freezer's recipes are pure functions, and `ShotRunner` only runs a shot. Against it: [`freezer_node.cpp`](../../modules/stepit-freezer/src/freezer_node/src/freezer_node.cpp), 823 lines. It holds the schema of the sequences' parameters, the connection and the reconnect thread, the action server, the watching of the trigger with its reconciliation of shot ids, and the outputs, behind about 15 synchronisation fields. |
 | **Open/closed** | Good. | A new objective is an XML file, with no build. A new behavior is one line in `registerNodes`. A new module is an entry in `MODULES` and a section in `rig.yaml`. A new camera setting is a row of `SETTINGS`, a new Freezer recipe a struct with `build()`, and a new editor check a `Rule`. The commander gained progress reporting without knowing any rig node. |
 | **Liskov substitution** | Good, where it applies: the device interfaces. | The fakes are substitutable enough that every test runs on them. They mirror the firmware's refusals: `FakeDriver::configure` validates "mirroring the firmware", and the Freezer's fake reproduces `Busy`, `NoTable` and a reset during a shot. One gap: the `const` methods of `stepit_driver::Driver` promise no side effect, and every implementation has one. |
 | **Interface segregation** | Good. | `ProgressReporter` has one method, and the behaviors take only the ports they use. `Camera` is wide (preview, settings, capture, files), but it is one device used by one driver. One API forces too much on its clients: `SetOutputs` of the Freezer sets all 16 lines, so a client that wants to switch the lights must read and write back the other 14 (finding 6). |
-| **Dependency inversion** | Good in C++. Weak at the system level and in the UI stores. | `FreezerNode(options, driver)` and `StepitHardware(DriverFactory)` take their abstraction. `CameraNode` picks its implementation inside ([`camera_node.cpp`](modules/stepit-camera/src/stepit_camera/src/camera_node.cpp), the `fake_camera` parameter). At the system level, every client depends on concrete names: topics, parameters and objectives. StepIt UI's stores take the shared rosbridge connection from the global `ros()` instead of receiving it, which makes them hard to test. |
+| **Dependency inversion** | Good in C++. Weak at the system level and in the UI stores. | `FreezerNode(options, driver)` and `StepitHardware(DriverFactory)` take their abstraction. `CameraNode` picks its implementation inside ([`camera_node.cpp`](../../modules/stepit-camera/src/stepit_camera/src/camera_node.cpp), the `fake_camera` parameter). At the system level, every client depends on concrete names: topics, parameters and objectives. StepIt UI's stores take the shared rosbridge connection from the global `ros()` instead of receiving it, which makes them hard to test. |
 
 ## API Design
 
 **The ROS interfaces of the modules: good.** They are typed and documented in their `.msg`, `.srv` and `.action` files. A few examples:
 
-- [`Picture.msg`](modules/stepit-camera/src/stepit_camera_msgs/msg/Picture.msg) sends a path, not the bytes, and says why.
-- [`Shoot.action`](modules/stepit-freezer/src/freezer_msgs/action/Shoot.action) has a result with timing, and feedback with states.
+- [`Picture.msg`](../../modules/stepit-camera/src/stepit_camera_msgs/msg/Picture.msg) sends a path, not the bytes, and says why.
+- [`Shoot.action`](../../modules/stepit-freezer/src/freezer_msgs/action/Shoot.action) has a result with timing, and feedback with states.
 - The serial protocols carry a version, which both drivers check at connection time, with a message that says which firmware to flash.
 - Latched QoS is used wherever a late subscriber must catch up. The Freezer keeps a depth of 1 on purpose, because rosbridge hands a new client the *oldest* kept message.
 
 **The commander's API is generic by design, and stringly typed as a consequence.**
 
 - The `payload` is YAML in a string, and errors surface only when a port is read, as an exception.
-- The feedback and `~/execution` are JSON in a string, documented in comments on both sides: the commander's [`execution_status.hpp`](modules/stepit-commander/src/stepit_server/include/stepit_server/execution_status.hpp) and the editor's [`execution.ts`](modules/stepit-editor/src/client/execution.ts).
+- The feedback and `~/execution` are JSON in a string, documented in comments on both sides: the commander's [`execution_status.hpp`](../../modules/stepit-commander/src/stepit_server/include/stepit_server/execution_status.hpp) and the editor's [`execution.ts`](../../modules/stepit-editor/src/client/execution.ts).
 - The editor even parses the text of BehaviorTree.CPP's exceptions, `/Exception in node '[^']*::(\d+)'/` (`failedNodeUid`), to find the node that failed.
 - Each snapshot on `~/execution` holds the whole run, the XML of the tree included; `SnapshotPacer` publishes one at most every `execution_period`, 0.2 s by default.
 
@@ -217,11 +217,11 @@ The behaviors have **no shared abstraction for "a node that listens to a topic"*
 | `/focus_stack/progress` | `stepit_macro_msgs/StackProgress` | Typed, with one latched publisher for every node and every run. |
 | `/focus_stack/stack_done`, `/focus_stack/all_stacks_done` | `std_msgs/String` | A relative folder, with no type of its own. |
 | `state.*` parameters of `/stack_state` | `double[]`, `[]` for not set | Named by convention: the names in `saved` and `forgotten` of `rig.yaml`, the keys of `SaveValues` and `LoadValues` in the objectives, and StepIt UI's `STACK_PARAMETERS` must agree. A name the node does not keep fails, at least. |
-| `stack.json`, `all_stacks.json` | JSON written by hand ([`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), `jsonString`) | No schema, and an escaping function copied from the camera's [`web_server.cpp`](modules/stepit-camera/src/stepit_camera/src/web_server.cpp), while `nlohmann::json` is at hand. |
+| `stack.json`, `all_stacks.json` | JSON written by hand ([`stack_done.cpp`](../../src/plugins/stepit_behaviors/src/stack_done.cpp), `jsonString`) | No schema, and an escaping function copied from the camera's [`web_server.cpp`](../../modules/stepit-camera/src/stepit_camera/src/web_server.cpp), while `nlohmann::json` is at hand. |
 
 **The HTTP APIs are good.**
 
-- The editor's [`api.ts`](modules/stepit-editor/src/server/api.ts) makes writes conditional (`If-Match`, `If-None-Match`, `412`) and atomic, answers `409` when the folder changed, refuses paths outside the folder with `safePath`, and serves an OpenAPI description.
+- The editor's [`api.ts`](../../modules/stepit-editor/src/server/api.ts) makes writes conditional (`If-Match`, `If-None-Match`, `412`) and atomic, answers `409` when the folder changed, refuses paths outside the folder with `safePath`, and serves an OpenAPI description.
 - The camera's web server serves ranges, lists folders through `folderUnder` (which checks against the canonical root), and describes itself in OpenAPI.
 
 Neither has authorisation: see finding 1.
@@ -234,11 +234,11 @@ Neither has authorisation: see finding 1.
 
 | What | Where | Weight |
 |---|---|---|
-| The joints of the robot and their order | 25 times in the objectives; `ui_teleop.joints` in [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml); [`logitech_dual_action.yaml`](src/stepit-macro/stepit_teleop/config/logitech_dual_action.yaml); the default of `gamepad_teleop`; `controllers.yaml` of StepIt Motors | High. Four places in two repositories. |
+| The joints of the robot and their order | 25 times in the objectives; `ui_teleop.joints` in [`rig.yaml`](../../src/stepit-macro/stepit_bringup/config/rig.yaml); [`logitech_dual_action.yaml`](../../src/stepit-macro/stepit_teleop/config/logitech_dual_action.yaml); the default of `gamepad_teleop`; `controllers.yaml` of StepIt Motors | High. Four places in two repositories. |
 | The motor limits | `scale: 18.8496` in `rig.yaml`; the firmware's `MAX_SPEED`; the xacro | Low. The firmware reports them at connection time, and only `StepitHardware` asks. |
 | Objective names in StepIt UI | `Toolbar.tsx`, `StackBar.tsx`, `motion/store.ts`, `stack/store.ts`, `shot/store.ts` | Medium. |
-| The node name `/stack_state` and the `state.*` names | `saved` and `forgotten` in `rig.yaml`; `kStateNode` in [`values_file.hpp`](src/plugins/stepit_behaviors/include/stepit_behaviors/values_file.hpp); the keys of the objectives; [`stack/store.ts:22`](ui/src/stack/store.ts) and `STACK_PARAMETERS` | Medium. |
-| The overshoots, derived from the ratios | `overshoot.*` in [`rig.yaml:88`](src/stepit-macro/stepit_bringup/config/rig.yaml) | Low. They are computed by hand, but `test_the_stage_overshoots_by_a_degree_and_the_rail_by_a_millimetre` fails if a ratio changes alone. |
+| The node name `/stack_state` and the `state.*` names | `saved` and `forgotten` in `rig.yaml`; `kStateNode` in [`values_file.hpp`](../../src/plugins/stepit_behaviors/include/stepit_behaviors/values_file.hpp); the keys of the objectives; [`stack/store.ts:22`](../../ui/src/stack/store.ts) and `STACK_PARAMETERS` | Medium. |
+| The overshoots, derived from the ratios | `overshoot.*` in [`rig.yaml:88`](../../src/stepit-macro/stepit_bringup/config/rig.yaml) | Low. They are computed by hand, but `test_the_stage_overshoots_by_a_degree_and_the_rail_by_a_millimetre` fails if a ratio changes alone. |
 | The serial protocols | command ids, frame layouts and versions in the firmware's `main.cpp` and in each `default_driver.cpp` | Low. The protocol version check catches a mismatch at connection time. |
 | The pictures folder | `pictures_folder` and the camera's `download_directory` | Low. Tied by the anchor `&pictures`, and tested. |
 
@@ -246,13 +246,13 @@ Neither has authorisation: see finding 1.
 
 | What | Where | Weight |
 |---|---|---|
-| The rosbridge client | Four clients: StepIt UI, the camera's test page, the Freezer's board page (each with a different API, e.g. `sendActionGoal` against `sendGoal`), and the editor, which opens a raw WebSocket per call ([`ros.ts`](modules/stepit-editor/src/client/ros.ts)) | High. Fixes do not travel: the camera's test page, at its recorded commit, still reads 64 KB from the start of every picture ([`picture.ts`](modules/stepit-camera/web/src/client/camera/picture.ts)), the case cpp-httplib 0.14 answers wrongly, which StepIt UI fixed with a `HEAD` request first. |
+| The rosbridge client | Four clients: StepIt UI, the camera's test page, the Freezer's board page (each with a different API, e.g. `sendActionGoal` against `sendGoal`), and the editor, which opens a raw WebSocket per call ([`ros.ts`](../../modules/stepit-editor/src/client/ros.ts)) | High. Fixes do not travel: the camera's test page, at its recorded commit, still reads 64 KB from the start of every picture ([`picture.ts`](../../modules/stepit-camera/web/src/client/camera/picture.ts)), the case cpp-httplib 0.14 answers wrongly, which StepIt UI fixed with a `HEAD` request first. |
 | The firmware's serial and framing layer | `Buffer.h`, `DataBuffer.{h,cpp}`, `SerialPort.{h,cpp}`, `CrcUtils.{h,cpp}`: 7 files, **identical** in both MCU projects | Medium. They are identical today, but nothing keeps them so. The host side is shared through the `framed-serial` submodule, with a check in `bin/modules/build.sh`. |
 | The host-side response classes | `msgs/response.hpp`, `info_response.hpp` and `status_response.hpp` of both drivers | Low. They differ by 60 or more lines each. |
 | A reconnect loop | `CameraDriver::loop`, `FreezerNode::reconnect_loop` | Low. They live in independent modules. |
 | A private executor for a subscription | three behaviors | Medium. The threading is subtle. |
 | Looking up a joint in a `JointState` | `GetJointPositions::read`, `CommandJointPositions::positionsOf` and `::arrived` | Low. |
-| Writing to a temporary file, then renaming | [`stack_state.cpp`](src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 8). |
+| Writing to a temporary file, then renaming | [`stack_state.cpp`](../../src/stepit-macro/stepit_state/src/stack_state.cpp), [`stack_done.cpp`](../../src/plugins/stepit_behaviors/src/stack_done.cpp), the editor's `writeAtomically` | Low. The camera's `savePicture`, which most needs it, does not do it (finding 8). |
 | `jsonString` | the camera's `web_server.cpp` and the plugin's `stack_done.cpp`, identical | Low. |
 | Expanding `~/` in a path | the plugin's `parameters.cpp`, `stack_state.cpp`, the camera's `settings.cpp` | Low. |
 | An objective is the `main_tree_to_execute` of its file | `TreeLoader::mainTree` in C++ (a regex) and the editor in TypeScript | Low, and documented. |
@@ -276,7 +276,7 @@ Neither has authorisation: see finding 1.
 
 **What is not tested:**
 
-1. **The plugin loaded by the real commander.** Every objective test calls `registerNodes` on a fresh factory ([`objective.hpp`](src/plugins/stepit_tests/tests/objective.hpp), `runObjective`). Nothing checks, in the real commander, the rule that keeps BehaviorTree.ROS2 from registering everything again: the plugin never declares or sets a parameter on the commander's node (see [Background](#why-the-commanders-node-must-not-change)). `TheCommandersNodeHoldsNoState` and `TheOvershootComesFromTheParameters` check it for one value each, on a plain node.
+1. **The plugin loaded by the real commander.** Every objective test calls `registerNodes` on a fresh factory ([`objective.hpp`](../../src/plugins/stepit_tests/tests/objective.hpp), `runObjective`). Nothing checks, in the real commander, the rule that keeps BehaviorTree.ROS2 from registering everything again: the plugin never declares or sets a parameter on the commander's node (see [Background](#why-the-commanders-node-must-not-change)). `TheCommandersNodeHoldsNoState` and `TheOvershootComesFromTheParameters` check it for one value each, on a plain node.
 2. **The rig's launch file, started.** Only its functions are tested.
 3. **The modules at the commits the rig pins.** `bin/modules/build.sh` builds them with `-DBUILD_TESTING=OFF` and skips their test packages. CI builds only the commander and two message packages. No job runs `check_shared_libraries`. A module's own CI runs on its own `main`.
 
@@ -295,16 +295,16 @@ ros2 param get /stack_state state.shots
 
 The commander is the node `/stepit_server`. When `rig.launch.py` starts it, the node loads two YAML files, one after the other:
 
-1. **The commander's defaults**, [`stepit_server.yaml`](modules/stepit-commander/src/stepit_server/config/stepit_server.yaml): `action_name`, `tick_frequency`, `ros_plugins_timeout`, `preempt`.
-2. **The rig's section** `stepit_server:` of [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml): `plugins`, `behavior_trees`, `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*`, `pictures_folder`.
+1. **The commander's defaults**, [`stepit_server.yaml`](../../modules/stepit-commander/src/stepit_server/config/stepit_server.yaml): `action_name`, `tick_frequency`, `ros_plugins_timeout`, `preempt`.
+2. **The rig's section** `stepit_server:` of [`rig.yaml`](../../src/stepit-macro/stepit_bringup/config/rig.yaml): `plugins`, `behavior_trees`, `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*`, `pictures_folder`.
 
 | Read by | Parameters | Declared on the node? |
 |---|---|---|
 | BehaviorTree.ROS2 | `action_name`, `tick_frequency`, `plugins`, `behavior_trees`, … | Yes |
-| The commander, [`stepit_server.cpp`](modules/stepit-commander/src/stepit_server/src/stepit_server.cpp) | `preempt` | Yes |
-| The rig's plugin, [`parameters.cpp`](src/plugins/stepit_behaviors/src/parameters.cpp) | `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*`, `pictures_folder` | **No**: read from the parameter file, the node's overrides |
+| The commander, [`stepit_server.cpp`](../../modules/stepit-commander/src/stepit_server/src/stepit_server.cpp) | `preempt` | Yes |
+| The rig's plugin, [`parameters.cpp`](../../src/plugins/stepit_behaviors/src/parameters.cpp) | `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*`, `pictures_folder` | **No**: read from the parameter file, the node's overrides |
 
-None of them changes while the rig runs. The state that does, the marks and the counts of a stack, is the parameters `state.*` of another node, `stack_state` ([`stack_state.hpp`](src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp)): the marks in memory only, empty at every start, the counts also in its state file, `~/ws/state/stack.yaml`. `SaveValues`, `LoadValues` and StepIt UI read and set them through that node's parameter services.
+None of them changes while the rig runs. The state that does, the marks and the counts of a stack, is the parameters `state.*` of another node, `stack_state` ([`stack_state.hpp`](../../src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp)): the marks in memory only, empty at every start, the counts also in its state file, `~/ws/state/stack.yaml`. `SaveValues`, `LoadValues` and StepIt UI read and set them through that node's parameter services.
 
 ### Why the commander's node must not change
 
@@ -314,9 +314,9 @@ When the commander starts, BehaviorTree.ROS2 runs a step it calls **registration
 2. it loads the plugins, the `.so` files of the folders in `plugins`: here `libstepit_behaviors_plugin.so`, whose entry point calls `stepit_behaviors::registerNodes`;
 3. it loads the XML files of the **installed** folders in `behavior_trees`, e.g. `install/plugins/stepit_objectives/share/stepit_objectives/objectives`.
 
-Before each goal, it runs the registration again **if its parameters changed since the last one** ([`tree_execution_server.cpp:184`](modules/stepit-commander/modules/BehaviorTree.ROS2/behaviortree_ros2/src/tree_execution_server.cpp), `is_old`). It decides that with a listener generated by `generate_parameter_library`, which stamps the parameters as changed on **any** parameter set or declared on the node (`bt_executor_parameters.hpp:230`). It cannot tell its own parameters from anyone else's.
+Before each goal, it runs the registration again **if its parameters changed since the last one** ([`tree_execution_server.cpp:184`](../../modules/stepit-commander/modules/BehaviorTree.ROS2/behaviortree_ros2/src/tree_execution_server.cpp), `is_old`). It decides that with a listener generated by `generate_parameter_library`, which stamps the parameters as changed on **any** parameter set or declared on the node (`bt_executor_parameters.hpp:230`). It cannot tell its own parameters from anyone else's.
 
-The commander adds a mechanism of its own on top: its **`TreeLoader`** ([`tree_loader.cpp`](modules/stepit-commander/src/stepit_server/src/tree_loader.cpp)), called before each goal from `onGoalReceived`. It re-reads the XML files when any changed, and also reads the **source** folder that the installed links point to. That is what lets a new objective, saved from the editor into `src/plugins/stepit_objectives/objectives`, run with no build. BehaviorTree.ROS2's registration knows nothing of it, and reads only the installed folder.
+The commander adds a mechanism of its own on top: its **`TreeLoader`** ([`tree_loader.cpp`](../../modules/stepit-commander/src/stepit_server/src/tree_loader.cpp)), called before each goal from `onGoalReceived`. It re-reads the XML files when any changed, and also reads the **source** folder that the installed links point to. That is what lets a new objective, saved from the editor into `src/plugins/stepit_objectives/objectives`, run with no build. BehaviorTree.ROS2's registration knows nothing of it, and reads only the installed folder.
 
 So a registration repeated while the rig runs drops every objective added since the last build, and loads the plugin a second time, which fails as its behaviors are registered already: the log then shows `Failed to load ROS Plugin: libstepit_behaviors_plugin.so … already registered`. The rig avoids it with one rule, written in `CLAUDE.md`: **the plugin never declares or sets a parameter on the commander's node**, and state that changes while the rig runs lives on `stack_state`. It holds (*verified*): six goals in a row on the rig at `cf03a80`, marks saved and counts read included, logged no second registration. Setting a parameter of the commander by hand, e.g. `preempt`, still triggers it.
 
@@ -324,7 +324,7 @@ So a registration repeated while the rig runs drops every objective added since 
 
 The commander publishes the name of the running objective on the latched topic `/stepit_server/objective`, and `""` when it ends, from its hook `onTreeExecutionCompleted`. Two clients rely on it: StepIt UI, to show "Running FocusStack", and to tell whether to turn Stop red until the status of the action comes, e.g. right after a restart, when the commander has published none; and `power_off`, to refuse to switch off while any objective runs.
 
-BehaviorTree.ROS2 ends a run in one of three ways ([`tree_execution_server.cpp`](modules/stepit-commander/modules/BehaviorTree.ROS2/behaviortree_ros2/src/tree_execution_server.cpp), `execute`):
+BehaviorTree.ROS2 ends a run in one of three ways ([`tree_execution_server.cpp`](../../modules/stepit-commander/modules/BehaviorTree.ROS2/behaviortree_ros2/src/tree_execution_server.cpp), `execute`):
 
 | How the run ends | Tree halted? | `onTreeExecutionCompleted` called? | `/stepit_server/objective` afterwards |
 |---|---|---|---|
@@ -346,17 +346,17 @@ These are ordered from the most to the least serious.
 
    On the Pi, the rig listens on every interface on ports 1667, 1668, 8070, 8080, 8081, 8090 and 9090 (*verified*, with `ss -ltn`).
 
-   DDS itself is confined to loopback by [`cyclonedds.xml`](docker/cyclonedds.xml), which is good. The servers listen on every interface, and the container is privileged with passwordless `sudo`. This is acceptable on a workshop's own network, as the README says, but the README names only rosbridge.
+   DDS itself is confined to loopback by [`cyclonedds.xml`](../../docker/cyclonedds.xml), which is good. The servers listen on every interface, and the container is privileged with passwordless `sudo`. This is acceptable on a workshop's own network, as the README says, but the README names only rosbridge.
 
-2. **A camera call that times out still runs later.** `CameraDriver::run()` throws `The camera did not answer in time` after 5 s, but its task stays queued and runs when the driver gets to it ([`camera_driver.hpp`](modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera_driver.hpp), `run`). A setting changed while a large RAW downloads is therefore refused to the caller, and the parameter keeps its old value, but the camera applies the new one afterwards: the node and the camera then disagree. `onSetParameters` also blocks the executor's thread for those 5 s.
+2. **A camera call that times out still runs later.** `CameraDriver::run()` throws `The camera did not answer in time` after 5 s, but its task stays queued and runs when the driver gets to it ([`camera_driver.hpp`](../../modules/stepit-camera/src/stepit_camera/include/stepit_camera/camera_driver.hpp), `run`). A setting changed while a large RAW downloads is therefore refused to the caller, and the parameter keeps its old value, but the camera applies the new one afterwards: the node and the camera then disagree. `onSetParameters` also blocks the executor's thread for those 5 s.
 
 3. **The robot's shape is duplicated in the XML.** A sixth joint, or a renamed controller, means editing eight XML files, `rig.yaml`, the gamepad's config and default, and StepIt Motors.
 
 4. **`FreezerNode` carries too many responsibilities** for its locking to be reviewed easily: three threads (the executor, which also runs the watch timer, the shot's worker, and the reconnector) and flags shared between them. Its tests are thorough (538 lines). The risk is in future changes, e.g. a race between `watch()` disconnecting and the reconnector connecting, which today heals itself after three failed polls.
 
-5. **StepIt Motors' default driver trusts the length of every response.** `configure`, `set_position` and `set_velocity` read `out[0]` without checking that `out` is empty. `get_status` reads 13 bytes per motor while `i < out.size()`, without checking that 13 remain ([`default_driver.cpp`](modules/stepit-motors/src/stepit_driver/src/default_driver.cpp)). The Freezer's driver, from the same template, checks every length (`check_length`). The CRC of the framing makes a short frame unlikely; a firmware of another version is caught by the handshake.
+5. **StepIt Motors' default driver trusts the length of every response.** `configure`, `set_position` and `set_velocity` read `out[0]` without checking that `out` is empty. `get_status` reads 13 bytes per motor while `i < out.size()`, without checking that 13 remain ([`default_driver.cpp`](../../modules/stepit-motors/src/stepit_driver/src/default_driver.cpp)). The Freezer's driver, from the same template, checks every length (`check_length`). The CRC of the framing makes a short frame unlikely; a firmware of another version is caught by the handshake.
 
-6. **`SetOutputs` sets all 16 lines.** A client that wants to switch one jack must know and write back the other 15 bits: StepIt UI's `withLights(get().outputs ?? 0, on)` in [`lights.ts`](ui/src/freezer/lights.ts). Two clients switching different jacks at once can undo each other. A set-and-clear mask would make the operation safe.
+6. **`SetOutputs` sets all 16 lines.** A client that wants to switch one jack must know and write back the other 15 bits: StepIt UI's `withLights(get().outputs ?? 0, on)` in [`lights.ts`](../../ui/src/freezer/lights.ts). Two clients switching different jacks at once can undo each other. A set-and-clear mask would make the operation safe.
 
 7. **The firmware's serial layer is copied across two repositories**, identically today; see [Coupling and Duplication](#coupling-and-duplication).
 
@@ -364,14 +364,14 @@ These are ordered from the most to the least serious.
     - Every workspace, the Pi's included, is built with `-DCMAKE_BUILD_TYPE=Debug` (`bin/*/build.sh`).
     - The camera's `savePicture` writes the final file in place, so its web server's listing can show a picture half written. The listing hides only dotfiles, "a file still being written under a temporary name".
     - `StepitHardware::on_init` swallows its exception without a log.
-    - `CubicTrajectory` rounds the fraction of a second with `std::lround(fraction * 1e9)` ([`cubic_trajectory.cpp:85`](src/plugins/stepit_behaviors/src/cubic_trajectory.cpp)), which gives a `nanosec` of 1,000,000,000, out of range, for a fraction above 0.9999999995. No objective uses `CubicTrajectory` today.
+    - `CubicTrajectory` rounds the fraction of a second with `std::lround(fraction * 1e9)` ([`cubic_trajectory.cpp:85`](../../src/plugins/stepit_behaviors/src/cubic_trajectory.cpp)), which gives a `nanosec` of 1,000,000,000, out of range, for a fraction above 0.9999999995. No objective uses `CubicTrajectory` today.
     - `rig.launch.py` writes its parameter file with `delete=False` and never removes it: one file per start, three in the Pi's container (*verified*).
-    - `Stack` ([`stack.xml`](src/plugins/stepit_objectives/objectives/stack.xml)) is a prototype grid of 11 × 11 moves whose photo is a comment, `<!-- Take the photo here. -->`, listed among the objectives as if it shot.
+    - `Stack` ([`stack.xml`](../../src/plugins/stepit_objectives/objectives/stack.xml)) is a prototype grid of 11 × 11 moves whose photo is a comment, `<!-- Take the photo here. -->`, listed among the objectives as if it shot.
     - Documentation has drifted:
       - `logitech_dual_action.yaml` refers to `docs/Teleop.md`, which is `docs/Gamepad.md`;
       - the commander's `TODO.md` says it has no CI, while it has three workflows;
-      - StepIt UI's [ARCHITECTURE.md](ui/docs/ARCHITECTURE.md), in its review, says `stack/store.ts` calls the commander's parameter services, where it calls `stack_state`'s;
-      - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) describes the state on the commander's node, `declareParameters()`, `clear_state()` and `TODO.md`, none of which exists.
+      - StepIt UI's [ARCHITECTURE.md](../../ui/docs/ARCHITECTURE.md), in its review, says `stack/store.ts` calls the commander's parameter services, where it calls `stack_state`'s;
+      - [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) describes the state on the commander's node, `declareParameters()`, `clear_state()` and `TODO.md`, none of which exists.
 
 ## Recommendations
 

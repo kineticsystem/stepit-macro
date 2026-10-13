@@ -23,7 +23,7 @@
 
 ## Introduction
 
-This document explains how StepIt Macro is built, what each part is responsible for, and where to start when we want to change something. It assumes you have read the [README](../README.md) and started the rig once with `./docker/dock.sh start`. It covers the rig's own code: the behaviors and objectives in `src/plugins`, the programs and the launch file in `src/stepit-macro`, the scripts in `bin`, the container in `docker` and CI. StepIt UI, in `ui`, has its own [ARCHITECTURE.md](../ui/docs/ARCHITECTURE.md), which this document only summarises. How the rig and its modules are judged, what is fragile and what should change, is in the review, [Review.md](../Review.md).
+This document explains how StepIt Macro is built, what each part is responsible for, and where to start when we want to change something. It assumes you have read the [README](../README.md) and started the rig once with `./docker/dock.sh start`. It covers the rig's own code: the behaviors and objectives in `src/plugins`, the programs and the launch file in `src/stepit-macro`, the scripts in `bin`, the container in `docker` and CI. StepIt UI, in `ui`, has its own [ARCHITECTURE.md](../ui/docs/ARCHITECTURE.md), which this document only summarises. How the rig and its modules are judged, what is fragile and what should change, is in the review, [Review.md](design/Review.md).
 
 It follows one idea: **the modules know nothing of the rig**. StepIt Motors, StepIt Commander, StepIt Camera, StepIt Freezer and StepIt Editor are generic, each with its own repository, container and CI. Everything that makes them a focus stacking rig lives here: the behaviors and objectives the commander loads, the programs that run beside the modules, the one file that configures them all, `rig.yaml`, and the page that drives them, StepIt UI.
 
@@ -229,7 +229,7 @@ flowchart TB
 The `plugins` workspace is built on top of `modules`, which holds the commander: the plugin is loaded into the commander's process, so it must be compiled against the same BehaviorTree.CPP and BehaviorTree.ROS2. `stepit-macro` is built on ROS alone, so that CI builds it without the modules: it builds its own copy of `btcpp_ros2_interfaces` from the commander's submodule, the one interface it needs.
 
 > [!IMPORTANT]
-> Keep the robot's names in `stepit_behaviors`: an objective says *what* to do, a behavior knows *where* the robot's topic or service is. See [Separation of Concerns](../Review.md#separation-of-concerns) in the review for where the objectives repeat them today.
+> Keep the robot's names in `stepit_behaviors`: an objective says *what* to do, a behavior knows *where* the robot's topic or service is. See [Separation of Concerns](design/Review.md#separation-of-concerns) in the review for where the objectives repeat them today.
 
 ## Starting the Rig
 
@@ -250,7 +250,7 @@ The launch file finds the repo from its own source, `RIG_DIR`, because `build.sh
 
 `declareParameters()` makes the commander's node carry the rig's parameters, which the commander itself knows nothing about: every `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*` and `focus_stack.*` that `rig.yaml` gives, `state_file` and `pictures_folder`. It then loads the state file into `state.<key>` parameters, gives `state.turn`, `state.shots` and `state.angles` the defaults of `focus_stack.*` until a page sets them, and adds a callback that writes every `state.<key>` a page sets into the file. The behaviors read the parameters through the functions of [`parameters.hpp`](../src/plugins/stepit_behaviors/include/stepit_behaviors/parameters.hpp), e.g. `overshootParameter()`, never by name.
 
-The commander calls `registerNodes()` again before a goal whenever its own parameters changed, and setting any parameter counts: see [Why the Commander's Node Must Not Change](../Review.md#why-the-commanders-node-must-not-change) in the review.
+The commander calls `registerNodes()` again before a goal whenever its own parameters changed, and setting any parameter counts: see [Why the Commander's Node Must Not Change](design/Review.md#why-the-commanders-node-must-not-change) in the review.
 
 [`nodes_model.cpp`](../src/plugins/stepit_behaviors/src/nodes_model.cpp) builds the `<TreeNodesModel>` of every behavior from the real registration, with no ROS node; `write_nodes_model` writes it to `stepit_objectives/objectives/stepit_behaviors.xml`, which the editor reads and `test_nodes_model` compares.
 
@@ -390,7 +390,7 @@ The rig runs it twice: `gamepad_teleop` for the gamepad, configured by [`logitec
 
 ## StepIt UI
 
-StepIt UI is a React page, built by Vite into `ui/dist` and served on port 8070. It owns nothing of the rig: it sends tasks to the commander as objectives, configuration straight to the drivers, and mirrors what the rig publishes. Its layers, stores, flows and its own review are in [ui/docs/ARCHITECTURE.md](../ui/docs/ARCHITECTURE.md). What it shares with the rest of the repo is only names: of objectives, topics, services, parameters and joints, see [Coupling and Duplication](../Review.md#coupling-and-duplication) in the review.
+StepIt UI is a React page, built by Vite into `ui/dist` and served on port 8070. It owns nothing of the rig: it sends tasks to the commander as objectives, configuration straight to the drivers, and mirrors what the rig publishes. Its layers, stores, flows and its own review are in [ui/docs/ARCHITECTURE.md](../ui/docs/ARCHITECTURE.md). What it shares with the rest of the repo is only names: of objectives, topics, services, parameters and joints, see [Coupling and Duplication](design/Review.md#coupling-and-duplication) in the review.
 
 ## The Container, the Scripts and CI
 
