@@ -6,7 +6,10 @@
 
 <img src="docs/images/stepit-macro.jpg" width="80%">
 
-An automated macro photography system for 3D focus stacking.
+A ROS 2 robotic system that automates multi-angle focus stacking for macro
+photography, built end to end: the firmware of the microcontrollers, the ROS 2
+drivers of the motors, the camera and the lights, a task server that runs
+behavior trees, and a web UI to drive the rig.
 
 A camera is mounted on a motorized linear rail, which sits on a rotary stage.
 For each angle, the rail moves the camera through a series of focus distances
