@@ -165,6 +165,8 @@ flowchart TB
 
 The modules run in one container on the rig's Raspberry Pi 5, and each driver owns its hardware: StepIt Motors talks to the Teensy that drives the stepper motors, StepIt Freezer to the Freezer board, which fires the camera through its shutter jack, and StepIt Camera to the camera over USB, to download the pictures. What happens to the pictures is left to other projects, on other computers: [StepIt Stacker](https://github.com/kineticsystem/stepit-stacker) merges each focus stack into one sharp image per angle and makes a hologram of the angles, and [HoloPi](https://github.com/kineticsystem/holo-pi) shows it on a Looking Glass Portrait. The rig needs neither.
 
+To build the electronics box, the enclosure that holds all the electronics of the rig, with the connectors of the motors and the USB and network ports on its panels, see [The Electronics Box](docs/hardware/ElectronicsBox.md).
+
 ## StepIt UI
 
 [StepIt UI](ui) puts the rig on one page, on port 8070 of the computer that runs it, e.g. `http://192.168.100.24:8070` from a tablet on the same network. It is made for a touch screen, and works on a desktop too.
