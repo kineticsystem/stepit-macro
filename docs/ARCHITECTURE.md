@@ -9,7 +9,7 @@
 - [The Behaviors](#the-behaviors)
   - [Registration and Parameters](#registration-and-parameters)
   - [The Families of Behaviors](#the-families-of-behaviors)
-  - [The State File](#the-state-file)
+  - [The State of the Rig](#the-state-of-the-rig)
 - [The Objectives](#the-objectives)
 - [A Focus Stack, from the Button to the Pictures](#a-focus-stack-from-the-button-to-the-pictures)
 - [The Rig's Own Programs](#the-rigs-own-programs)
@@ -93,6 +93,7 @@ flowchart TB
         Bridge["rosbridge<br/>port 9090"]
         Teleop["gamepad_teleop<br/>ui_teleop"]
         Power["power_off"]
+        State["stack_state<br/>state/stack.yaml"]
         Commander["stepit_server<br/>with stepit_behaviors"]
         Objectives["stepit_objectives<br/>XML"]
         Motors["StepIt Motors<br/>controller manager"]
@@ -104,7 +105,9 @@ flowchart TB
     Bridge --> Teleop
     Bridge --> Power
     Bridge --> Commander
+    Bridge -- "parameters" --> State
     Teleop -- "objectives" --> Commander
+    Commander -- "parameters" --> State
     Objectives -. "loaded" .-> Commander
     Teleop -- "velocities" --> Motors
     Commander --> Motors
@@ -114,15 +117,15 @@ flowchart TB
     classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
 ```
 
-The commander is a generic action server: it runs any behavior tree it finds, by name. The rig gives it a plugin, `stepit_behaviors`, which it loads into its own process, and a folder of objectives, `stepit_objectives/objectives`. The browser reaches everything through the commander's rosbridge, which knows every message of the rig because every module is installed in the same container; it also loads the live view and the pictures from StepIt Camera's servers, ports 8081 and 8090, which the diagram leaves out.
+The commander is a generic action server: it runs any behavior tree it finds, by name. The rig gives it a plugin, `stepit_behaviors`, which it loads into its own process, and a folder of objectives, `stepit_objectives/objectives`. What the objectives and the pages share, the marks and the counts of a focus stack, lives in a node of its own, `stack_state`, never on the commander's node. The browser reaches everything through the commander's rosbridge, which knows every message of the rig because every module is installed in the same container; it also loads the live view and the pictures from StepIt Camera's servers, ports 8081 and 8090, which the diagram leaves out.
 
 The interface the rig's own code adds to the modules':
 
 | Name | Type | What it does |
 |---|---|---|
 | `/commander/execute_objective` | action, `btcpp_ros2_interfaces/action/ExecuteTree` | The commander's: runs an objective of `stepit_objectives` by name, with a YAML payload. |
-| `/stepit_server` parameters `overshoot.<joint>`, `mm_per_turn.<joint>`, `deg_per_turn.<joint>`, `focus_stack.*`, `state_file`, `pictures_folder` | parameters | Declared on the commander's node by the plugin, from the section `stepit_server` of `rig.yaml`. |
-| `/stepit_server` parameters `state.<key>` | parameters, lists of numbers | The rig's state file, e.g. `state.near`; a page that sets one writes the file. |
+| `/stepit_server` parameter overrides `overshoot.<joint>`, `mm_per_turn.<joint>`, `deg_per_turn.<joint>`, `pictures_folder` | parameters, read-only | The measured constants of the behaviors, from the section `stepit_server` of `rig.yaml`: read by the plugin from the commander's parameter file, never declared on its node. |
+| `/stack_state` parameters `state.<name>` | parameters, lists of numbers | The state of the rig: `state.turn`, `state.shots`, `state.angles`, saved in `~/ws/state/stack.yaml`; `state.near`, `state.far`, in memory only, `[]` at every start. Set through `/stack_state/set_parameters`, followed on `/parameter_events`. |
 | `/focus_stack/progress` | `stepit_macro_msgs/StackProgress`, latched, one publisher created when the plugin loads | `done` and `total`, the pictures of a running focus stack, from `ReportProgress`. |
 | `/focus_stack/stack_done`, `/focus_stack/all_stacks_done` | `std_msgs/String`, latched | The folder of a finished angle, and of a finished focus stack, from `StackDone` and `AllStacksDone`. |
 | `/joy`, `/ui/joy` | `sensor_msgs/Joy`, in | The gamepad, and StepIt UI's sliders, for `gamepad_teleop` and `ui_teleop`. |
@@ -142,8 +145,10 @@ The rig is built as three colcon workspaces and one pnpm project, each with its 
 | | `stepit_tests` | Every test of the behaviors and objectives, against fakes. | Everything above. |
 | | `stepit_macro_msgs` | The messages of the rig's own topics: `StackProgress`. | Nothing. |
 | `stepit-macro` | `stepit_bringup` | `rig.launch.py` and `rig.yaml`: the only place the rig starts and configures the modules. | The modules' launch files, by package name. |
-| | `stepit_teleop` | `gamepad_teleop`: a `Joy` to velocities, a button to an objective. | `btcpp_ros2_interfaces`, built here from the commander's submodule. |
+| | `stepit_teleop` | `gamepad_teleop`: a `Joy` to velocities, a button to an objective. | `btcpp_ros2_interfaces`, built here from the commander's submodule; `stepit_teleop_msgs`. |
+| | `stepit_teleop_msgs` | `GamepadStatus`, of `/gamepad_teleop/status`. | Nothing. |
 | | `stepit_power` | `power_off`: the computer off, on request. | `std_srvs`, the commander's objective topic, by name. |
+| | `stepit_state` | `stack_state`: the state of the rig, its parameters `state.*`, and the only writer of the state file. | `yaml-cpp`. Nothing of the objectives or the pages. |
 | | `stepit_macro_tests` | Every test of `src/stepit-macro`, `rig.yaml` included. | Everything above. |
 | `ui` (pnpm) | StepIt UI | The rig's page. | The ROS interfaces of every module, by name, through rosbridge. |
 
@@ -213,15 +218,20 @@ flowchart TB
     Bringup["stepit_bringup"]
     Teleop["stepit_teleop"]
     Power["stepit_power"]
+    State["stepit_state"]
+    TeleopMsgs["stepit_teleop_msgs"]
     Tests --> Behaviors
     Tests -. "runs the XML" .-> Objectives
     Objectives -. "by name" .-> Behaviors
     Behaviors --> Modules
     MacroTests --> Teleop
     MacroTests --> Power
+    MacroTests --> State
+    Teleop --> TeleopMsgs
     MacroTests -. "loads by path" .-> Bringup
     Bringup -. "launches" .-> Modules
     Teleop -. "objectives by name" .-> Objectives
+    Behaviors -. "/stack_state by name" .-> State
 
     classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
 ```
@@ -235,10 +245,10 @@ The `plugins` workspace is built on top of `modules`, which holds the commander:
 
 [`rig.launch.py`](../src/stepit-macro/stepit_bringup/launch/rig.launch.py) reads [`rig.yaml`](../src/stepit-macro/stepit_bringup/config/rig.yaml) and starts everything. `rig.yaml` has two parts:
 
-- **`launch`**: the launch arguments of each module, by its name in `MODULES` (`robot`, `commander`, `camera`, `freezer`, `teleop`, `power`) or in `PROGRAMS` (`editor`, `ui`). `split_config()` refuses a name it does not know, and `include()` reads the arguments the module's launch file declares and refuses any other: a typo stops the rig rather than being ignored.
-- **every other section**: an ordinary ROS 2 parameter file, written to a temporary file and passed as `params_file` to the commander, the camera, the Freezer and `power_off`, after their own; and to `ui_teleop`, a second `gamepad_teleop` the launch file starts itself, with `/joy` remapped to `/ui/joy`.
+- **`launch`**: the launch arguments of each module, by its name in `MODULES` (`robot`, `commander`, `camera`, `freezer`, `teleop`, `power`, `state`) or in `PROGRAMS` (`editor`, `ui`). `split_config()` refuses a name it does not know, and `include()` reads the arguments the module's launch file declares and refuses any other: a typo stops the rig rather than being ignored.
+- **every other section**: an ordinary ROS 2 parameter file, written to a temporary file and passed as `params_file` to the commander, the camera, the Freezer, `power_off` and `stack_state`, after their own; and to `ui_teleop`, a second `gamepad_teleop` the launch file starts itself, with `/joy` remapped to `/ui/joy`.
 
-Each include is a `GroupAction(scoped=True, forwarding=False)`: arguments with the same name, `usb_port` or `web_port`, never leak from one module to the next. Before anything starts, `clear_state()` removes the entries of `state_cleared_on_start` from the state file, the marks of the rail, which are counts of motor steps and mean nothing once the motors' controller powers up again; it takes the entry out of the parameters, so the commander never sees it. The editor and StepIt UI are not launch files: `editor()` runs the editor's server with `tsx`, `ui()` serves `ui/dist` with `python3 -m http.server`.
+Each include is a `GroupAction(scoped=True, forwarding=False)`: arguments with the same name, `usb_port` or `web_port`, never leak from one module to the next. The editor and StepIt UI are not launch files: `editor()` runs the editor's server with `tsx`, `ui()` serves `ui/dist` with `python3 -m http.server`.
 
 The launch file finds the repo from its own source, `RIG_DIR`, because `build.sh` installs it as a link (`--symlink-install`). A change to `rig.yaml` needs a restart of the rig, no build.
 
@@ -246,11 +256,9 @@ The launch file finds the repo from its own source, `RIG_DIR`, because `build.sh
 
 ### Registration and Parameters
 
-[`plugin.cpp`](../src/plugins/stepit_behaviors/src/plugin.cpp) exports the whole package as one `BT_REGISTER_ROS_NODES` plugin, which calls `registerNodes()` in [`register_nodes.cpp`](../src/plugins/stepit_behaviors/src/register_nodes.cpp). It registers every behavior, gives `Shoot` and `SetPictureFolder` the default name of their action and service, creates the two latched publishers of the finished stacks once, and calls `declareParameters()` in [`parameters.cpp`](../src/plugins/stepit_behaviors/src/parameters.cpp).
+[`plugin.cpp`](../src/plugins/stepit_behaviors/src/plugin.cpp) exports the whole package as one `BT_REGISTER_ROS_NODES` plugin, which calls `registerNodes()` in [`register_nodes.cpp`](../src/plugins/stepit_behaviors/src/register_nodes.cpp). It registers every behavior, gives `Shoot`, `SetPictureFolder`, `SaveValues` and `LoadValues` the default name of their action and service (`/freezer/shoot`, `/camera/set_parameters`, `/stack_state/set_parameters`, `/stack_state/get_parameters`), and creates the publishers of the progress and of the finished stacks once, after the other nodes.
 
-`declareParameters()` makes the commander's node carry the rig's parameters, which the commander itself knows nothing about: every `overshoot.*`, `mm_per_turn.*`, `deg_per_turn.*` and `focus_stack.*` that `rig.yaml` gives, `state_file` and `pictures_folder`. It then loads the state file into `state.<key>` parameters, gives `state.turn`, `state.shots` and `state.angles` the defaults of `focus_stack.*` until a page sets them, and adds a callback that writes every `state.<key>` a page sets into the file. The behaviors read the parameters through the functions of [`parameters.hpp`](../src/plugins/stepit_behaviors/include/stepit_behaviors/parameters.hpp), e.g. `overshootParameter()`, never by name.
-
-The commander calls `registerNodes()` again before a goal whenever its own parameters changed, and setting any parameter counts: see [Why the Commander's Node Must Not Change](design/Review.md#why-the-commanders-node-must-not-change) in the review.
+The behaviors' parameters, every `overshoot.*`, `mm_per_turn.*` and `deg_per_turn.*` that `rig.yaml` gives and `pictures_folder`, are configuration, which the commander itself knows nothing about. The behaviors read them through the functions of [`parameters.hpp`](../src/plugins/stepit_behaviors/include/stepit_behaviors/parameters.hpp), e.g. `overshootParameter()`, never by name, and [`parameters.cpp`](../src/plugins/stepit_behaviors/src/parameters.cpp) takes them from the commander's parameter overrides, the parameter file it was started with. **The plugin never declares or sets a parameter on the commander's node**: the commander calls `registerNodes()` again before a goal whenever its own parameters changed, a declaration included, which drops the objectives added since the last build. See [Why the commander's node must not change](design/Review.md#why-the-commanders-node-must-not-change) in the review.
 
 [`nodes_model.cpp`](../src/plugins/stepit_behaviors/src/nodes_model.cpp) builds the `<TreeNodesModel>` of every behavior from the real registration, with no ROS node; `write_nodes_model` writes it to `stepit_objectives/objectives/stepit_behaviors.xml`, which the editor reads and `test_nodes_model` compares.
 
@@ -262,21 +270,19 @@ The commander calls `registerNodes()` again before a goal whenever its own param
 | Trajectories, pure logic | `CubicTrajectory` | Writes a `JointTrajectory` to the blackboard, one waypoint reached after a given duration, for `FollowJointTrajectory`. No objective uses either today. |
 | Motion | `GetJointPositions`, `FollowJointTrajectory`, `CommandJointPositions` | The first and the last own a callback group and an executor of their own, spun when ticked. `FollowJointTrajectory` derives from the rig's [`RosActionNode`](../src/plugins/stepit_behaviors/include/stepit_behaviors/ros_action_node.hpp), which drops the exception a halt throws when its goal has just ended. |
 | Controllers | `GetActiveControllers`, `IsControllerActive`, `SwitchController` | `BT::RosServiceNode`s of the controller manager. |
-| State | `SaveValues`, `LoadValues` | The state file, see below. |
+| State | `SaveValues`, `LoadValues` | `BT::RosServiceNode`s of the parameter services of `stack_state`, see below. |
 | Shot and pictures | `Shoot`, `ExpectPicture`, `SetPictureFolder`, `RestorePictureFolder`, `CurrentTime`, `StackDone`, `AllStacksDone`, `ReportProgress` | `Shoot` fires the Freezer's action; `ExpectPicture`, a decorator, succeeds only once `/camera/picture` reports the files of the shot; `RestorePictureFolder`, a decorator, sends the next pictures to the pictures folder again however its child ends, from its `halt()` too; the others name the folders and announce what is done. |
 
 `CommandJointPositions` is the one with the most behaviour: it sends every joint of the position controller its target, the others where they are, waits on `/joint_states` until the moved ones have arrived and stopped, goes past a target first when it would arrive against the approach direction (backlash), and on a halt or a timeout deactivates `position_controller`, so that the hardware brakes the released joints itself. Never stop by sending the current positions: a moving joint brakes past them and comes back.
 
-### The State File
+### The State of the Rig
 
-What the objectives learn while the rig runs goes into one YAML file, `state_file`, `~/ws/state/stack.yaml` on the rig, never into `rig.yaml`. Four writers share it:
+What the objectives learn and the pages set while the rig runs is the state of the rig, never `rig.yaml`. It is the node `stack_state`, of [`stepit_state`](../src/stepit-macro/stepit_state/include/stepit_state/stack_state.hpp), which keeps each value as its parameter `state.<name>`, a list of numbers. The section `stack_state` of `rig.yaml` names two kinds:
 
-- `SaveValues`, e.g. from `MarkNear`, writes a key, then sets its `state.<key>` parameter;
-- the callback of `declareParameters()` writes a key when a page sets `state.<key>`;
-- `declareParameters()` reads it and sets the parameters when the plugin is registered;
-- `rig.launch.py`'s `clear_state()` removes the marks before the rig starts.
+- **saved**, `turn`, `shots` and `angles`, the plan of a focus stack that a page sets: kept in `state_file`, `~/ws/state/stack.yaml` in the git-ignored folder `state`, so that they survive a restart. They start from the file, or from `defaults.<name>` while the file has none, e.g. on a new rig.
+- **forgotten**, `near` and `far`, the marks of the rail that `MarkNear` and `MarkFar` set: in memory only, `[]` at every start, which means "not set". They are counts of motor steps, which mean nothing once the motors' controller powers up again.
 
-Every write goes to a temporary file, then renamed, so a crash never leaves it half written. Every page reads the parameters on connection and follows `/parameter_events`, so a mark set on one tablet shows on every other.
+`SaveValues` sets a value through `/stack_state/set_parameters`, `LoadValues` reads it through `/stack_state/get_parameters`, and the pages do the same through rosbridge. The node refuses a name it does not keep, a value that is not a list of numbers, and a saved value it cannot write, and the caller is told why. It is the only writer of the file: every write goes to a temporary file, then renamed, so a crash never leaves it half written, and a file that cannot be read is reported and replaced by the next value saved. Every page reads the parameters on connection and follows `/parameter_events`, so a mark set on one tablet shows on every other.
 
 ## The Objectives
 
@@ -287,7 +293,7 @@ An objective is an XML file in [`stepit_objectives/objectives`](../src/plugins/s
 | `EnsureControllers` (subtree) | the given ones | Stops every controller owning a command interface except the given ones, and starts those, best effort. Every motion objective calls it first. |
 | `ActivateController`, `ActivateTeleop`, `ToggleTeleop` | the given one, `velocity_controller` | Hand the robot to a controller, to the gamepad and the sliders, or back. |
 | `MoveJointsDirectlyTo`, `OffsetJointsDirectlyBy`, `MoveRailBy`, `RotateStageBy`, `MoveRailToMark`, `Stack`, `FocusStack` | `position_controller` | `CommandJointPositions`: each joint on the microcontroller's own profile. |
-| `MarkNear`, `MarkFar` | none | Save where the rail is in the state file; they move nothing and leave the controllers alone. |
+| `MarkNear`, `MarkFar` | none | Save where the rail is in the state of the rig, in memory only; they move nothing and leave the controllers alone. |
 | `TakeShot` | none | `SetPictureFolder` `tests`, then `Shoot`. |
 
 The payload is written into the global blackboard, so the objectives read it as `{@key}`; values passed between the nodes of one tree have no prefix. The rig's joints have roles that the objectives know: `joint1` is the rotary stage and `joint2` the rail.
@@ -372,7 +378,7 @@ sequenceDiagram
     Cmd-->>Page: FocusStack succeeded
 ```
 
-StepIt UI sends the plan; the marks are already on the rig, in the state file. The objective computes the first and the last position of the stack from where the joints are, with `DegreesToRadians` and `SetJoints`, and every move approaches its position going from the one toward the other, so that the gears always end loaded the same way. At each angle, `SetPictureFolder` sends the pictures into `<start time>/angle_NN_<degrees>deg`; after the last shot of an angle, `StackDone` writes `stack.json` there and announces the folder; after the last angle, `AllStacksDone` writes `all_stacks.json`. A shot whose picture does not come within 15 s fails `ExpectPicture`, and the whole stack stops where it is.
+StepIt UI sends the plan; the marks are already on the rig, in `stack_state`. The objective computes the first and the last position of the stack from where the joints are, with `DegreesToRadians` and `SetJoints`, and every move approaches its position going from the one toward the other, so that the gears always end loaded the same way. At each angle, `SetPictureFolder` sends the pictures into `<start time>/angle_NN_<degrees>deg`; after the last shot of an angle, `StackDone` writes `stack.json` there and announces the folder; after the last angle, `AllStacksDone` writes `all_stacks.json`. A shot whose picture does not come within 15 s fails `ExpectPicture`, and the whole stack stops where it is.
 
 Every page shows every picture: StepIt UI follows `/camera/picture` and loads each one from the camera's web server, whichever page started the stack.
 
@@ -409,11 +415,13 @@ The objective tests run the real XML and the real behaviors against fakes of the
 | `test_offset_vector`, `test_set_joints`, `test_steps`, `test_ports` | The pure logic: offsets, the joints set, the loops, a number or a list. |
 | `test_cubic_trajectory`, `test_follow_joint_trajectory` | The cubic trajectory's shape; following it through the trajectory controller, and a controller that fails. |
 | `test_get_joint_positions`, `test_command_joint_positions` | Reading the joints; the direct moves, the approach against backlash, the stop on a halt or a timeout. |
-| `test_switch_controller`, `test_expect_picture`, `test_values_file` | The strictness of a switch; waiting for every file of a shot; the state file, its parameters and a page setting one. |
+| `test_switch_controller`, `test_expect_picture`, `test_values` | The strictness of a switch; waiting for every file of a shot; `SaveValues` and `LoadValues` against a real `stack_state`, a value a page set, a name it refuses, and no state on the commander's node. |
+| `test_report_progress`, `test_restore_picture_folder` | The progress of a stack on its latched topic; the pictures folder restored however the child ends. |
 | `test_*_objective`, `test_direct_objectives`, `test_axis_objectives` | Every objective, end to end: `FocusStack` alone has 17 cases. |
 | `test_nodes_model` | The committed node model matches the registration. |
 | `test_gamepad_teleop`, `test_power_off` | The sticks, the stop button, the watchdog; switching off, and the refusal during a stack, with a command of the test's own. |
-| `test_rig_config.py` | `rig.yaml` as `rig.launch.py` reads it: the sections, the clearing of the state, the measured ratios. |
+| `test_stack_state` | The defaults of a new rig, the saved values after a restart, the marks forgotten, the file written whole, a value refused, a broken file. |
+| `test_rig_config.py` | `rig.yaml` as `rig.launch.py` reads it: the sections, the saved and forgotten values, no state on the commander, the measured ratios. |
 
 Not tested: the commander's own loop around the plugin, i.e. `registerNodes()` called again before a goal; `include()` of `rig.launch.py` against the modules' real launch files; and anything against the real hardware, which is checked by hand on the rig.
 
@@ -423,8 +431,8 @@ Not tested: the commander's own loop around the plugin, i.e. `registerNodes()` c
 |---|---|
 | add an objective | an XML file in `stepit_objectives/objectives` naming it in `main_tree_to_execute`, with its payload in a `<TreeNodesModel>`; `docs/<Name>.md` and the README's list; a test in `stepit_tests`. No build. |
 | add a behavior | a class in `stepit_behaviors`, a line in `registerNodes()`, the node model regenerated with `write_nodes_model`, a test; then `bin/plugins/build.sh` and a restart. |
-| add a measured constant | a parameter in the section `stepit_server` of `rig.yaml`, declared in `declareParameters()`, read through a function of `parameters.hpp`. |
-| remember something across objectives | `SaveValues` and `LoadValues`, a key of the state file; `state_cleared_on_start` if a start of the rig must forget it. |
+| add a measured constant | a parameter in the section `stepit_server` of `rig.yaml`, read through a new function of `parameters.hpp` from the commander's parameter overrides, never declared. |
+| remember something across objectives | a name in `saved` (kept in the state file) or `forgotten` (empty at every start) of the section `stack_state` of `rig.yaml`, then `SaveValues` and `LoadValues` with that key. |
 | add a program | a package in `src/stepit-macro`, its launch file, an entry in `MODULES` of `rig.launch.py`, its section in `rig.yaml`, its tests in `stepit_macro_tests`, and the package in `ci-ros-lint.yml` and `.pre-commit-config.yaml`. |
 | configure a module | its section of `rig.yaml`, never the module. |
 
@@ -436,10 +444,10 @@ Not tested: the commander's own loop around the plugin, i.e. `registerNodes()` c
 
 **Objectives as XML, behaviors as C++.** A new or edited objective runs on the next goal with no build, and the editor shows it; a new behavior needs a build and a restart. What the XML may hold is limited to what the behaviors expose as ports, which is why `CommandJointPositions` takes the approach, the overshoot and the tolerances as ports.
 
-**State in a file on the rig, shown as parameters.** Every page and every objective sees the same marks and counts, and they survive a restart of the browser. Parameters were chosen over a service of the rig's own because every page already follows `/parameter_events` through rosbridge; the price is a parameter callback inside the plugin, and a file with four writers.
+**State on a node of its own, shown as parameters.** Every page and every objective sees the same marks and counts, and they survive a restart of the browser. Parameters were chosen over a service of the rig's own because every page already follows `/parameter_events` through rosbridge. They live on `stack_state`, not on the commander's node, whose every parameter change makes BehaviorTree.ROS2 register the plugin and the trees again; and that node is the one writer of the file. The price is one more node to start, and objectives that fail when it is not running.
 
 **Two teleop nodes, the same program.** The sliders are a second gamepad, so they inherit the watchdog and the velocity scales of the real one, and the page never sends a velocity. The price is that both write `/velocity_controller/commands`, and a gamepad held at the same time as a slider fights it.
 
-**The robot stops by releasing the position controller.** A halt of `CommandJointPositions` deactivates `position_controller`, and the hardware brakes every released joint at the motor's acceleration, measured in `docs/ActivateController.md`. Cancelling is a controlled stop, not an emergency stop: see `TODO.md`, item 4.
+**The robot stops by releasing the position controller.** A halt of `CommandJointPositions` deactivates `position_controller`, and the hardware brakes every released joint at the motor's acceleration, measured in `docs/ActivateController.md`. Cancelling is a controlled stop, not an emergency stop.
 
 **No authentication.** Anyone who reaches rosbridge on port 9090 can run objectives, set parameters and switch the computer off; the rig is for a workshop's own network.
