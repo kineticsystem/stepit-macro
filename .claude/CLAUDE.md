@@ -205,6 +205,10 @@ they reach the real robot: both `test.sh` scripts therefore set `ROS_DOMAIN_ID` 
 `STEPIT_TEST_DOMAIN_ID`, overriding the shell's. Run the tests through them, never with a plain
 `colcon test`.
 
+## Pull Request Notes
+
+Each pull request has a notes file in [docs/pr/](../docs/pr/README.md): what we discussed, what we chose, and why. One file per pull request, written while the branch is open. Keep them simple: short sentences, one idea per paragraph, and a Mermaid diagram when it explains faster than words. A pull request that moves a module also has a note in the module's own `docs/pr/`.
+
 ## Architecture and Review Documents
 
 For the `architect` and `reviewer` skills: what they cannot find out alone.
