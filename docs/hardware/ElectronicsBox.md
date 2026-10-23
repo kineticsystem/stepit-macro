@@ -24,7 +24,7 @@
 
 ## Introduction
 
-This document explains how to build the electronics box of the rig: the enclosure that holds all of its electronics, among them the Teensy and the [PiBot board](../../modules/stepit-motors/docs/hardware/PiBot%20MDRB.pdf) with its TMC2208 drivers. It is the physical box, not the Docker container that runs the software.
+This document explains how to build the electronics box of the rig: the enclosure that holds all of its electronics, among them the Teensy and the [PiBot board](../../modules/stepit-motors/docs/hardware/PiBotMDRB.pdf) with its TMC2208 drivers. It is the physical box, not the Docker container that runs the software.
 
 For now it covers the connectors of the five stepper motors on the panel of the box, and the USB and network ports of the Raspberry Pi 5. It follows one idea: **use a standard industrial connector on the panel, the same one for every motor, with the sockets on the box**.
 
