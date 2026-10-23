@@ -17,6 +17,7 @@
   - [Start the Rig with the Pi](#start-the-rig-with-the-pi)
   - [Where the Rig Keeps Its Files](#where-the-rig-keeps-its-files)
   - [Update the Rig](#update-the-rig)
+  - [Flash StepIt Freezer](#flash-stepit-freezer)
 - [Logging in with an SSH Key](#logging-in-with-an-ssh-key)
   - [Rebooting the Pi from the PC](#rebooting-the-pi-from-the-pc)
 - [Troubleshooting](#troubleshooting)
@@ -25,7 +26,7 @@
 
 This document installs StepIt Macro on a Raspberry Pi 5, which then runs the whole rig: StepIt Motors, StepIt Freezer, the camera, the commander, the editor and StepIt UI, in the same container as on a PC. We control it from a tablet or a desktop on the same network, through StepIt UI.
 
-The container brings its own Ubuntu 24.04 with ROS 2 Jazzy, whatever system the Pi runs. The Pi's system only provides the kernel, Docker and the drivers of the USB devices, which Raspberry Pi OS has: the serial ports of the Teensy (`cdc_acm`) and of the Arduino Nano (`ftdi_sio`), the camera and the gamepad.
+The container brings its own Ubuntu 24.04 with ROS 2 Jazzy, whatever system the Pi runs. The Pi's system only provides the kernel, Docker and the drivers of the USB devices, which Raspberry Pi OS has: the serial ports of the Teensy and of the Arduino Nano R4 (`cdc_acm`), the camera and the gamepad.
 
 Every command below runs on the Pi, in an SSH session:
 
@@ -38,7 +39,7 @@ ssh <user>@stepit.local
 - A Raspberry Pi 5 with **8 GB** of memory, which the build needs, and **Raspberry Pi OS Lite (64-bit)**, reachable on the network as `stepit.local`. Lite has no desktop, which is what we want: a desktop grabs the camera as soon as it is plugged in, and the camera driver then cannot open it.
 - The official Raspberry Pi **27 W** power supply, 5.1 V at 5 A, and an active cooler: a long build throttles a Pi 5 without one. The Pi asks the supply what it can give, over USB-PD: with a supply of 3 A, e.g. the 15 W one of the Pi 4, it caps its USB ports at 600 mA for all of them together, which the Teensy, the Nano, the gamepad and the camera exceed, and they drop out. See [Check the System](#check-the-system).
 - About 15 GB free on the SD card or, better, on an NVMe SSD: the image is about 3 GB, and the build writes a lot.
-- StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano), connected to the Pi's USB ports.
+- StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano R4), connected to the Pi's USB ports.
 
 ## Install the Rig
 
@@ -94,9 +95,9 @@ The two boards appear under the same names as on any other computer, since the n
 | Board | Name | Usual port |
 |---|---|---|
 | StepIt Motors, the Teensy | `usb-Teensyduino_USB_Serial_12382150-if00` | `/dev/ttyACM0` |
-| StepIt Freezer, the Arduino Nano | `usb-FTDI_FT232R_USB_UART_A700fkwd-if00-port0` | `/dev/ttyUSB0` |
+| StepIt Freezer, the Arduino Nano R4 | `usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00` | `/dev/ttyACM0` or `/dev/ttyACM1` |
 
-The rig uses the names, not the ports: `/dev/ttyACM0` and `/dev/ttyUSB0` depend on the order the boards were plugged in.
+The rig uses the names, not the ports: both boards are `/dev/ttyACM*`, numbered in the order they were plugged in.
 
 The container needs nothing more to open them. It is privileged and mounts the whole of `/dev`, so it sees a board that is unplugged and plugged in again. Its user is in the group `dialout`, number 20, which owns the serial ports on Raspberry Pi OS as on Ubuntu.
 
@@ -149,7 +150,7 @@ sed -i \
   -e 's|use_dummy: true|use_dummy: false|' \
   -e 's|usb_port: /dev/ttyACM0|usb_port: /dev/serial/by-id/usb-Teensyduino_USB_Serial_12382150-if00|' \
   -e 's|use_fake: true|use_fake: false|' \
-  -e 's|usb_port: /dev/ttyUSB0|usb_port: /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A700fkwd-if00-port0|' \
+  -e 's|usb_port: /dev/ttyUSB0|usb_port: /dev/serial/by-id/usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00|' \
   src/stepit-macro/stepit_bringup/config/rig.yaml
 ```
 
@@ -184,7 +185,7 @@ Start the rig, and follow its output:
 
 ```
 Connection established with STEPIT controller, firmware 1.1.1.
-Connection established with FREEZER controller, firmware 2.0.0.
+Connection established with FREEZER controller, firmware 2.1.0.
 ```
 
 Stop the rig with:
@@ -257,6 +258,30 @@ Then build the rig again, and start it:
 
 `git stash pop` merges the Pi's changes into a `rig.yaml` that changed upstream, unless the same lines changed: git then says so, and the file shows both versions to choose from.
 
+### Flash StepIt Freezer
+
+The firmware of the Freezer's Nano R4 is not part of the image: flash it again when an update changes `modules/stepit-freezer/src/freezer_mcu`, i.e. when the log says the driver refuses the firmware. The Pi flashes it with PlatformIO, over DFU.
+
+Install PlatformIO once, in a virtual environment of its own, and the udev rule that lets it write to the Nano R4's USB device:
+
+```
+python3 -m venv ~/.platformio/penv
+~/.platformio/penv/bin/pip install platformio
+sudo cp modules/stepit-freezer/src/freezer_mcu/udev/60-arduino-nano-r4.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+Stop the rig, which holds the port, flash, and start it again:
+
+```
+./docker/dock.sh stop
+cd modules/stepit-freezer/src/freezer_mcu
+~/.platformio/penv/bin/pio run --target upload --upload-port /dev/serial/by-id/usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00
+cd ~/stepit-macro && ./docker/dock.sh start
+```
+
+The first upload downloads the compiler, about 240 MB. See [Flash the Firmware](../modules/stepit-freezer/README.md#flash-the-firmware) in the README of StepIt Freezer for the details.
+
 ## Logging in with an SSH Key
 
 A key lets a PC log in to the Pi without its password: we type the password once, to install the key. Scripts and tools on the PC, e.g. a coding assistant checking the rig, can then run commands on the Pi. Run these commands on the PC, in a terminal, replacing `<user>` with the user name on the Pi.
@@ -312,6 +337,12 @@ ssh stepit sudo -n /usr/sbin/reboot
 
 ## Troubleshooting
 
+**`git submodule update` fails with `Host key verification failed`.** The submodules are listed with SSH URLs in `.gitmodules`, and the Pi has no SSH key for GitHub, or has never trusted its host key. The repositories are public: fetch them over HTTPS for that one command.
+
+```
+git -c url."https://github.com/".insteadOf=git@github.com: submodule update --init --recursive
+```
+
 **A program crashes on the Pi but not on a PC.** Raspberry Pi OS runs the Pi 5 with memory pages of 16 KB, and a few arm64 programs only work with 4 KB pages. Switch to the standard kernel, with 4 KB pages, and reboot:
 
 ```
@@ -323,15 +354,15 @@ sudo reboot
 
 **The build stops with `Killed`, or the Pi stops answering during the build.** It ran out of memory, which happens on a Pi with less than 8 GB: the rig needs a Pi 5 with 8 GB.
 
-**`ls -l /dev/serial/by-id/` does not list a board.** The Pi does not see it. Check the cable, which must carry data and not only power, and the board's LED. `journalctl -kf`, left running while the board is plugged in, prints what the kernel sees: a working Teensy ends with `ttyACM0: USB ACM device`, a working Nano with `now attached to ttyUSB0`.
+**`ls -l /dev/serial/by-id/` does not list a board.** The Pi does not see it. Check the cable, which must carry data and not only power, and the board's LED. `journalctl -kf`, left running while the board is plugged in, prints what the kernel sees: a working Teensy or Nano R4 ends with `ttyACM0: USB ACM device`.
 
-**The log says the connection to a board failed.** Another program holds its port, e.g. a rig still running on a PC that shares the board, or ModemManager: see [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer). The Nano resets when its port opens: one failed attempt followed by `Connection established` is normal.
+**The log says the connection to a board failed.** Another program holds its port, e.g. a rig still running on a PC that shares the board, or ModemManager: see [Connect StepIt Motors and StepIt Freezer](#connect-stepit-motors-and-stepit-freezer).
 
 **The gamepad does nothing, and the log says `Couldn't open joystick /dev/input/js0`.** The container's user is not in the Pi's group `input`: start the rig with `./docker/dock.sh start`, which adds it, not with a plain `docker compose up`. Check it with `docker exec stepit-macro id`, which lists the number of `input`, 996. If `/dev/input/js0` does not exist, the gamepad is not plugged in, or is not in D mode: the switch at its back must be on **D**, and `lsusb` shows `046d:c216 ... [DirectInput Mode]`. Once the log no longer complains, press the stop button, button 1: the sticks drive the joints after `ToggleTeleop succeeded`, and pressing it again hands the robot back.
 
 **USB devices drop out, or the kernel says `error -71` and `unable to enumerate USB device`.** The ports run out of current: the Pi caps them at 600 mA when it does not see a 5 A supply. Check the supply as in [Check the System](#check-the-system): with the official 27 W supply, plugged straight into the Pi, it prints `5000`. A supply of 3 A cannot power the four devices: use the 27 W one, or a powered USB hub. Do not raise the cap with `usb_max_current_enable` on a 3 A supply: the Pi then browns out under load.
 
-**The Freezer does not connect after the Pi boots, and the log says `Cannot connect to the Freezer controller`.** The Arduino Nano is sometimes refused when the Pi powers up with it plugged in: `ls /dev/serial/by-id/` lists the Teensy only, and the kernel logged `error -71` for its port. Unplug the Nano and plug it in again: the Freezer's node tries to connect every 2 s, and logs `The Freezer controller is back` within a few seconds, with no restart. A short cable that carries data helps.
+**The Freezer does not connect after the Pi boots, and the log says `Cannot connect to the Freezer controller`.** The Pi did not see the Nano R4: `ls /dev/serial/by-id/` lists the Teensy only. It connected at every boot we tried, but if it happens, unplug the Nano and plug it in again: the Freezer's node tries to connect every 2 s, and logs `The Freezer controller is back` within a few seconds, with no restart. The Nano 3 the board had before was often refused at boot, with `error -71`.
 
 **The camera driver keeps waiting for a camera that is on and connected.** Its USB device is not writable by the container's user: install the rule of [Give the Rig the Camera and the Gamepad](#give-the-rig-the-camera-and-the-gamepad), then unplug the camera and plug it in again.
 
