@@ -4,7 +4,7 @@ Pull request [#104](https://github.com/kineticsystem/stepit-macro/pull/104), bra
 
 ## Goal
 
-The rig's motors now run on a Teensy 4.0 in place of the Teensy 4.1. StepIt Motors builds its firmware for both boards, `teensy40` by default, and documents both, in [kineticsystem/stepit-motors#25](https://github.com/kineticsystem/stepit-motors/pull/25), whose note, `docs/pr/025-teensy-40-and-41.md`, holds the decisions. Here we move the submodule to it and update the Pi guide, which names the board and now flashes it.
+The rig's motors now run on a Teensy 4.0 in place of the Teensy 4.1. StepIt Motors builds its firmware for both boards, `teensy40` by default, and documents both, in [kineticsystem/stepit-motors#25](https://github.com/kineticsystem/stepit-motors/pull/25), whose note, `docs/pr/025-teensy-40-and-41.md`, holds the decisions. Here we move the submodule to its merge, `6f9825f`, and update the Pi guide, which names the board and now flashes it.
 
 ## Decisions
 
@@ -22,4 +22,4 @@ The default `usb_port` of the motors in `rig.yaml`, `/dev/ttyACM0`. Each compute
 
 - Checked on the Pi, with the Teensy 4.0 and no motors attached: it flashed from the Pi twice, the second time with the rig stopped and the Teensy running StepIt Motors, as the guide says; the driver connected and read firmware 1.1.1; `/joint_states` came at 30 Hz; `OffsetJointsDirectlyBy`, `MoveJointsDirectlyTo` and velocities through `ActivateTeleop` moved the five joints as commanded.
 - The pins are not checked with motors on the Teensy 4.0.
-- The submodule points at the commit of stepit-motors#25 on its branch. When #25 is merged, it moves to the commit on `main`.
+- The submodule first pointed at the commit of stepit-motors#25 on its branch, `cbfa061`, and moved to its merge, `6f9825f`, which has the same files.
