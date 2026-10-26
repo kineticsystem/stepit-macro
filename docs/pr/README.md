@@ -11,6 +11,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [104-stepit-motors-teensy-40.md](104-stepit-motors-teensy-40.md) | [#104](https://github.com/kineticsystem/stepit-macro/pull/104) Update the modules: StepIt Motors on the Teensy 4.0 |
 | [105-stepit-motors-on-main.md](105-stepit-motors-on-main.md) | [#105](https://github.com/kineticsystem/stepit-macro/pull/105) StepIt Motors at its commit on `main` |
 | [106-test-motors.md](106-test-motors.md) | [#106](https://github.com/kineticsystem/stepit-macro/pull/106) TestMotors: every motor in turn |
+| [modules-mermaid-diagrams.md](modules-mermaid-diagrams.md) | Update the modules: diagrams as SVG images |
 
 ## How to Write One
 
