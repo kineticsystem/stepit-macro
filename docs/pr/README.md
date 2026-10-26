@@ -7,6 +7,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | Note | Pull request |
 |---|---|
 | [102-update-stepit-freezer.md](102-update-stepit-freezer.md) | [#102](https://github.com/kineticsystem/stepit-macro/pull/102) Update the modules: StepIt Freezer on the Arduino Nano R4 |
+| [103-mermaid-diagrams.md](103-mermaid-diagrams.md) | [#103](https://github.com/kineticsystem/stepit-macro/pull/103) Diagrams as SVG images, from Mermaid sources |
 
 ## How to Write One
 
