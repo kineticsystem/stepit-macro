@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Objective: TestMotors
+
+  Tests the five motors one after the other: each turns 720 degrees, two turns,
+  counter-clockwise, then back to where it was, before the next one starts,
+  from joint1 to joint5. The others stay where they are.
+
+    ros2 action send_goal /commander/execute_objective \
+      btcpp_ros2_interfaces/action/ExecuteTree \
+      "{target_tree: TestMotors}"
+
+  The angles are those of the motors, not of the axes: two turns of joint1 turn
+  the rotary stage by 9 degrees, and two turns of joint2 move the rail by about
+  3 mm. A positive offset turns a StepIt motor counter-clockwise.
+
+  Every move goes through the position controller, on the microcontroller's
+  own profile. The objective fails as soon as a motor does not reach its target
+  within 60 s, and leaves the next ones untested.
+-->
+<root BTCPP_format="4" main_tree_to_execute="TestMotors">
+
+  <BehaviorTree ID="TestMotors" _description="Turns each motor 720 degrees counter-clockwise and back, one after the other, from joint1 to joint5.">
+    <Sequence>
+      <SubTree ID="EnsureControllers" controllers="position_controller"/>
+      <SubTree ID="TurnMotorAndBack" joint="joint1"/>
+      <SubTree ID="TurnMotorAndBack" joint="joint2"/>
+      <SubTree ID="TurnMotorAndBack" joint="joint3"/>
+      <SubTree ID="TurnMotorAndBack" joint="joint4"/>
+      <SubTree ID="TurnMotorAndBack" joint="joint5"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- One motor: two turns counter-clockwise, then back to where it was. -->
+  <BehaviorTree ID="TurnMotorAndBack" _description="Turns one motor 720 degrees counter-clockwise, then back to where it was.">
+    <Sequence>
+      <GetJointPositions _description="Where the motor is." topic_name="/joint_states" joint_names="{joint}" positions="{start}"/>
+      <!-- 720 degrees, 4 pi radians: positive is counter-clockwise. -->
+      <OffsetVector _description="Two turns counter-clockwise from there." input="{start}" offset="12.566370614359172" output="{target}"/>
+      <CommandJointPositions _description="Turns the motor there, and waits until it is."
+                             topic_name="/position_controller/commands"
+                             controller_joints="joint1;joint2;joint3;joint4;joint5"
+                             joint_names="{joint}" positions="{target}"/>
+      <CommandJointPositions _description="Turns the motor back to where it was, and waits until it is."
+                             topic_name="/position_controller/commands"
+                             controller_joints="joint1;joint2;joint3;joint4;joint5"
+                             joint_names="{joint}" positions="{start}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- The payload of the objective, none, and the port of its subtree, for editors. -->
+  <TreeNodesModel>
+    <SubTree ID="TestMotors"/>
+    <SubTree ID="TurnMotorAndBack">
+      <input_port name="joint">the joint of the motor to turn, e.g. joint3</input_port>
+    </SubTree>
+  </TreeNodesModel>
+
+</root>

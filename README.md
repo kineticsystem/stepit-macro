@@ -304,6 +304,7 @@ the objective, i.e. after the `target_tree` of the command:
 |---|---|
 | [`OffsetJointsDirectlyBy`](docs/OffsetJointsDirectlyBy.md) | Moves joints **by** a signed offset, relative to where they are, through the position controller: each joint on the microcontroller's own profile, fastest, but not synchronised. |
 | [`MoveJointsDirectlyTo`](docs/MoveJointsDirectlyTo.md) | Moves joints **to** absolute positions, the same way. |
+| [`TestMotors`](docs/TestMotors.md) | Tests the five motors one after the other: each turns 720 degrees counter-clockwise, then back, from `joint1` to `joint5`. |
 | [`ActivateController`](docs/ActivateController.md) | Stops the controller driving the robot and activates another one. |
 | [`ActivateTeleop`](docs/ActivateTeleop.md) | Hands the robot to the gamepad: stops the controllers driving it and activates the velocity controller. **Manual drive** in StepIt UI runs it. |
 | [`ToggleTeleop`](docs/ToggleTeleop.md) | Runs `ActivateTeleop`, or, when the gamepad already drives the robot, hands it back to the trajectory controller. The gamepad's stop button runs it. |
