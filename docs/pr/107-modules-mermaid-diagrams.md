@@ -1,6 +1,6 @@
 # Update the Modules: Diagrams as SVG Images
 
-Branch `modules-mermaid-diagrams`.
+Pull request [#107](https://github.com/kineticsystem/stepit-macro/pull/107), branch `modules-mermaid-diagrams`.
 
 ## Goal
 
