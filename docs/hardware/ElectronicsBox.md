@@ -102,69 +102,8 @@ Five M12 sockets need about 25 mm between their centres.
 
 Each motor goes from the board to the motor through the panel:
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    subgraph Box["Electronics box"]
-        Board["PiBot board<br/>pin header"] -- "Dupont 4-pin" --> Socket["Panel socket<br/>M12 female"]
-    end
-    Socket -- "M12 male cable<br/>Lapp, 2 m" --> Motor["Motor<br/>JST PH 6-pin"]
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is ../diagrams/motor-wiring.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="../diagrams/motor-wiring.svg" alt="Inside the electronics box, a Dupont 4-pin cable joins the pin header of the PiBot board to an M12 female panel socket; a 2 m Lapp cable with an M12 male plug joins the socket to the JST PH 6-pin connector of the motor." width="204"></p>
 
 **The socket goes on the box, the plug on the cable.** The side that carries the power must never have exposed pins.
 

@@ -61,79 +61,15 @@ None of the findings is a safety issue for the motion. The stops are:
 
 ## The System as It Is
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-  UI[StepIt UI] -->|rosbridge 9090| CMD[Commander]
-  ED[StepIt Editor] -->|rosbridge 9090| CMD
-  ED -->|files| XML[Objectives XML]
-  GP[Gamepad] -->|ToggleTeleop| CMD
-  CMD -->|loads| PL[stepit_behaviors plugin]
-  CMD -->|loads| XML
-  PL -->|controllers, joint states| MOTORS[StepIt Motors]
-  PL -->|Shoot| FRZ[StepIt Freezer]
-  PL -->|folder, pictures| CAM[StepIt Camera]
-  UI -->|settings, live view| CAM
-  UI -->|set_outputs| FRZ
-  UI -->|power_off| PWR[stepit_power]
-  UI -->|state.*| ST[stack_state]
-  PL -->|SaveValues, LoadValues| ST
+The tasks go through the commander, as objectives:
 
-  classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is ../diagrams/review-tasks.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="../diagrams/review-tasks.svg" alt="StepIt Editor, StepIt UI and the gamepad reach the commander, which loads the objectives' XML and the stepit_behaviors plugin; the plugin drives the motors, the Freezer and the camera, and saves and loads values in stack_state." width="678"></p>
+
+The configuration goes straight to the nodes:
+
+<!-- The source is ../diagrams/review-configuration.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="../diagrams/review-configuration.svg" alt="StepIt UI sets the camera's settings and live view, the Freezer's outputs and the state of stack_state directly, and asks stepit_power to switch the computer off." width="637"></p>
 
 Tasks go through the commander; configuration goes straight to the drivers. The sliders of StepIt UI reach the robot through `ui_teleop`, a second `gamepad_teleop`. State shared between pages lives on the rig, in four places:
 
