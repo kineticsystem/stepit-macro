@@ -207,6 +207,20 @@ if(BUILD_TESTING)
     ${sensor_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
+  # The TestMotors objective, against a fake robot.
+  ament_add_gtest(test_test_motors_objective tests/test_test_motors_objective.cpp)
+  target_include_directories(test_test_motors_objective PRIVATE tests)
+  target_link_libraries(test_test_motors_objective
+    ament_index_cpp::ament_index_cpp
+    stepit_behaviors::stepit_behaviors
+    stepit_server::stepit_server
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ${control_msgs_TARGETS}
+    ${controller_manager_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${trajectory_msgs_TARGETS})
+
   # The ToggleTeleop objective, and so IsControllerActive.
   ament_add_gtest(test_toggle_teleop_objective
     tests/test_toggle_teleop_objective.cpp)
