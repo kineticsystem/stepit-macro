@@ -31,91 +31,8 @@ It follows one idea: **the modules know nothing of the rig**. StepIt Motors, Ste
 
 One container, `stepit-macro`, runs every module and the rig's own programs, started by one launch file. The browser and the gamepad are the only things outside it.
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    Browser["StepIt UI<br/>in the browser"]
-    Gamepad["Gamepad<br/>/dev/input/js0"]
-    subgraph Container["stepit-macro container"]
-        Bridge["rosbridge<br/>port 9090"]
-        Teleop["gamepad_teleop<br/>ui_teleop"]
-        Power["power_off"]
-        State["stack_state<br/>state/stack.yaml"]
-        Commander["stepit_server<br/>with stepit_behaviors"]
-        Objectives["stepit_objectives<br/>XML"]
-        Motors["StepIt Motors<br/>controller manager"]
-        Camera["StepIt Camera"]
-        Freezer["StepIt Freezer"]
-    end
-    Browser --> Bridge
-    Gamepad --> Teleop
-    Bridge --> Teleop
-    Bridge --> Power
-    Bridge --> Commander
-    Bridge -- "parameters" --> State
-    Teleop -- "objectives" --> Commander
-    Commander -- "parameters" --> State
-    Objectives -. "loaded" .-> Commander
-    Teleop -- "velocities" --> Motors
-    Commander --> Motors
-    Commander --> Camera
-    Commander --> Freezer
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/big-picture.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/big-picture.svg" alt="StepIt UI reaches rosbridge, which reaches the teleop nodes, power_off, stepit_server and the parameters of stack_state; the gamepad drives gamepad_teleop; stepit_server, loaded with the objectives, sets the parameters of stack_state and drives the motors, the camera and the Freezer." width="871"></p>
 
 The commander is a generic action server: it runs any behavior tree it finds, by name. The rig gives it a plugin, `stepit_behaviors`, which it loads into its own process, and a folder of objectives, `stepit_objectives/objectives`. What the objectives and the pages share, the marks and the counts of a focus stack, lives in a node of its own, `stack_state`, never on the commander's node. The browser reaches everything through the commander's rosbridge, which knows every message of the rig because every module is installed in the same container; it also loads the live view and the pictures from StepIt Camera's servers, ports 8081 and 8090, which the diagram leaves out.
 
@@ -154,87 +71,8 @@ The rig is built as three colcon workspaces and one pnpm project, each with its 
 
 The dependencies as they are, the build-time ones solid, the ones by name at run time dashed:
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    Tests["stepit_tests"]
-    Objectives["stepit_objectives"]
-    Behaviors["stepit_behaviors"]
-    Modules["modules workspace<br/>stepit_server, freezer_msgs, stepit_camera_msgs"]
-    MacroTests["stepit_macro_tests"]
-    Bringup["stepit_bringup"]
-    Teleop["stepit_teleop"]
-    Power["stepit_power"]
-    State["stepit_state"]
-    TeleopMsgs["stepit_teleop_msgs"]
-    Tests --> Behaviors
-    Tests -. "runs the XML" .-> Objectives
-    Objectives -. "by name" .-> Behaviors
-    Behaviors --> Modules
-    MacroTests --> Teleop
-    MacroTests --> Power
-    MacroTests --> State
-    Teleop --> TeleopMsgs
-    MacroTests -. "loads by path" .-> Bringup
-    Bringup -. "launches" .-> Modules
-    Teleop -. "objectives by name" .-> Objectives
-    Behaviors -. "/stack_state by name" .-> State
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/packages.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/packages.svg" alt="The packages and their dependencies: stepit_tests on stepit_behaviors and the objectives, the behaviors on the modules workspace, stepit_macro_tests on stepit_teleop, stepit_power, stepit_state and stepit_bringup, which launches the modules; stepit_teleop on stepit_teleop_msgs; the behaviors name /stack_state." width="975"></p>
 
 The `plugins` workspace is built on top of `modules`, which holds the commander: the plugin is loaded into the commander's process, so it must be compiled against the same BehaviorTree.CPP and BehaviorTree.ROS2. `stepit-macro` is built on ROS alone, so that CI builds it without the modules: it builds its own copy of `btcpp_ros2_interfaces` from the commander's submodule, the one interface it needs.
 
@@ -302,81 +140,8 @@ The payload is written into the global blackboard, so the objectives read it as 
 
 `FocusStack` is the longest flow of the rig, and the one that crosses the most modules:
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-sequenceDiagram
-    participant Page as StepIt UI
-    participant Cmd as stepit_server
-    participant Robot as position_controller
-    participant Shot as Freezer, camera
-
-    Page->>Cmd: FocusStack {shots, stage_from, stage_to, angles}
-    Note over Cmd: EnsureControllers, LoadValues near, far
-    Cmd->>Robot: first position, past it and back
-    loop every angle, every shot
-        Cmd->>Robot: the rail at this shot
-        Robot-->>Cmd: /joint_states: arrived, stopped
-        Cmd->>Shot: Shoot
-        Shot-->>Cmd: /camera/picture
-        Cmd-->>Page: /focus_stack/progress
-    end
-    Cmd-->>Page: /focus_stack/stack_done, per angle
-    Cmd->>Robot: every joint home
-    Cmd-->>Page: FocusStack succeeded
-```
+<!-- The source is diagrams/focus-stack.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/focus-stack.svg" alt="StepIt UI sends FocusStack to stepit_server, which moves position_controller to every shot of every angle, shoots with the Freezer and the camera, reports the progress and each stack done, and brings every joint home." width="764"></p>
 
 StepIt UI sends the plan; the marks are already on the rig, in `stack_state`. The objective computes the first and the last position of the stack from where the joints are, with `DegreesToRadians` and `SetJoints`, and every move approaches its position going from the one toward the other, so that the gears always end loaded the same way. At each angle, `SetPictureFolder` sends the pictures into `<start time>/angle_NN_<degrees>deg`; after the last shot of an angle, `StackDone` writes `stack.json` there and announces the folder; after the last angle, `AllStacksDone` writes `all_stacks.json`. A shot whose picture does not come within 15 s fails `ExpectPicture`, and the whole stack stops where it is.
 

@@ -77,78 +77,8 @@ Pressing the button does two things, in order:
 1. It sends velocity 0 to every joint, which brakes them if the velocity controller is already active.
 2. It runs the objective [`ToggleTeleop`](ToggleTeleop.md). The commander halts the objective it is running, if any, and runs `ToggleTeleop` in its place. When `velocity_controller` is not active, it runs `ActivateTeleop`, which stops every other controller driving the robot, leaves the broadcasters running, and activates `velocity_controller`. When it is, it activates `joint_trajectory_controller` instead, and the sticks no longer move the robot.
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-sequenceDiagram
-    participant Joy as joy_linux_node
-    participant Teleop as gamepad_teleop
-    participant Commander as stepit-commander
-    participant Manager as controller_manager
-
-    Joy->>Teleop: /joy, stop button pressed
-    Teleop->>Manager: /velocity_controller/commands, all 0
-    Teleop->>Commander: ToggleTeleop
-    Note over Commander: halts the running objective,<br/>if any, within 10 ms
-    Commander->>Manager: list_controllers
-    Note over Commander: velocity_controller not active:<br/>runs ActivateTeleop
-    Commander->>Manager: list_controllers
-    Commander->>Manager: switch_controller
-    Note over Manager: other controllers stopped,<br/>the motors brake to 0
-    Commander-->>Teleop: succeeded
-```
+<!-- The source is diagrams/gamepad-stop.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/gamepad-stop.svg" alt="The stop button: gamepad_teleop sends zero velocities and ToggleTeleop; the commander halts the running objective, finds velocity_controller inactive and runs ActivateTeleop, which switches the controllers." width="760"></p>
 
 **The commander preempts.** A goal sent while an objective runs replaces it: the commander halts the running tree at its next tick, which cancels its trajectory or deactivates its position controller, aborts its goal with the message `Preempted by objective 'ToggleTeleop'`, and runs the new objective. This is the commander's parameter `preempt`, on by default; with it off, `ToggleTeleop` would wait for the running objective to end, and the button would stop nothing. See [One Objective at a Time](https://github.com/kineticsystem/stepit-commander#one-objective-at-a-time) in the README of StepIt Commander.
 

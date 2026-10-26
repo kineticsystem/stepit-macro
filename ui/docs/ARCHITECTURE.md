@@ -27,74 +27,8 @@ It follows one idea: **the page owns nothing of the rig**. The commander, the ca
 
 The page is a single-page React application, built by Vite into `dist` and served as static files on port 8070 by StepIt Macro. It has no server of its own: the browser talks to three servers of the rig directly.
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    Page["StepIt UI<br/>in the browser"]
-    Page -- ":9090" --- Bridge["rosbridge"]
-    Page -- ":8081" --- Video["web_video_server"]
-    Page -- ":8090" --- Web["camera web server"]
-    Bridge --- Commander["Commander"]
-    Bridge --- Camera["Camera driver"]
-    Bridge --- Freezer["Freezer"]
-    Bridge --- CM["Controller manager"]
-    Bridge --- Programs["ui_teleop<br/>stack_state<br/>power_off"]
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/connections.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/connections.svg" alt="The page connects to rosbridge on port 9090, web_video_server on 8081 and the camera's web server on 8090; rosbridge reaches the commander, the camera driver, the Freezer, the controller manager and the rig's programs." width="910"></p>
 
 | Server | Port | Carries |
 |---|---|---|
@@ -118,79 +52,8 @@ The source code lives in [`src`](../src), one folder per device of the rig, plus
 
 The dependencies are meant to point down only. The diagram shows the imports as they are; the dashed arrows skip the layer of interfaces, see [Are the Layers Respected?](#are-the-layers-respected).
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TD
-    Views["Views<br/>components, App.tsx"]
-    Stores["State<br/>commander, camera, shot, stack, lights, motion, power, devices"]
-    Interfaces["Interfaces and logic<br/>commander.ts, camera.ts, picture.ts, joy.ts, outputs.ts…"]
-    Connection["Connection<br/>connection.ts, settings.ts"]
-    Transport["Transport<br/>rosbridge.ts"]
-
-    Views --> Stores
-    Views -.-> Interfaces
-    Views -.-> Connection
-    Stores --> Interfaces
-    Stores --> Connection
-    Stores -.-> Transport
-    Interfaces --> Transport
-    Connection --> Transport
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/layers.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/layers.svg" alt="The layers of the page: views, state, interfaces and logic, connection, transport; the dashed arrows are the imports that skip the layer of interfaces." width="528"></p>
 
 > [!IMPORTANT]
 > Keep the layer of interfaces free of React, of the stores and of `ros()`: each function or class takes the `Rosbridge` it talks to, or a function to publish with, as `JoyPublisher` does. This is what lets the tests run it against a fake WebSocket, and nothing else in the page is tested.
@@ -253,72 +116,8 @@ Each store is a zustand store, created at import time, with its actions on it. T
 | `useDevices` | the last status of each device and when it came, `since` (when the page connected), `now`, ticking every 0.5 s to see a node gone silent | `followDevices`: the four status topics, again on every connection and when the camera node of the settings changes | `useSettings` |
 | `useSettings` | the preferences of the browser, in `localStorage` | — | — |
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    Shot["useShot"] --> Camera["useCamera"]
-    Shot --> Commander["useCommander"]
-    Camera --> Commander
-    Motion["useMotion"] --> Commander
-    Stack["useStack"] --> Commander
-    Stack --> Camera
-    Camera --> Settings["useSettings"]
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/hooks.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/hooks.svg" alt="The stores and the stores they read: useShot and useStack read useCamera and useCommander, useMotion reads useCommander, useCamera reads useCommander and useSettings." width="457"></p>
 
 `useShot` also reads `useSettings`, for the address of the pictures, `useStack` stops the live view through `useCamera` before a stack, and `useLights` depends on no other store. The stores form no cycle, and `useCommander` is the one they all lean on: whether a task runs decides what may be changed.
 
@@ -326,75 +125,8 @@ flowchart TB
 
 **Test shot** is the longest flow of the page, and the one that crosses the most stores:
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-sequenceDiagram
-    participant Shot as useShot
-    participant Rig as rosbridge
-    participant Web as web server
-
-    Note over Shot: followPictures: listening since the page opened
-    Note over Shot: stop the live view
-    Shot->>Rig: run TakeShot
-    Note over Rig: SetPictureFolder tests, then Shoot in ExpectPicture
-    Rig-->>Shot: picture: tests/IMG_0042.CR2
-    Rig-->>Shot: TakeShot succeeded: the picture came
-    Shot->>Web: HEAD, Range /pictures/tests/IMG_0042.CR2
-    Web-->>Shot: JPEG preview
-```
+<!-- The source is diagrams/take-shot.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/take-shot.svg" alt="useShot stops the live view and runs TakeShot through rosbridge; the picture arrives on its topic, then the objective succeeds, and useShot fetches the JPEG preview from the web server." width="594"></p>
 
 The Toolbar's button calls `takeShot()`. The live view is stopped through `useCamera`, and the objective runs through `useCommander`, which the diagram leaves out: both talk to rosbridge. **Every page shows every picture**: `followPictures` hands each one the camera reports to `show()`, whoever fired the shot, a test shot or a stack, from this page or another device. **The rig proves the shot, not the page**: `TakeShot` wraps `Shoot` in `ExpectPicture`, so it succeeds only once the camera has reported the picture, and fails when none comes, for every client that runs it. `takeShot()` only says how the objective ended.
 
@@ -404,69 +136,8 @@ The page shows only the latest picture, and keeps two, the files of a shot in RA
 
 ## The Sliders, from the Thumb to the Motor
 
-```mermaid
----
-config:
-  theme: base
-  themeCSS: ".edgeLabel p { padding: 4px 10px; }"
-  flowchart:
-    padding: 20
-    nodeSpacing: 40
-    rankSpacing: 50
-  class:
-    padding: 16
-  sequence:
-    boxMargin: 12
-    boxTextMargin: 8
-    noteMargin: 28
-    messageMargin: 40
-    actorMargin: 60
-    labelBoxWidth: 56
-    labelBoxHeight: 28
-  themeVariables:
-    primaryColor: "#3b6fb6"
-    primaryTextColor: "#ffffff"
-    primaryBorderColor: "#2c5590"
-    lineColor: "#8b949e"
-    textColor: "#4d86d6"
-    actorBkg: "#3b6fb6"
-    actorBorder: "#2c5590"
-    actorTextColor: "#ffffff"
-    actorLineColor: "#8b949e"
-    signalColor: "#8b949e"
-    signalTextColor: "#4d86d6"
-    noteBkgColor: "#3b6fb6"
-    noteTextColor: "#ffffff"
-    noteBorderColor: "#2c5590"
-    secondaryColor: "#3b6fb6"
-    tertiaryColor: "#3b6fb6"
-    clusterBkg: "transparent"
-    clusterBorder: "#8b949e"
-    titleColor: "#4d86d6"
-    edgeLabelBackground: "#3b6fb6"
-    classText: "#ffffff"
-    labelBoxBkgColor: "#3b6fb6"
-    labelBoxBorderColor: "#2c5590"
-    labelTextColor: "#ffffff"
-    loopTextColor: "#4d86d6"
-    mainBkg: "#3b6fb6"
-    nodeBorder: "#2c5590"
-    nodeTextColor: "#ffffff"
-    secondaryBorderColor: "#2c5590"
-    secondaryTextColor: "#ffffff"
-    tertiaryBorderColor: "#2c5590"
-    tertiaryTextColor: "#ffffff"
-    errorBkgColor: "#3b6fb6"
-    errorTextColor: "#ffffff"
----
-flowchart TB
-    Slider["Slider"] -- "axis, -1 to 1" --> Motion["useMotion"]
-    Motion --> Joy["JoyPublisher"]
-    Joy -- "/ui/joy, 20 Hz" --> Teleop["ui_teleop"]
-    Teleop -- "velocities" --> VC["velocity_controller"]
-
-    classDef default fill:#3b6fb6,stroke:#2c5590,color:#ffffff
-```
+<!-- The source is diagrams/sliders.mmd: change it, then run bin/render-diagrams.sh. -->
+<p align="center"><img src="diagrams/sliders.svg" alt="A slider sets an axis in useMotion; JoyPublisher sends /ui/joy at 20 Hz to ui_teleop, which turns it into velocities for velocity_controller." width="182"></p>
 
 `Slider` turns the pointer into an axis with `axisAt()`, which has a dead zone around the centre. `useMotion` ignores it unless manual drive is on. `JoyPublisher` sends the axes at once on a change, then 20 times a second while a slider is held, through `ros().publish()`, which drops them while disconnected.
 
