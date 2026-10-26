@@ -18,6 +18,7 @@
   - [Where the Rig Keeps Its Files](#where-the-rig-keeps-its-files)
   - [Update the Rig](#update-the-rig)
   - [Flash StepIt Freezer](#flash-stepit-freezer)
+  - [Flash StepIt Motors](#flash-stepit-motors)
 - [Logging in with an SSH Key](#logging-in-with-an-ssh-key)
   - [Rebooting the Pi from the PC](#rebooting-the-pi-from-the-pc)
 - [Troubleshooting](#troubleshooting)
@@ -39,7 +40,7 @@ ssh <user>@stepit.local
 - A Raspberry Pi 5 with **8 GB** of memory, which the build needs, and **Raspberry Pi OS Lite (64-bit)**, reachable on the network as `stepit.local`. Lite has no desktop, which is what we want: a desktop grabs the camera as soon as it is plugged in, and the camera driver then cannot open it.
 - The official Raspberry Pi **27 W** power supply, 5.1 V at 5 A, and an active cooler: a long build throttles a Pi 5 without one. The Pi asks the supply what it can give, over USB-PD: with a supply of 3 A, e.g. the 15 W one of the Pi 4, it caps its USB ports at 600 mA for all of them together, which the Teensy, the Nano, the gamepad and the camera exceed, and they drop out. See [Check the System](#check-the-system).
 - About 15 GB free on the SD card or, better, on an NVMe SSD: the image is about 3 GB, and the build writes a lot.
-- StepIt Motors (the Teensy) and StepIt Freezer (the Arduino Nano R4), connected to the Pi's USB ports.
+- StepIt Motors (the Teensy 4.0) and StepIt Freezer (the Arduino Nano R4), connected to the Pi's USB ports.
 
 ## Install the Rig
 
@@ -94,7 +95,7 @@ The two boards appear under the same names as on any other computer, since the n
 
 | Board | Name | Usual port |
 |---|---|---|
-| StepIt Motors, the Teensy | `usb-Teensyduino_USB_Serial_12382150-if00` | `/dev/ttyACM0` |
+| StepIt Motors, the Teensy 4.0 | `usb-Teensyduino_USB_Serial_21025410-if00` | `/dev/ttyACM0` |
 | StepIt Freezer, the Arduino Nano R4 | `usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00` | `/dev/ttyACM0` or `/dev/ttyACM1` |
 
 The rig uses the names, not the ports: both boards are `/dev/ttyACM*`, numbered in the order they were plugged in.
@@ -148,7 +149,7 @@ The rig starts on fake hardware by default. Point it at the two boards, in [`rig
 ```
 sed -i \
   -e 's|use_dummy: true|use_dummy: false|' \
-  -e 's|usb_port: /dev/ttyACM0|usb_port: /dev/serial/by-id/usb-Teensyduino_USB_Serial_12382150-if00|' \
+  -e 's|usb_port: /dev/ttyACM0|usb_port: /dev/serial/by-id/usb-Teensyduino_USB_Serial_21025410-if00|' \
   -e 's|use_fake: true|use_fake: false|' \
   -e 's|usb_port: /dev/ttyUSB0|usb_port: /dev/serial/by-id/usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00|' \
   src/stepit-macro/stepit_bringup/config/rig.yaml
@@ -281,6 +282,29 @@ cd ~/stepit-macro && ./docker/dock.sh start
 ```
 
 The first upload downloads the compiler, about 240 MB. See [Flash the Firmware](../modules/stepit-freezer/README.md#flash-the-firmware) in the README of StepIt Freezer for the details.
+
+### Flash StepIt Motors
+
+The firmware of the Teensy is not part of the image either: flash it again when an update changes `modules/stepit-motors/src/stepit_mcu`, i.e. when the log says `Flash the firmware that matches this workspace`, or when the Teensy is new. The Pi flashes it with the PlatformIO of [Flash StepIt Freezer](#flash-stepit-freezer), with the command line loader of the Teensy.
+
+Install the udev rule of the Teensy once, which lets the loader write to its USB device:
+
+```
+wget -O /tmp/00-teensy.rules https://www.pjrc.com/teensy/00-teensy.rules
+sudo cp /tmp/00-teensy.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+StepIt Motors has one build per board: `teensy40`, the board of the rig, and `teensy41`. Stop the rig, which holds the port, flash the build of the rig's board, and start it again:
+
+```
+./docker/dock.sh stop
+cd modules/stepit-motors/src/stepit_mcu
+~/.platformio/penv/bin/pio run -e teensy40 --target upload
+cd ~/stepit-macro && ./docker/dock.sh start
+```
+
+The loader restarts the Teensy into its bootloader by itself. It may print `Unable to soft reboot` and `Waiting for Teensy device...`, then `Found HalfKay Bootloader`: the upload is done when it prints `Booting`. If it keeps waiting, press the program button of the Teensy once. The first upload downloads the compiler of the Teensy. See [Install StepIt Motors on the Microcontroller](../modules/stepit-motors/README.md#install-stepit-motors-on-the-microcontroller) in the README of StepIt Motors for the details.
 
 ## Logging in with an SSH Key
 
