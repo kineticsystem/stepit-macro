@@ -56,6 +56,21 @@ describe('the camera over rosbridge', () => {
     await expect(stop).rejects.toThrow('The camera is not connected');
   });
 
+  it('follows whether the live view is on, from the status of the driver, whoever switched it', () => {
+    const listener = vi.fn();
+    camera.onStreaming(listener);
+    expect(socket.lastSent('subscribe')).toMatchObject({
+      topic: '/camera/status', type: 'stepit_camera_msgs/msg/CameraStatus', qos: { durability: 'transient_local' },
+    });
+    socket.receive({ op: 'publish', topic: '/camera/status', msg: { connected: true, streaming: true } });
+    socket.receive({ op: 'publish', topic: '/camera/status', msg: { connected: true, streaming: false } });
+    expect(listener.mock.calls).toEqual([[true], [false]]);
+
+    // A driver that does not say it leaves the page as it is.
+    socket.receive({ op: 'publish', topic: '/camera/status', msg: { connected: true } });
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it('hears of the saved pictures, reliably', () => {
     const listener = vi.fn();
     camera.onPicture(listener);

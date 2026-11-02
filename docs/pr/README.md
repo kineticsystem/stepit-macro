@@ -15,6 +15,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [108-inverted-joints.md](108-inverted-joints.md) | [#108](https://github.com/kineticsystem/stepit-macro/pull/108) Invert both motors of the rig |
 | [109-freezer-lost-reply.md](109-freezer-lost-reply.md) | [#109](https://github.com/kineticsystem/stepit-macro/pull/109) Update the modules: the Freezer tolerates a lost reply |
 | [111-freezer-2.1.1.md](111-freezer-2.1.1.md) | [#111](https://github.com/kineticsystem/stepit-macro/pull/111) Update the modules: StepIt Freezer on firmware 2.1.1 |
+| [112-live-view-follows-camera.md](112-live-view-follows-camera.md) | [#112](https://github.com/kineticsystem/stepit-macro/pull/112) The live view button follows the camera |
 
 ## How to Write One
 
