@@ -16,6 +16,11 @@ export interface StatusMessage {
   device: string;
   /** Why it is not connected; empty when it is. */
   message: string;
+  /**
+   * The Freezer's only: the status queries its controller left unanswered
+   * during the shots since its node started. A healthy controller leaves none.
+   */
+  missed_status?: number;
 }
 
 export interface Device {
@@ -49,12 +54,14 @@ export interface Heard {
 
 /**
  * - connected: the node talks to its device.
+ * - warning: the node talks to its device, which has misbehaved since the node
+ *   started, e.g. the Freezer's controller left status queries unanswered.
  * - disconnected: the node runs, and says it has lost its device.
  * - gone: the node said nothing for SILENCE_MS, e.g. it died.
  * - unknown: the page cannot tell, e.g. it is not connected to the rig, or it
  *   has just connected.
  */
-export type DeviceState = 'connected' | 'disconnected' | 'gone' | 'unknown';
+export type DeviceState = 'connected' | 'warning' | 'disconnected' | 'gone' | 'unknown';
 
 /**
  * The state of a device, from what the page last heard of it: since is when
@@ -65,7 +72,8 @@ export function deviceState(heard: Heard | undefined, since: number | undefined,
   const last = heard && heard.at >= since ? heard : undefined;
   if (!last) return now - since > SILENCE_MS ? 'gone' : 'unknown';
   if (now - last.at > SILENCE_MS) return 'gone';
-  return last.status.connected ? 'connected' : 'disconnected';
+  if (!last.status.connected) return 'disconnected';
+  return (last.status.missed_status ?? 0) > 0 ? 'warning' : 'connected';
 }
 
 /**
@@ -77,6 +85,11 @@ export function deviceText(device: Device, state: DeviceState, heard: Heard | un
     case 'connected': {
       const name = heard?.status.device;
       return `${device.label}: connected${name ? ` (${name})` : ''}`;
+    }
+    case 'warning': {
+      const missed = heard?.status.missed_status ?? 0;
+      return `${device.label}: connected, but ${missed} status ${missed === 1 ? 'reply' : 'replies'} missed since ` +
+        'its node started; a healthy board misses none: check its firmware and its USB cable';
     }
     case 'disconnected':
       return `${device.label}: ${heard?.status.message || 'not connected'}`;

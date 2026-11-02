@@ -21,6 +21,15 @@ describe('the state of a device', () => {
     expect(deviceState(heard(false, 2000, 'Lost the StepIt controller'), since, 2100)).toBe('disconnected');
   });
 
+  it('is a warning when the Freezer\'s controller has missed status replies', () => {
+    const freezer = (missed: number): Heard => ({ status: { connected: true, device: '/dev/ttyACM0', message: '',
+      missed_status: missed }, at: 2000 });
+    expect(deviceState(freezer(0), since, 2100)).toBe('connected');
+    expect(deviceState(freezer(3), since, 2100)).toBe('warning');
+    expect(deviceState({ ...freezer(3), status: { ...freezer(3).status, connected: false } }, since, 2100))
+      .toBe('disconnected');
+  });
+
   it('is gone when its node has been silent too long', () => {
     expect(deviceState(heard(true, 2000), since, 2000 + SILENCE_MS + 1)).toBe('gone');
   });
@@ -38,6 +47,10 @@ describe('the state of a device', () => {
 describe('the text of a device', () => {
   it('names the device it talks to, or tells why not', () => {
     expect(deviceText(motors, 'connected', heard(true, 0), true)).toBe('Motors: connected (/dev/ttyACM0)');
+    const freezer = DEVICES.find((d) => d.id === 'freezer')!;
+    const missed = (n: number): Heard => ({ status: { connected: true, device: 'x', message: '', missed_status: n }, at: 0 });
+    expect(deviceText(freezer, 'warning', missed(1), true)).toMatch(/^Freezer: connected, but 1 status reply missed/);
+    expect(deviceText(freezer, 'warning', missed(4), true)).toMatch(/4 status replies missed .* a healthy board misses none/);
     expect(deviceText(motors, 'disconnected', heard(false, 0, 'Lost the StepIt controller: IO Exception'), true))
       .toBe('Motors: Lost the StepIt controller: IO Exception');
     expect(deviceText(motors, 'gone', undefined, true)).toMatch(/no news from its node/);

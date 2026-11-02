@@ -14,6 +14,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [107-modules-mermaid-diagrams.md](107-modules-mermaid-diagrams.md) | [#107](https://github.com/kineticsystem/stepit-macro/pull/107) Update the modules: diagrams as SVG images |
 | [108-inverted-joints.md](108-inverted-joints.md) | [#108](https://github.com/kineticsystem/stepit-macro/pull/108) Invert both motors of the rig |
 | [109-freezer-lost-reply.md](109-freezer-lost-reply.md) | [#109](https://github.com/kineticsystem/stepit-macro/pull/109) Update the modules: the Freezer tolerates a lost reply |
+| [110-show-missed-replies.md](110-show-missed-replies.md) | [#110](https://github.com/kineticsystem/stepit-macro/pull/110) Show the missed replies |
 
 ## How to Write One
 

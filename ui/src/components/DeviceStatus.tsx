@@ -13,8 +13,9 @@ const ICONS: Record<DeviceId, ReactNode> = {
  * The connection to the rig's rosbridge, first: green when connected, orange
  * while connecting, red and struck through when disconnected. Then an icon per
  * device of the rig, camera, motors, Freezer and gamepad: green when its node
- * talks to it, red and struck through when it does not or its node is silent,
- * grey when the page cannot tell. A tap tells why, as a tablet has no tooltip.
+ * talks to it, orange when it talks to it but the device has misbehaved, e.g.
+ * the Freezer's board missed status replies, red and struck through when it
+ * does not or its node is silent, grey when the page cannot tell. A tap tells why, as a tablet has no tooltip.
  */
 export function DeviceStatus() {
   const { heard, since, now } = useDevices();

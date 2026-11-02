@@ -165,7 +165,8 @@ button.stop:disabled { background: var(--panel); border-color: var(--border); co
 .device { position: relative; }
 .device-connected, .device-connected:hover:not(:disabled),
 .connection-connected, .connection-connected:hover:not(:disabled) { color: var(--ok); }
-.connection-connecting, .connection-connecting:hover:not(:disabled) { color: var(--warning); }
+.connection-connecting, .connection-connecting:hover:not(:disabled),
+.device-warning, .device-warning:hover:not(:disabled) { color: var(--warning); }
 .device-disconnected, .device-gone, .connection-disconnected,
 .device-disconnected:hover:not(:disabled), .device-gone:hover:not(:disabled),
 .connection-disconnected:hover:not(:disabled) { color: var(--error); }
