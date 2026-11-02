@@ -47,7 +47,7 @@ export const useShot = create<ShotState>((set, get) => {
     pictures: [],
 
     async takeShot() {
-      // TakeShot switches the live view off for the shot, and on again after it.
+      // TakeShot switches the live view off, and leaves it off: the picture shows in its place.
       set({ state: 'shooting', message: 'Shooting…' });
       try {
         // followPictures shows the picture, as every page shows every picture.
