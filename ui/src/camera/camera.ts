@@ -4,6 +4,7 @@
 //   <node>/get_settings      the settings, their values and their choices
 //   <node>/set_parameters    change a setting, e.g. iso, as `ros2 param set`
 //   <node>/start_streaming   the live view on, and off with stop_streaming
+//   <node>/status            whether the live view is on, among others
 //   <node>/picture           each picture the camera takes, once saved: where
 //                            the file is, which the web server serves
 //
@@ -47,6 +48,11 @@ interface SetParametersResponse {
   results: { successful: boolean; reason: string }[];
 }
 
+interface StatusMessage {
+  /** Whether the live view is on; absent from a driver older than it. */
+  streaming?: boolean;
+}
+
 interface PictureMessage {
   name: string;
   path: string;
@@ -87,6 +93,16 @@ export class Camera {
 
   stopStreaming(): Promise<string> {
     return this.trigger('stop_streaming');
+  }
+
+  /**
+   * Calls the listener with whether the live view is on, as the driver says
+   * on its status: when it changes, whoever switched it, and every second.
+   */
+  onStreaming(listener: (streaming: boolean) => void): () => void {
+    return this.ros.subscribe<StatusMessage>(`${this.node}/status`, 'stepit_camera_msgs/msg/CameraStatus',
+      (message) => { if (message.streaming !== undefined) listener(message.streaming); },
+      { reliability: 'reliable', durability: 'transient_local', history: 'keep_last', depth: 1 });
   }
 
   /**

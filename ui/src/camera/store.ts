@@ -20,6 +20,7 @@ interface CameraState {
   changing: Record<string, string>;
   /** Why the last change failed, by setting. */
   refused: Record<string, string>;
+  /** Whether the live view is on, as the camera's driver says. */
   streaming: boolean;
   streamError?: string;
 
@@ -57,6 +58,7 @@ export const useCamera = create<CameraState>((set, get) => ({
   },
 
   async setStreaming(on) {
+    // Shown at once; the driver's status confirms it, or tells otherwise.
     set({ streaming: on, streamError: undefined });
     try {
       await (on ? camera().startStreaming() : camera().stopStreaming());
@@ -72,20 +74,29 @@ function without<T>(record: Record<string, T>, key: string): Record<string, T> {
 }
 
 /**
- * Keeps the camera up to date while the page is open: reads the settings now
- * and then, and starts the live view again whenever rosbridge reconnects, if
- * it was on. Returns a function that stops it.
+ * Keeps the camera up to date while the page is open: follows whether the
+ * live view is on, as the driver says, so that every page shows the same,
+ * whoever switched it, and reads the settings now and then. Returns a
+ * function that stops it.
  */
 export function followCamera(): () => void {
+  let stopFollowing = () => {};
+  const follow = () => {
+    stopFollowing();
+    stopFollowing = camera().onStreaming((streaming) => useCamera.setState({ streaming }));
+  };
   const connected = () => {
     void useCamera.getState().refresh();
-    // The live view is off when the page opens. Once started, it is started
-    // again after a reconnection, e.g. when the rig restarted.
-    if (useCamera.getState().streaming) void useCamera.getState().setStreaming(true);
+    // Again on every connection, as the other stores do: the settings may
+    // name another rosbridge, a new Rosbridge without the subscriptions.
+    follow();
   };
   ros();
   if (status() === 'connected') connected();
   const unsubscribe = onConnected(connected);
+  const unsubscribeSettings = useSettings.subscribe((settings, previous) => {
+    if (settings.cameraNode !== previous.cameraNode) follow();
+  });
   const timer = setInterval(() => {
     const { changing } = useCamera.getState();
     // During a task, e.g. a shot, the driver may be busy downloading a
@@ -95,7 +106,9 @@ export function followCamera(): () => void {
     }
   }, REFRESH_PERIOD);
   return () => {
+    stopFollowing();
     unsubscribe();
+    unsubscribeSettings();
     clearInterval(timer);
   };
 }
