@@ -21,6 +21,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(stepit_camera_msgs REQUIRED)
 find_package(stepit_macro_msgs REQUIRED)
 find_package(stepit_server REQUIRED)
@@ -43,6 +44,7 @@ add_library(stepit_behaviors SHARED
   src/picture_folder.cpp
   src/cubic_trajectory.cpp
   src/expect_picture.cpp
+  src/pause_live_view.cpp
   src/restore_picture_folder.cpp
   src/ports.cpp
   src/shoot.cpp
@@ -70,6 +72,7 @@ target_link_libraries(stepit_behaviors PUBLIC
   ${rcl_interfaces_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
+  ${std_srvs_TARGETS}
   ${stepit_camera_msgs_TARGETS}
   ${stepit_macro_msgs_TARGETS}
   ${trajectory_msgs_TARGETS})
@@ -121,6 +124,7 @@ ament_export_dependencies(
   rclcpp_action
   sensor_msgs
   std_msgs
+  std_srvs
   stepit_camera_msgs
   stepit_macro_msgs
   stepit_server

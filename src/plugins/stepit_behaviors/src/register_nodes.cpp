@@ -29,6 +29,7 @@
 #include "stepit_behaviors/offset_vector.hpp"
 #include "stepit_behaviors/picture_folder.hpp"
 #include "stepit_behaviors/report_progress.hpp"
+#include "stepit_behaviors/pause_live_view.hpp"
 #include "stepit_behaviors/restore_picture_folder.hpp"
 #include "stepit_behaviors/shoot.hpp"
 #include "stepit_behaviors/stack_done.hpp"
@@ -74,6 +75,7 @@ void registerNodes(BT::BehaviorTreeFactory& factory, const BT::RosNodeParams& pa
   BT::RosNodeParams camera_params = params;
   camera_params.default_port_value = "/camera/set_parameters";
   factory.registerNodeType<SetPictureFolder>("SetPictureFolder", camera_params);
+  factory.registerNodeType<PauseLiveView>("PauseLiveView", params);
   factory.registerNodeType<RestorePictureFolder>("RestorePictureFolder", params);
   factory.registerNodeType<CurrentTime>("CurrentTime");
 

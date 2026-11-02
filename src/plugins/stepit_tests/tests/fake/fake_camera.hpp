@@ -32,6 +32,8 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <stepit_camera_msgs/msg/camera_status.hpp>
 #include <stepit_camera_msgs/msg/picture.hpp>
 
 namespace stepit_tests
@@ -42,7 +44,10 @@ namespace stepit_tests
  * reports a picture on /camera/picture, as the real driver does once it has
  * downloaded it, in the folder its parameter `folder` names, which a node sets
  * through /camera/set_parameters. It records every folder it is given, and can
- * ignore the next releases, as the real camera sometimes does. Given a
+ * ignore the next releases, as the real camera sometimes does. Its live view
+ * is switched by /camera/start_streaming and /camera/stop_streaming, and told
+ * on the latched /camera/status: like the real camera, it ignores a release
+ * while in live view. Given a
  * pictures folder with saveTo, it also saves each picture there, as an empty
  * file, before reporting it, as the real driver saves the download.
  */
@@ -50,10 +55,29 @@ class FakeCamera
 {
 public:
   using Picture = stepit_camera_msgs::msg::Picture;
+  using CameraStatus = stepit_camera_msgs::msg::CameraStatus;
+  using Trigger = std_srvs::srv::Trigger;
 
   FakeCamera() : node_{ std::make_shared<rclcpp::Node>("camera") }
   {
     publisher_ = node_->create_publisher<Picture>("/camera/picture", rclcpp::QoS{ 10 });
+    status_publisher_ =
+        node_->create_publisher<CameraStatus>("/camera/status", rclcpp::QoS{ 1 }.reliable().transient_local());
+    publishStatus();
+    start_service_ = node_->create_service<Trigger>(
+        "/camera/start_streaming", [this](const Trigger::Request::SharedPtr, Trigger::Response::SharedPtr response) {
+          ++starts_;
+          streaming_ = true;
+          publishStatus();
+          response->success = true;
+        });
+    stop_service_ = node_->create_service<Trigger>(
+        "/camera/stop_streaming", [this](const Trigger::Request::SharedPtr, Trigger::Response::SharedPtr response) {
+          ++stops_;
+          streaming_ = false;
+          publishStatus();
+          response->success = true;
+        });
     node_->declare_parameter("folder", "");
     on_set_ = node_->add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) {
       rcl_interfaces::msg::SetParametersResult result;
@@ -85,9 +109,13 @@ public:
   FakeCamera(const FakeCamera&) = delete;
   FakeCamera& operator=(const FakeCamera&) = delete;
 
-  /// @brief The shutter is released: a picture, unless the camera ignores it.
+  /// @brief The shutter is released: a picture, unless the camera ignores it, or is in live view.
   void release()
   {
+    if (streaming_)
+    {
+      return;
+    }
     if (ignore_ > 0)
     {
       --ignore_;
@@ -122,6 +150,41 @@ public:
   void ignore(int count)
   {
     ignore_ = count;
+  }
+
+  /// @brief Switch the live view on or off, as another client would, and tell it on the status.
+  void setStreaming(bool streaming)
+  {
+    streaming_ = streaming;
+    publishStatus();
+  }
+
+  /// @brief Whether the live view is on.
+  bool streaming() const
+  {
+    return streaming_;
+  }
+
+  /// @brief How many times the live view was asked to start, and to stop.
+  int starts() const
+  {
+    return starts_;
+  }
+  int stops() const
+  {
+    return stops_;
+  }
+
+  /// @brief Whether the live view is on once `starts` start requests came, or after `timeout`:
+  /// PauseLiveView starts it again without waiting.
+  bool streamingAfter(int starts, std::chrono::milliseconds timeout = std::chrono::milliseconds{ 3000 }) const
+  {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (starts_ < starts && std::chrono::steady_clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+    }
+    return streaming_;
   }
 
   /// @brief How many pictures it took.
@@ -164,8 +227,23 @@ public:
   }
 
 private:
+  void publishStatus()
+  {
+    CameraStatus status;
+    status.connected = true;
+    status.device = "Fake camera";
+    status.streaming = streaming_;
+    status_publisher_->publish(status);
+  }
+
   rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<Picture>::SharedPtr publisher_;
+  rclcpp::Publisher<CameraStatus>::SharedPtr status_publisher_;
+  rclcpp::Service<Trigger>::SharedPtr start_service_;
+  rclcpp::Service<Trigger>::SharedPtr stop_service_;
+  std::atomic<bool> streaming_{ false };
+  std::atomic<int> starts_{ 0 };
+  std::atomic<int> stops_{ 0 };
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_;
   rclcpp::executors::SingleThreadedExecutor executor_;
   std::thread spinner_;

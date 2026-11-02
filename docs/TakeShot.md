@@ -14,15 +14,18 @@ ros2 action send_goal /commander/execute_objective \
 
 ```
 TakeShot
-└── Sequence
-    └── RestorePictureFolder   (however it ends: the pictures folder itself again)
-        └── Sequence
-            ├── SetPictureFolder   tests   (where the camera saves the picture)
-            └── ExpectPicture   (fails if the camera reports no picture of the shot)
-                └── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
+└── PauseLiveView   resume   (the live view off for the shot, then on again if it was on)
+    └── Sequence
+        └── RestorePictureFolder   (however it ends: the pictures folder itself again)
+            └── Sequence
+                ├── SetPictureFolder   tests   (where the camera saves the picture)
+                └── ExpectPicture   (fails if the camera reports no picture of the shot)
+                    └── Shoot   (sends the goal to /freezer/shoot, and waits for the end of the shot)
 ```
 
 **The picture proves the shot.** The Freezer fires the camera through a wire and cannot tell whether its shutter opened: the camera may ignore the release. `ExpectPicture` listens on `/camera/picture` from before the shot, and the objective succeeds only once the camera has reported the picture, within 15 s of the end of the shot. Each shot of [`FocusStack`](FocusStack.md) is checked the same way, so every client that fires a shot, StepIt UI, the editor or the command line, learns the same.
+
+**The live view is off for the shot.** A camera in live view ignores a shot. `PauseLiveView` reads `streaming` on `/camera/status`; when the live view is on, it calls `/camera/stop_streaming`, which answers once the camera has left the live view, and after the shot, succeeded, failed or stopped, `/camera/start_streaming`. A live view that was off stays off.
 
 **A test shot goes into the folder `tests`** of the camera's pictures, apart from the folders of the stacks, see [`FocusStack`](FocusStack.md). StepIt UI's **Test shot** runs this objective. After the shot, succeeded, failed or stopped, the next pictures go into the pictures folder itself again, not into `tests`: see `RestorePictureFolder` in [`FocusStack`](FocusStack.md).
 

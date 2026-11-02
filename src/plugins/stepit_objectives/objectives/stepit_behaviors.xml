@@ -85,6 +85,11 @@
             <input_port name="offset" type="BT::AnyTypeAllowed">a number added to every element, or a list with one per element</input_port>
             <input_port name="input" type="std::vector&lt;double, std::allocator&lt;double&gt; &gt;">the numbers to offset</input_port>
         </Action>
+        <Decorator ID="PauseLiveView">
+            <input_port name="timeout" type="double" default="10.000000">how long to wait for the camera's status, then for it to leave the live view, in seconds</input_port>
+            <input_port name="resume" type="bool" default="true">switch the live view on again after the child, if it was on</input_port>
+            <input_port name="camera" type="std::string" default="/camera">the node of StepIt Camera</input_port>
+        </Decorator>
         <Action ID="ReportProgress">
             <input_port name="total" type="BT::AnyTypeAllowed">of how much</input_port>
             <input_port name="done" type="BT::AnyTypeAllowed">how much is done, e.g. the pictures taken</input_port>
