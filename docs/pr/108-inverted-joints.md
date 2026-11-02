@@ -1,6 +1,6 @@
 # Inverted Joints
 
-Branch `inverted-joints`.
+Pull request [#108](https://github.com/kineticsystem/stepit-macro/pull/108), branch `inverted-joints`.
 
 ## Goal
 
