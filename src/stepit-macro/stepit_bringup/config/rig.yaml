@@ -27,6 +27,11 @@ launch:
     baud_rate: 9600
     # RViz, on the host's display.
     launch_rviz: false
+    # The joints whose motor turns the other way, separated by spaces: their
+    # positions and velocities change sign. Both motors turn backwards as they
+    # are wired since 2026-11-02; inverted, the rail counts away from the
+    # subject and the stage counter-clockwise is negative, as below.
+    inverted_joints: joint1 joint2
 
   # StepIt Commander, the action server running the objectives, and the
   # rosbridge the editor reaches it through: stepit_server/commander.launch.py.
