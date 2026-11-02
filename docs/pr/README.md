@@ -12,6 +12,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [105-stepit-motors-on-main.md](105-stepit-motors-on-main.md) | [#105](https://github.com/kineticsystem/stepit-macro/pull/105) StepIt Motors at its commit on `main` |
 | [106-test-motors.md](106-test-motors.md) | [#106](https://github.com/kineticsystem/stepit-macro/pull/106) TestMotors: every motor in turn |
 | [107-modules-mermaid-diagrams.md](107-modules-mermaid-diagrams.md) | [#107](https://github.com/kineticsystem/stepit-macro/pull/107) Update the modules: diagrams as SVG images |
+| [108-inverted-joints.md](108-inverted-joints.md) | [#108](https://github.com/kineticsystem/stepit-macro/pull/108) Invert both motors of the rig |
 
 ## How to Write One
 

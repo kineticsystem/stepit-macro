@@ -59,6 +59,15 @@ def test_rig_yaml_sets_the_serial_ports():
     assert "usb_port" in arguments["freezer"]
 
 
+def test_both_motors_of_the_rig_are_inverted():
+    # As they are wired: without it, the rail and the stage move backwards.
+    arguments, _ = rig.split_config(load_config())
+    assert rig.to_argument(arguments["robot"]["inverted_joints"]).split() == [
+        "joint1",
+        "joint2",
+    ]
+
+
 def test_rig_yaml_parameters_are_a_ros_parameter_file():
     _, parameters = rig.split_config(load_config())
     assert "launch" not in parameters
