@@ -31,9 +31,9 @@
 <root BTCPP_format="4" main_tree_to_execute="TakeShot">
 
   <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
-    <!-- A camera in live view ignores a shot: the live view is off for the
-         shot, and on again after it, however it ends, if it was on. -->
-    <PauseLiveView _description="The live view is off for the shot, then on again if it was on." resume="true">
+    <!-- A camera in live view ignores a shot: the live view is switched off,
+         and stays off, so that the page shows the picture. -->
+    <PauseLiveView _description="The live view is off for the shot, and stays off." resume="false">
       <Sequence>
         <!-- However the shot ends, succeeded, failed or stopped, the next
              pictures go into the pictures folder itself again, not into tests. -->
