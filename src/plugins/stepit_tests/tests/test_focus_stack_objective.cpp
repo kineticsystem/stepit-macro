@@ -247,6 +247,20 @@ TEST_F(FocusStackObjective, ShootsAtEveryRailPositionOfEveryAngle)
   EXPECT_EQ(manager_->stateOf("position_controller"), "active");
 }
 
+// A camera in live view ignores a shot: the stack switches the live view off,
+// and leaves it off, so that the camera does not stay in live view after it.
+TEST_F(FocusStackObjective, ItSwitchesTheLiveViewOffForGood)
+{
+  camera_->setStreaming(true);
+  mark(1.0, 2.0);
+  ASSERT_EQ(runObjective(factory_, "FocusStack", kPayload, std::chrono::seconds{ 60 }), BT::NodeStatus::SUCCESS);
+
+  EXPECT_EQ(camera_->taken(), 6);
+  EXPECT_EQ(camera_->stops(), 1);
+  EXPECT_FALSE(camera_->streamingAfter(1, std::chrono::milliseconds{ 300 }));
+  EXPECT_EQ(camera_->starts(), 0);
+}
+
 // The pictures of a stack go into a folder named after when it started, with
 // one folder per angle, its number and its angle; then back to the pictures
 // folder itself.

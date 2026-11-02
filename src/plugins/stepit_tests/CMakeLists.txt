@@ -26,6 +26,7 @@ if(BUILD_TESTING)
   find_package(rclcpp_action REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(std_srvs REQUIRED)
   find_package(stepit_macro_msgs REQUIRED)
   find_package(stepit_camera_msgs REQUIRED)
   find_package(trajectory_msgs REQUIRED)
@@ -164,7 +165,8 @@ if(BUILD_TESTING)
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
     ${freezer_msgs_TARGETS}
-    ${stepit_camera_msgs_TARGETS})
+    ${stepit_camera_msgs_TARGETS}
+    ${std_srvs_TARGETS})
 
   # The camera's folder restored however a part of an objective ends, halted included.
   ament_add_gtest(test_restore_picture_folder tests/test_restore_picture_folder.cpp)
@@ -172,7 +174,8 @@ if(BUILD_TESTING)
   target_link_libraries(test_restore_picture_folder
     stepit_behaviors::stepit_behaviors
     rclcpp::rclcpp
-    ${stepit_camera_msgs_TARGETS})
+    ${stepit_camera_msgs_TARGETS}
+    ${std_srvs_TARGETS})
 
   # MarkNear, MarkFar and FocusStack, against the fakes of the whole rig.
   ament_add_gtest(test_focus_stack_objective
@@ -190,6 +193,7 @@ if(BUILD_TESTING)
     ${freezer_msgs_TARGETS}
     ${sensor_msgs_TARGETS}
     ${stepit_camera_msgs_TARGETS}
+    ${std_srvs_TARGETS}
     ${stepit_macro_msgs_TARGETS}
     ${trajectory_msgs_TARGETS})
 
@@ -243,7 +247,8 @@ if(BUILD_TESTING)
     rclcpp::rclcpp
     rclcpp_action::rclcpp_action
     ${freezer_msgs_TARGETS}
-    ${stepit_camera_msgs_TARGETS})
+    ${stepit_camera_msgs_TARGETS}
+    ${std_srvs_TARGETS})
 
   ament_add_gtest(test_activate_controller_objective
     tests/test_activate_controller_objective.cpp)

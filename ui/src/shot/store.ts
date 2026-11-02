@@ -12,7 +12,7 @@
 // pictures.ts.
 
 import { create } from 'zustand';
-import { camera, useCamera } from '../camera/store';
+import { camera } from '../camera/store';
 import { Camera, type Picture } from '../camera/camera';
 import { loadPicture } from '../camera/picture';
 import { useCommander } from '../commander/store';
@@ -47,8 +47,8 @@ export const useShot = create<ShotState>((set, get) => {
     pictures: [],
 
     async takeShot() {
+      // TakeShot switches the live view off for the shot, and on again after it.
       set({ state: 'shooting', message: 'Shooting…' });
-      if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
       try {
         // followPictures shows the picture, as every page shows every picture.
         const result = await useCommander.getState().run('TakeShot');

@@ -10,7 +10,6 @@
 // follows them on /parameter_events.
 
 import { create } from 'zustand';
-import { useCamera } from '../camera/store';
 import { useCommander } from '../commander/store';
 import { onConnected, ros } from '../ros/connection';
 import { errorMessage } from '../ros/rosbridge';
@@ -108,9 +107,8 @@ export const useStack = create<StackState>((set, get) => ({
   },
 
   async start() {
-    // The pictures show in place of the live view, as a test shot's do: every
-    // page shows every picture, see followPictures.
-    if (useCamera.getState().streaming) await useCamera.getState().setStreaming(false);
+    // FocusStack switches the live view off, and leaves it off: its pictures
+    // show in its place, as every page shows every picture, see followPictures.
     return useCommander.getState().run('FocusStack', payloadOf(planOf(get())));
   },
 }));

@@ -337,8 +337,10 @@ node (`SetPictureFolder`, the camera's folder of pictures), pure logic
 `MillimetresToRadians`, `DegreesToRadians`) and the state of the rig
 (`SaveValues`, `LoadValues`, service clients of the node `stack_state`). `Steps` is a decorator that loops over values,
 `ExpectPicture` one that waits for the camera's picture of the shot it wraps,
-and `RestorePictureFolder` one that sends the camera's next pictures to the
-pictures folder again however its child ends, halted included.
+`RestorePictureFolder` one that sends the camera's next pictures to the
+pictures folder again however its child ends, halted included, and
+`PauseLiveView` one that runs its child with the camera's live view off, then
+switches it on again, or not, by its port `resume`.
 
 Some behaviors read parameters of their own from the commander's section of
 `rig.yaml`: the overshoot of each motor against backlash, `overshoot.<joint>`,

@@ -17,28 +17,30 @@ ros2 action send_goal /commander/execute_objective \
 
 ```
 FocusStack
-├── SubTree EnsureControllers       (position_controller only)
-├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
-├── LoadValues  near, far           (the marks, from stack_state)
-├── CurrentTime                     -> {stack_folder}, e.g. 2026-10-06_15-20-04
-├── ReportProgress                  0 of shots × angles, on /focus_stack/progress
-├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
-├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
-├── CommandJointPositions           to {first}, past it and back
-├── RestorePictureFolder            (however it ends: the pictures folder itself again)
-│   └── Sequence
-│       ├── Steps  stage_from to stage_to, `angles` values, in degrees
-│       │   ├── DegreesToRadians            this angle
-│       │   ├── SetPictureFolder            {stack_folder}/angle_01_-17.0deg, and so on
-│       │   ├── Steps  near to far, `shots` values
-│       │   │   ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
-│       │   │   ├── Sleep                   500 ms, for the vibrations to die down
-│       │   │   ├── ExpectPicture           (fails if no picture comes within 15 s: the whole stack stops)
-│       │   │   │   └── Shoot               (the Freezer's default sequence: the camera and the lights)
-│       │   │   └── ReportProgress          one more picture
-│       │   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
-│       └── AllStacksDone                   all_stacks.json in the stack's folder, and its name on /focus_stack/all_stacks_done
-└── CommandJointPositions           back to {home}
+└── PauseLiveView   resume=false   (the live view off, and left off)
+    └── Sequence
+        ├── SubTree EnsureControllers       (position_controller only)
+        ├── GetJointPositions               -> {home}: the angles are from here, and the joints come back here
+        ├── LoadValues  near, far           (the marks, from stack_state)
+        ├── CurrentTime                     -> {stack_folder}, e.g. 2026-10-06_15-20-04
+        ├── ReportProgress                  0 of shots × angles, on /focus_stack/progress
+        ├── DegreesToRadians                stage_from, stage_to, with deg_per_turn.joint1
+        ├── SetJoints                       -> {first}, {last}: the first and the last position of the stack
+        ├── CommandJointPositions           to {first}, past it and back
+        ├── RestorePictureFolder            (however it ends: the pictures folder itself again)
+        │   └── Sequence
+        │       ├── Steps  stage_from to stage_to, `angles` values, in degrees
+        │       │   ├── DegreesToRadians            this angle
+        │       │   ├── SetPictureFolder            {stack_folder}/angle_01_-17.0deg, and so on
+        │       │   ├── Steps  near to far, `shots` values
+        │       │   │   ├── CommandJointPositions   to the stage's angle and the rail's step, from {first} toward {last}
+        │       │   │   ├── Sleep                   500 ms, for the vibrations to die down
+        │       │   │   ├── ExpectPicture           (fails if no picture comes within 15 s: the whole stack stops)
+        │       │   │   │   └── Shoot               (the Freezer's default sequence: the camera and the lights)
+        │       │   │   └── ReportProgress          one more picture
+        │       │   └── StackDone                   stack.json in the angle's folder, and its name on /focus_stack/stack_done
+        │       └── AllStacksDone                   all_stacks.json in the stack's folder, and its name on /focus_stack/all_stacks_done
+        └── CommandJointPositions           back to {home}
 ```
 
 Every move goes through the position controller, as in [`Stack`](Stack.md): the microcontroller plans each one on its own profile, and `CommandJointPositions` waits until the joints have arrived and stopped before the shot.
@@ -55,6 +57,8 @@ Every move goes through the position controller, as in [`Stack`](Stack.md): the 
 pictures/2026-10-06_15-20-04/angle_01_-17.0deg/IMG_5460.CR2 ... IMG_5469.CR2
 pictures/2026-10-06_15-20-04/angle_02_-16.0deg/IMG_5470.CR2 ...
 ```
+
+**The live view is switched off, and stays off.** A camera in live view ignores a shot. `PauseLiveView` reads `streaming` on `/camera/status`, and when the live view is on, calls `/camera/stop_streaming`, which answers once the camera has left the live view. Unlike [`TakeShot`](TakeShot.md), it does not switch the live view on again: after a long stack, the camera would drain its battery in live view.
 
 `SetPictureFolder` sets the parameter `folder` of StepIt Camera, which saves the next pictures there; however the stack ends, the next pictures go to the pictures folder itself again, so that a later picture, from the Freezer's remote trigger or the camera's own shutter, never lands among the stack's. `RestorePictureFolder` sees to it: when its child succeeds or fails, e.g. on a shot whose picture does not come, and also when Stop, or another objective, halts the stack, which ticks no node, from its `halt()`. It sends the request without waiting for the answer, as a halt cannot wait: the reset is not confirmed, and a camera that is not there keeps its folder, without failing the stack.
 

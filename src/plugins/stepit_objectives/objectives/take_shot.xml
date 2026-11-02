@@ -31,19 +31,23 @@
 <root BTCPP_format="4" main_tree_to_execute="TakeShot">
 
   <BehaviorTree ID="TakeShot" _description="Fires a shot on the StepIt Freezer board: the cameras, flashes and lights of a sequence.">
-    <Sequence>
-      <!-- However the shot ends, succeeded, failed or stopped, the next
-           pictures go into the pictures folder itself again, not into tests. -->
-      <RestorePictureFolder _description="However the shot ends, the next pictures go into the pictures folder again.">
-        <Sequence>
-          <SetPictureFolder _description="A test shot goes into the folder tests of the pictures." folder="tests"/>
-          <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
-            <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
-                   sequence="{@sequence}"/>
-          </ExpectPicture>
-        </Sequence>
-      </RestorePictureFolder>
-    </Sequence>
+    <!-- A camera in live view ignores a shot: the live view is off for the
+         shot, and on again after it, however it ends, if it was on. -->
+    <PauseLiveView _description="The live view is off for the shot, then on again if it was on." resume="true">
+      <Sequence>
+        <!-- However the shot ends, succeeded, failed or stopped, the next
+             pictures go into the pictures folder itself again, not into tests. -->
+        <RestorePictureFolder _description="However the shot ends, the next pictures go into the pictures folder again.">
+          <Sequence>
+            <SetPictureFolder _description="A test shot goes into the folder tests of the pictures." folder="tests"/>
+            <ExpectPicture _description="Fails if the camera reports no picture of the shot.">
+              <Shoot _description="Fires the sequence on the Freezer board, and waits until the shot has ended."
+                     sequence="{@sequence}"/>
+            </ExpectPicture>
+          </Sequence>
+        </RestorePictureFolder>
+      </Sequence>
+    </PauseLiveView>
   </BehaviorTree>
 
   <!-- The payload of the objective, for editors: what each entry is, with an example. -->

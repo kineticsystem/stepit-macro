@@ -151,4 +151,35 @@ TEST_F(TakeShotObjective, AHaltedShotRunsToItsEnd)
   EXPECT_EQ(tree.rootNode()->status(), BT::NodeStatus::IDLE);
 }
 
+// A camera in live view ignores a shot: the live view is off for the shot,
+// and on again after it.
+TEST_F(TakeShotObjective, ItShootsWithTheLiveViewOffThenSwitchesItOnAgain)
+{
+  startFreezer();
+  camera_->setStreaming(true);
+  ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::SUCCESS);
+  EXPECT_EQ(camera_->taken(), 1);
+  EXPECT_EQ(camera_->stops(), 1);
+  EXPECT_TRUE(camera_->streamingAfter(1));
+}
+
+// Off, the live view is left alone.
+TEST_F(TakeShotObjective, ItLeavesALiveViewThatIsOffAlone)
+{
+  startFreezer();
+  ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::SUCCESS);
+  EXPECT_EQ(camera_->stops(), 0);
+  EXPECT_FALSE(camera_->streamingAfter(1, std::chrono::milliseconds{ 300 }));
+  EXPECT_EQ(camera_->starts(), 0);
+}
+
+// The live view comes back even when the shot fails.
+TEST_F(TakeShotObjective, ItSwitchesTheLiveViewOnAgainWhenTheShotFails)
+{
+  startFreezer();
+  camera_->setStreaming(true);
+  camera_->ignore(1);
+  ASSERT_EQ(runObjective(factory_, kObjective, ""), BT::NodeStatus::FAILURE);
+  EXPECT_TRUE(camera_->streamingAfter(1));
+}
 }  // namespace stepit_tests
