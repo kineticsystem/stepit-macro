@@ -59,12 +59,12 @@ def test_rig_yaml_sets_the_serial_ports():
     assert "usb_port" in arguments["freezer"]
 
 
-def test_both_motors_of_the_rig_are_inverted():
-    # As they are wired: without it, the rail and the stage move backwards.
+def test_only_the_stage_of_the_rig_is_inverted():
+    # As the motors are wired: the stage turns backwards without it, and the
+    # rail, inverted, moves toward the subject when MoveRailBy says away.
     arguments, _ = rig.split_config(load_config())
     assert rig.to_argument(arguments["robot"]["inverted_joints"]).split() == [
         "joint1",
-        "joint2",
     ]
 
 
@@ -193,7 +193,7 @@ def test_the_ui_sliders_drive_the_stage_at_a_quarter_of_the_rail_speed():
     teleop = parameters["ui_teleop"]["ros__parameters"]
     assert teleop["stop_button"] == -1
     assert teleop["joint1"] == {"axis": 0, "scale": pytest.approx(4.7124, abs=1e-3)}
-    assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(-18.8496, abs=1e-3)}
+    assert teleop["joint2"] == {"axis": 1, "scale": pytest.approx(18.8496, abs=1e-3)}
     for joint in ("joint3", "joint4", "joint5"):
         assert teleop[joint]["axis"] == -1
 
