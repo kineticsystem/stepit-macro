@@ -1,6 +1,6 @@
 # Update the Modules: the Velocity Trajectory Controller
 
-Branch `velocity-trajectory-controller`.
+Pull request [#116](https://github.com/kineticsystem/stepit-macro/pull/116), branch `velocity-trajectory-controller`.
 
 ## Goal
 

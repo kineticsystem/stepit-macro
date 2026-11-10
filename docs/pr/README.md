@@ -19,6 +19,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [113-pause-live-view-for-a-test-shot.md](113-pause-live-view-for-a-test-shot.md) | [#113](https://github.com/kineticsystem/stepit-macro/pull/113) The live view off for the shots |
 | [114-keep-live-view-off-after-a-test-shot.md](114-keep-live-view-off-after-a-test-shot.md) | [#114](https://github.com/kineticsystem/stepit-macro/pull/114) The live view stays off after a test shot |
 | [115-rail-not-inverted.md](115-rail-not-inverted.md) | [#115](https://github.com/kineticsystem/stepit-macro/pull/115) The rail not inverted: moves by position go the right way |
+| [116-velocity-trajectory-controller.md](116-velocity-trajectory-controller.md) | [#116](https://github.com/kineticsystem/stepit-macro/pull/116) Update the modules: the velocity trajectory controller |
 
 ## How to Write One
 
