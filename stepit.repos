@@ -12,7 +12,7 @@ repositories:
   stepit-motors:
     type: git
     url: https://github.com/kineticsystem/stepit-motors.git
-    version: dc269f86799647ed8f5f59712b5ad32b4c5f697e
+    version: dc269f87799647ed8f5f59712b5ad32b4c5f697e
   stepit-freezer:
     type: git
     url: https://github.com/kineticsystem/stepit-freezer.git
