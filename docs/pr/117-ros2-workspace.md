@@ -1,6 +1,6 @@
 # The Modules from `stepit.repos`, Not Submodules
 
-Branch `ros2-workspace`.
+Pull request [#117](https://github.com/kineticsystem/stepit-macro/pull/117), branch `ros2-workspace`.
 
 ## Goal
 
@@ -24,4 +24,4 @@ StepIt Motors and StepIt Freezer both carried `serial` and `framed-serial` as su
 ## Open Items
 
 - The modules merge first. StepIt Motors rebases on merge, which gives its commits new hashes: `stepit.repos` then moves to the commits of the three modules on `main`, before this merges.
-- Each checkout of the rig, the PC and the Pi, runs the cleanup that `download` prints once, after the pull. The Pi was deployed from this branch and builds.
+- Each checkout of the rig, the PC and the Pi, runs the cleanup that `download` prints once, after the pull.
