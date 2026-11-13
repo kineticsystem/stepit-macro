@@ -21,6 +21,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [115-rail-not-inverted.md](115-rail-not-inverted.md) | [#115](https://github.com/kineticsystem/stepit-macro/pull/115) The rail not inverted: moves by position go the right way |
 | [116-velocity-trajectory-controller.md](116-velocity-trajectory-controller.md) | [#116](https://github.com/kineticsystem/stepit-macro/pull/116) Update the modules: the velocity trajectory controller |
 | [117-ros2-workspace.md](117-ros2-workspace.md) | [#117](https://github.com/kineticsystem/stepit-macro/pull/117) The modules from `stepit.repos`, not submodules |
+| [118-stepit-motors-on-main-again.md](118-stepit-motors-on-main-again.md) | [#118](https://github.com/kineticsystem/stepit-macro/pull/118) StepIt Motors at its commit on `main`, again |
 
 ## How to Write One
 
