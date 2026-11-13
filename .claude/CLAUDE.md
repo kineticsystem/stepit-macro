@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 StepIt Macro runs the whole focus stacking rig **in one container**, `stepit-macro`: it builds the
-git submodules under `modules/` (motors, commander, editor, camera, Freezer) and StepIt UI, the
+modules of `stepit.repos` (motors, commander, editor, camera, Freezer), which `./docker/dock.sh
+download` imports with `vcs` into `modules/`, a folder git ignores, and StepIt UI, the
 rig's own page in `ui/`, and starts them all with one launch file, `stepit_bringup/rig.launch.py`,
 configured by one file, `src/stepit-macro/stepit_bringup/config/rig.yaml`. Each module keeps its own container, tests and
 CI, to work on it alone. The repo also holds the rig's **own ROS packages** in `src/`, as two
@@ -42,12 +43,12 @@ Start the rig with `dock.sh`, never a plain `docker compose up`, which lacks the
 The repo is mounted at `~/ws`. Three workspaces, each with its scripts in `bin/<workspace>/`,
 building into `build/<workspace>`, `install/<workspace>` and `log/<workspace>` and naming its
 folders explicitly: colcon never crawls the repo, and `modules/COLCON_IGNORE` keeps it out of the
-submodules anyway. `bin/update.sh`, `bin/build.sh` and `bin/test.sh` (on the `PATH`, aliased
+modules anyway. `bin/update.sh`, `bin/build.sh` and `bin/test.sh` (on the `PATH`, aliased
 `update`, `build`, `test`) run them in order:
 
 | Workspace | Holds |
 |---|---|
-| `modules` | The modules' ROS packages, the editor's web page (pnpm) and its validator, into the rig's own build folders, never the modules' (their own containers mount them at `~/ws`: the CMake caches differ). Not tested here: the modules have their own CI. The driver and the Freezer both carry `serial` and `framed-serial`: the driver's are built, and `bin/modules/build.sh` fails if the two pin different commits. `bin/modules/build.sh --packages-up-to <pkg>` builds part of it. |
+| `modules` | The modules' ROS packages, the editor's web page (pnpm) and its validator, into the rig's own build folders, never the modules' (their own containers mount them at `~/ws`: the CMake caches differ). Not tested here: the modules have their own CI. `stepit.repos` lists the libraries the modules share once, `serial`, `framed-serial` and BehaviorTree.ROS2, and only those copies are built, never a module's own `modules/`; `bin/modules/build.sh` fails if a module's own `.repos` file pins one at another commit. `bin/modules/build.sh --packages-up-to <pkg>` builds part of it. |
 | `plugins` | `src/plugins`, **on top of `modules`**, which holds the commander: the commander loads the plugin into its process, so it must be built against the commander's BehaviorTree libraries. `UNDERLAY` (an install folder) overrides the underlay: CI sets it to the commander's own workspace. |
 | `stepit-macro` | `src/stepit-macro`, on ROS alone, so that CI builds it without the modules. |
 
@@ -104,7 +105,7 @@ restart of the rig (`./docker/dock.sh stop && ./docker/dock.sh start`).
 
 **`src/stepit-macro`** holds the rig's own programs, ROS nodes that run on their own rather than
 inside the commander, and the launch file of the rig. It also builds `btcpp_ros2_interfaces` from
-`modules/stepit-commander`, the type of the commander's action, which has no Debian package. Its
+`modules/BehaviorTree.ROS2`, the type of the commander's action, which has no Debian package. Its
 tests go in `stepit_macro_tests`. A new program needs a launch file, an entry in `MODULES` of
 `rig.launch.py` and its section in `rig.yaml`.
 
@@ -216,21 +217,21 @@ For the `architect` and `reviewer` skills: what they cannot find out alone.
 - **One architecture document and one review per part.** Each part has its own `docs/ARCHITECTURE.md`: the rig's own code (`docs/ARCHITECTURE.md`, for `src/plugins` and `src/stepit-macro`), StepIt UI (`ui/docs/ARCHITECTURE.md`) and each module (`modules/<module>/docs/ARCHITECTURE.md`). Its review is a separate document beside it, `docs/Review.md`, opened with the date and the commit reviewed; the architecture document describes the design and holds no review. Without a part named, ask which.
 - **The house style** of these documents, besides `write-docs`: match the existing `ARCHITECTURE.md` of the modules (and `modules/stepit-camera/docs/WEB_PAGE.md` for a web page); the newest, by `git log -1 --format=%ci -- docs/ARCHITECTURE.md`, wins when they differ. British spelling (centre, colour).
 - **The sections**: Introduction with the one idea of the part in bold, The Big Picture with a table of its interface (topics, actions, services, ports, routes), The Layers or The Packages (a table of folder or package, responsibility, what it may know, and a diagram of the imports as they are, with any edge that breaks the rule shown), the parts in the order a reader needs them, a sequence diagram of the longest flow (from a click or a goal to the result), Tests (and what is not tested), How to Extend, Design Decisions and Trade-offs. Add a section a part needs, e.g. The Protocol or Safety Nets.
-- **The neighbours** of a part: `rig.yaml`, the objectives, the other modules' interfaces, and code copied from another module: `diff` the copies, e.g. `serial` and `framed-serial` in the driver and the Freezer; copies that diverge are a finding, and so are values kept in step by hand with `rig.yaml`.
+- **The neighbours** of a part: `rig.yaml`, the objectives, the other modules' interfaces, and code copied from another module: `diff` the copies, e.g. the firmware's protocol layer in the driver and the Freezer; copies that diverge are a finding, and so is a module's `.repos` file that pins a shared library at another commit than `stepit.repos`, and so are values kept in step by hand with `rig.yaml`.
 - **The rig's deliberate choices** are in this file, in each module's Design Decisions, and in `docs/*.md` with measurements (e.g. `docs/ActivateController.md`): judge them, but do not report them as bugs. Say whether an implementation issue is a safety issue for the rig.
 - **Probes run inside the rig's image, never on the host.** A web page: `docker run --rm -u $(id -u):$(id -g) -v $PWD:/ui -v <scratch>:/ui/tests/probe -w /ui stepit-macro:latest bash -lc 'node_modules/.bin/vitest run tests/probe'`. ROS packages: `./docker/dock.sh shell`, then the workspace's `test.sh`, which runs on ROS domain 77.
 - **Diagrams** follow the `beautiful-mermaid-diagrams` skill, not the blue style of `write-docs`: colours by role, compact, readable in light and dark mode. Each is shown as an image: its source is `docs/diagrams/<name>.mmd` (`ui/docs/diagrams/` for StepIt UI, the module's own `docs/diagrams/` for a module), rendered by `bin/render-diagrams.sh` into an SVG beside it, outside the container (it needs Node.js and Chrome); commit both. `bin/check-diagrams.sh`, run by `bin/test.sh` and by `ci-format.yml`, fails when an SVG is older than its source. Each module has the same two scripts.
-- **A module is a submodule** with its own repository: its document is committed there, then `git add modules/<module>` here, which is the user's call. Link the document from the module's README.
+- **A module is a repository of its own**, listed in `stepit.repos`: its document is committed there, then its new commit goes into `stepit.repos` here, which is the user's call. Link the document from the module's README.
 
 ## CI
 
 `.github/workflows`: `ci.yml` builds and tests each workspace with the `bin/<workspace>` scripts in
-`ros:jazzy-ros-base`, except `modules` (the modules have their own CI; the `plugins` job builds
-`modules/stepit-commander` first, checked out over HTTPS: `.gitmodules` lists SSH URLs, and passes
-it as `UNDERLAY`); `ci-format.yml` runs pre-commit without the ament hooks;
+`ros:jazzy-ros-base`, except `modules` (the modules have their own CI; both jobs import `stepit.repos`
+with `vcs import --shallow` and run `check_shared_libraries`; the `plugins` job builds
+`modules/stepit-commander` first, with its own scripts, and passes it as `UNDERLAY`); `ci-format.yml` runs pre-commit without the ament hooks;
 `ci-ros-lint.yml` runs those, per package. The `ui` job of `ci.yml` runs `bin/ui/` with Node.js, no
 ROS. The `objectives` job of `ci.yml` builds the editor's native
-validator (submodule `stepit-editor`) against the ROS package of BehaviorTree.CPP and runs
+validator (`modules/stepit-editor`) against the ROS package of BehaviorTree.CPP and runs
 `validate` on `src/plugins/stepit_objectives/objectives`: a broken objective fails CI. A new package must be added to the package list
 of `ci-ros-lint.yml` and to the paths of the ament hooks in `.pre-commit-config.yaml`.
 
@@ -245,5 +246,5 @@ of `ci-ros-lint.yml` and to the paths of the ament hooks in `.pre-commit-config.
   with the `{@key}` the objective reads.
 - Each objective's parameters are documented in `docs/<ObjectiveName>.md` and listed in the
   README; update both when adding or changing an objective.
-- Changing a module means committing in its own repository, then updating its pointer here
-  (`git add modules/<module>`).
+- Changing a module means committing in its own repository, then moving its `version` in
+  `stepit.repos` here to the new commit.

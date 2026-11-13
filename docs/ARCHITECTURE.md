@@ -62,7 +62,7 @@ The rig is built as three colcon workspaces and one pnpm project, each with its 
 | | `stepit_tests` | Every test of the behaviors and objectives, against fakes. | Everything above. |
 | | `stepit_macro_msgs` | The messages of the rig's own topics: `StackProgress`. | Nothing. |
 | `stepit-macro` | `stepit_bringup` | `rig.launch.py` and `rig.yaml`: the only place the rig starts and configures the modules. | The modules' launch files, by package name. |
-| | `stepit_teleop` | `gamepad_teleop`: a `Joy` to velocities, a button to an objective. | `btcpp_ros2_interfaces`, built here from the commander's submodule; `stepit_teleop_msgs`. |
+| | `stepit_teleop` | `gamepad_teleop`: a `Joy` to velocities, a button to an objective. | `btcpp_ros2_interfaces`, built here from the rig's BehaviorTree.ROS2; `stepit_teleop_msgs`. |
 | | `stepit_teleop_msgs` | `GamepadStatus`, of `/gamepad_teleop/status`. | Nothing. |
 | | `stepit_power` | `power_off`: the computer off, on request. | `std_srvs`, the commander's objective topic, by name. |
 | | `stepit_state` | `stack_state`: the state of the rig, its parameters `state.*`, and the only writer of the state file. | `yaml-cpp`. Nothing of the objectives or the pages. |
@@ -74,7 +74,7 @@ The dependencies as they are, the build-time ones solid, the ones by name at run
 <!-- The source is diagrams/packages.mmd: change it, then run bin/render-diagrams.sh. -->
 <p align="center"><img src="diagrams/packages.svg" alt="The packages and their dependencies: stepit_tests on stepit_behaviors and the objectives, the behaviors on the modules workspace, stepit_macro_tests on stepit_teleop, stepit_power, stepit_state and stepit_bringup, which launches the modules; stepit_teleop on stepit_teleop_msgs; the behaviors name /stack_state." width="975"></p>
 
-The `plugins` workspace is built on top of `modules`, which holds the commander: the plugin is loaded into the commander's process, so it must be compiled against the same BehaviorTree.CPP and BehaviorTree.ROS2. `stepit-macro` is built on ROS alone, so that CI builds it without the modules: it builds its own copy of `btcpp_ros2_interfaces` from the commander's submodule, the one interface it needs.
+The `plugins` workspace is built on top of `modules`, which holds the commander: the plugin is loaded into the commander's process, so it must be compiled against the same BehaviorTree.CPP and BehaviorTree.ROS2. `stepit-macro` is built on ROS alone, so that CI builds it without the modules: it builds its own copy of `btcpp_ros2_interfaces` from the rig's BehaviorTree.ROS2, in `modules/BehaviorTree.ROS2`, the one interface it needs.
 
 > [!IMPORTANT]
 > Keep the robot's names in `stepit_behaviors`: an objective says *what* to do, a behavior knows *where* the robot's topic or service is. See [Separation of Concerns](design/Review.md#separation-of-concerns) in the review for where the objectives repeat them today.
@@ -167,7 +167,7 @@ StepIt UI is a React page, built by Vite into `ui/dist` and served on port 8070.
 
 [`dock.sh`](../docker/dock.sh) wraps Docker Compose. `build` starts the package cache, builds the image from `ros:jazzy-ros-base`, then runs `update.sh` and `build.sh` in a container that it commits as the image, so the image holds the rosdep packages and the rig does not install them again on start. `start` passes the host's `input` and `plugdev` group numbers to the container, which a plain `docker compose up` would not. The container is privileged, on the host network, with `/dev` and `/run/dbus` mounted, and the repo at `~/ws`.
 
-[`bin/update.sh`](../bin/update.sh), [`bin/build.sh`](../bin/build.sh) and [`bin/test.sh`](../bin/test.sh) run the scripts of each workspace in order. `build.sh` removes a workspace whose CMake cache was built from another folder, e.g. by a module's own container. `bin/modules/build.sh` refuses to build when StepIt Motors and StepIt Freezer pin different commits of `serial` or `framed-serial`. Both `test.sh` scripts set `ROS_DOMAIN_ID` to 77, as the fakes use the robot's real names.
+[`bin/update.sh`](../bin/update.sh), [`bin/build.sh`](../bin/build.sh) and [`bin/test.sh`](../bin/test.sh) run the scripts of each workspace in order. `build.sh` removes a workspace whose CMake cache was built from another folder, e.g. by a module's own container. `bin/modules/build.sh` refuses to build when a module's own `.repos` file pins a library it shares with others, `serial`, `framed-serial` or BehaviorTree.ROS2, at another commit than `stepit.repos`. Both `test.sh` scripts set `ROS_DOMAIN_ID` to 77, as the fakes use the robot's real names.
 
 [`ci.yml`](../.github/workflows/ci.yml) builds and tests `plugins`, on the commander's own workspace and the Freezer's and the camera's messages, and `stepit-macro`, on ROS alone; tests the UI with Node.js; and validates the objectives with the editor's validator. `ci-format.yml` and `ci-ros-lint.yml` run the formatters and the ament linters.
 

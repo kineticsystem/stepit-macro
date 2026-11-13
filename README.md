@@ -56,7 +56,7 @@ is consistent and synchronized with each capture.
 
 ## The Modules
 
-StepIt Macro runs the whole rig with one command, in one Docker container, `stepit-macro`. It brings together five projects, checked out as git submodules under [`modules`](modules), and its own application, StepIt UI, in [`ui`](ui):
+StepIt Macro runs the whole rig with one command, in one Docker container, `stepit-macro`. It brings together five projects, listed in [`stepit.repos`](stepit.repos) and imported under `modules`, and its own application, StepIt UI, in [`ui`](ui):
 
 | Module | What it does |
 |---|---|
@@ -132,19 +132,23 @@ The Freezer board is not needed either: its driver runs with a fake controller b
 
 ### Check out the Git Repository
 
-Check out this git repository, including all the modules and their own
-submodules.
+Check out this git repository:
 
 ```
-git clone --recurse-submodules git@github.com:kineticsystem/stepit-macro.git
+git clone git@github.com:kineticsystem/stepit-macro.git
 cd stepit-macro
 ```
 
-If you missed the switch `--recurse-submodules`, download the modules with:
+The modules are not part of the repository. [`stepit.repos`](stepit.repos) lists them, each at the commit the rig runs, together with the libraries they share: `serial` and `framed-serial`, used by StepIt Motors and StepIt Freezer, and BehaviorTree.ROS2, used by the commander. Each is listed once, so the rig builds one copy of each. Import them all into `modules`, a folder git ignores:
 
 ```
 ./docker/dock.sh download
 ```
+
+`download` runs `vcs` in a container of `ros:jazzy-ros-base`, so the host needs nothing but Docker. It fetches over HTTPS, which needs no GitHub key. Run it again after a change to `stepit.repos`, e.g. after a `git pull`: each repository moves to its new commit, and keeps any local change.
+
+> [!IMPORTANT]
+> A checkout made before `stepit.repos` holds the modules as git submodules, which stay in `modules` after the `git pull`. `download` finds them, stops, and prints the command that removes them with their git data. Push any work in them first: the command deletes it.
 
 ### Build the Project
 
@@ -510,9 +514,9 @@ StepIt UI, in [`ui`](ui), is not a ROS workspace but a pnpm project, with script
 
 [`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins`, `src/stepit-macro` and StepIt UI: the modules run theirs in their own CI.
 
-The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. StepIt Motors and StepIt Freezer both carry the libraries `serial` and `framed-serial` as submodules; colcon refuses two packages of the same name, so the rig builds the driver's copy, and `bin/modules/build.sh` stops if the two modules pin different commits of them.
+The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. The libraries the modules share, `serial`, `framed-serial` and BehaviorTree.ROS2, are built from the rig's own copies in `modules`, never from a module's own `modules` folder, which a module's own container fills when it runs on this checkout: colcon refuses two packages of the same name. Each module also pins them in a `.repos` file of its own, for building alone, and `bin/modules/build.sh` stops if one of those pins another commit than `stepit.repos`.
 
-`src/plugins` and `src/stepit-macro` stay separate workspaces because CI builds them alone, without the modules: the first on the commander's workspace only, the second on ROS alone, as `src/stepit-macro` builds `btcpp_ros2_interfaces`, the type of the commander's action, from the commander's own copy in `modules/stepit-commander`.
+`src/plugins` and `src/stepit-macro` stay separate workspaces because CI builds them alone, without the modules: the first on the commander's workspace only, the second on ROS alone, as `src/stepit-macro` builds `btcpp_ros2_interfaces`, the type of the commander's action, from the rig's copy of BehaviorTree.ROS2 in `modules/BehaviorTree.ROS2`, the one the commander is built with.
 
 The packages of `src/stepit-macro`:
 
@@ -528,7 +532,13 @@ A new program goes into `src/stepit-macro` as a package with a launch file, and 
 
 ## Working on a Module
 
-Each module is a complete git repository of its own under [`modules`](modules): edit, commit and push it as usual. Its README tells how to build and test it in its own container, alone, with its own fake hardware and test page. Run one system or the other, not both: they use the same ports and the same ROS names.
+Each module is a complete git repository of its own under `modules`, checked out at the commit of `stepit.repos`, on no branch: create a branch before committing, e.g. `git -C modules/stepit-camera switch -c <branch>`, with the name of the branch in place of `<branch>`. `download` fetches over HTTPS; to push over SSH instead, without changing the clones, tell git once:
+
+```
+git config --global url."git@github.com:".pushInsteadOf "https://github.com/"
+```
+
+Then edit, commit and push the module as usual. Its README tells how to build and test it in its own container, alone, with its own fake hardware and test page. Run one system or the other, not both: they use the same ports and the same ROS names.
 
 In the rig's container, rebuild everything with `build`, or one module's packages only, e.g. the camera's:
 
@@ -545,18 +555,23 @@ If the rig stops right after starting, look at its output with `./docker/dock.sh
 
 ## Updating the Modules
 
-StepIt Macro records the commit of each module it was tested with. To move
-every module to the latest commit of its `main` branch:
+StepIt Macro records the commit of each module it was tested with, in [`stepit.repos`](stepit.repos). To move a module, e.g. to the latest commit of its `main` branch, look up that commit:
 
 ```
-git submodule update --remote --recursive
+git ls-remote https://github.com/kineticsystem/stepit-camera.git main
+```
+
+Put it in the module's `version` in `stepit.repos`, then import and build again:
+
+```
+./docker/dock.sh download
 ./docker/dock.sh build
 ```
 
-Then commit the new commits of the modules in StepIt Macro:
+If the new commit of StepIt Motors, StepIt Freezer or StepIt Commander pins `serial`, `framed-serial` or BehaviorTree.ROS2 at another commit in its own `.repos` file, the build stops and names it: move the library to the same commit in `stepit.repos`. Then commit `stepit.repos`:
 
 ```
-git add modules
+git add stepit.repos
 git commit -m "Update the modules"
 ```
 
@@ -584,14 +599,13 @@ modules:
 
 | Workflow | What it checks |
 |---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. The job of `src/plugins` first builds the commander's workspace from the `stepit-commander` submodule, and builds on it alone, with `UNDERLAY`. A third job, `ui`, type checks, tests and builds StepIt UI with Node.js, and a fourth, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
+| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. Both import the repositories of `stepit.repos` first, and fail if a module pins a shared library at another commit. The job of `src/plugins` then builds the commander's workspace with the commander's own scripts, and builds on it alone, with `UNDERLAY`. A third job, `ui`, type checks, tests and builds StepIt UI with Node.js, and a fourth, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
 | [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files. |
 | [`ci-ros-lint.yml`](.github/workflows/ci-ros-lint.yml) | The ament linters of every package: copyright, lint_cmake and cpplint. |
 
 The build cannot use `industrial_ci`, as the modules do: it builds one
 workspace from the sources of the repo, and `src/plugins` is built on top of
-the commander's. CI checks out only the `stepit-commander` and `stepit-editor` submodules, over
-HTTPS; the other modules have CI of their own.
+the commander's. CI imports every module, without its history, but builds only the commander and the messages of the camera and of the Freezer; the modules have CI of their own.
 
 The `objectives` job runs the editor's validator, `validate`, on
 [`src/plugins/stepit_objectives/objectives`](src/plugins/stepit_objectives/objectives):

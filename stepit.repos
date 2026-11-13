@@ -1,0 +1,43 @@
+# The repositories the rig is made of, each at the commit the rig runs, and
+# imported into modules/ by ./docker/dock.sh download. Each one is listed once:
+# the libraries that two modules share, serial and framed-serial for StepIt
+# Motors and StepIt Freezer, and BehaviorTree.ROS2 for the commander, are
+# listed here, at the commits the modules' own .repos files pin, and
+# bin/modules/build.sh fails when they differ. The modules' own .repos files
+# are only for building a module on its own.
+#
+# The URLs are HTTPS: the repositories are public, so a computer without a
+# GitHub key, e.g. the Pi or CI, can import them.
+repositories:
+  stepit-motors:
+    type: git
+    url: https://github.com/kineticsystem/stepit-motors.git
+    version: aa25249ffe64da9b054eca511cc3c2cdd8f0fc6a
+  stepit-freezer:
+    type: git
+    url: https://github.com/kineticsystem/stepit-freezer.git
+    version: f44e914d50d86a9c4bc9afdbe6f55e2ed5b63a6d
+  stepit-camera:
+    type: git
+    url: https://github.com/kineticsystem/stepit-camera.git
+    version: 11b679df3e8e6e2abcfc202b95bdbb42bc1b919f
+  stepit-commander:
+    type: git
+    url: https://github.com/kineticsystem/stepit-commander.git
+    version: ac7a38567ccf65b9be9e5502f747e8eb079ebc95
+  stepit-editor:
+    type: git
+    url: https://github.com/kineticsystem/stepit-editor.git
+    version: 45588f4d1658cb23f87c8a4e48327096da25dddc
+  serial:
+    type: git
+    url: https://github.com/kineticsystem/serial.git
+    version: d8d160678aa0b31cdf467c052b954fa287cc6cdf
+  framed-serial:
+    type: git
+    url: https://github.com/kineticsystem/framed-serial.git
+    version: d386c91ae9499d55daef3413dd585eec66c6fc2d
+  BehaviorTree.ROS2:
+    type: git
+    url: https://github.com/kineticsystem/BehaviorTree.ROS2.git
+    version: b0ae01d1eb05e8ed33237fc8ebb3d2b8f0b820dc

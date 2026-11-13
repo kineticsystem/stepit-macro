@@ -110,13 +110,15 @@ systemctl is-active ModemManager && sudo systemctl disable --now ModemManager
 
 ### Check out the Git Repository
 
-The repositories are public, so the Pi needs no GitHub key. `.gitmodules` lists the modules by their SSH addresses: the first command makes git fetch them over HTTPS instead. Check out the rig, with its modules and their own submodules:
+The repositories are public, so the Pi needs no GitHub key: it fetches them over HTTPS. Check out the rig, then import its modules, listed in [`stepit.repos`](../stepit.repos), into `modules`:
 
 ```
-git config --global url.https://github.com/.insteadOf git@github.com:
-git clone --recurse-submodules https://github.com/kineticsystem/stepit-macro.git
+git clone https://github.com/kineticsystem/stepit-macro.git
 cd stepit-macro
+./docker/dock.sh download
 ```
+
+`download` runs `vcs` in a container of `ros:jazzy-ros-base`, so the Pi needs nothing but Docker and git.
 
 ### Give the Rig the Camera and the Gamepad
 
@@ -246,9 +248,11 @@ To update the rig to the latest commit of `main`, with its modules, set the Pi's
 
 ```
 git stash push -m "the Pi's ports" -- src/stepit-macro/stepit_bringup/config/rig.yaml
-git pull && git submodule update --init --recursive
+git pull && ./docker/dock.sh download
 git stash pop
 ```
+
+The first update after the modules moved from git submodules to `stepit.repos` stops at `download`, see [Troubleshooting](#troubleshooting).
 
 Then build the rig again, and start it:
 
@@ -361,10 +365,11 @@ ssh stepit sudo -n /usr/sbin/reboot
 
 ## Troubleshooting
 
-**`git submodule update` fails with `Host key verification failed`.** The submodules are listed with SSH URLs in `.gitmodules`, and the Pi has no SSH key for GitHub, or has never trusted its host key. The repositories are public: fetch them over HTTPS for that one command.
+**`download` stops with `These modules are git submodules of an earlier checkout`.** The rig was checked out when the modules were git submodules, and they stay in `modules` after the `git pull`, where `vcs` cannot import over them. The Pi holds no work of its own in the modules: remove them with the command `download` prints, then download again, e.g.:
 
 ```
-git -c url."https://github.com/".insteadOf=git@github.com: submodule update --init --recursive
+rm -rf modules/stepit-camera modules/stepit-commander modules/stepit-editor modules/stepit-freezer modules/stepit-motors .git/modules
+./docker/dock.sh download
 ```
 
 **A program crashes on the Pi but not on a PC.** Raspberry Pi OS runs the Pi 5 with memory pages of 16 KB, and a few arm64 programs only work with 4 KB pages. Switch to the standard kernel, with 4 KB pages, and reboot:

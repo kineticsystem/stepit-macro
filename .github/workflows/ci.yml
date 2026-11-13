@@ -2,11 +2,15 @@
 # plain ROS image:
 #
 # - src/plugins, on top of the commander's workspace, which is built first from
-#   the stepit-commander submodule, and of the messages of StepIt Freezer and
-#   StepIt Camera, built from their submodules; in the container, it is on top
-#   of the modules' workspace, which holds all three;
+#   stepit-commander, with its own scripts, and of the messages of StepIt
+#   Freezer and StepIt Camera; in the container, it is on top of the modules'
+#   workspace, which holds all three;
 # - src/stepit-macro, with the commander's interfaces, which it builds from the
-#   same submodule.
+#   rig's BehaviorTree.ROS2.
+#
+# Both import the repositories of ../../stepit.repos first, without their
+# history, and check that the modules pin the libraries they share at the
+# rig's commits.
 #
 # StepIt UI, ui/, the rig's page, is type checked, tested and built by a job of
 # its own, as it needs Node.js and no ROS.
@@ -14,7 +18,7 @@
 # The modules are not built here: each has its own CI.
 #
 # industrial_ci, which the modules use, builds one workspace from the sources
-# of the repo: it cannot build one on top of a submodule's.
+# of the repo: it cannot build one on top of a module's.
 #
 # The Debian packages the jobs download, mostly rosdep's, are kept in the
 # Actions cache, so that the next run installs them without downloading them.
@@ -54,20 +58,19 @@ jobs:
       - name: Install git
         run: apt-get update -qq && apt-get install -qq -y git
       - uses: actions/checkout@v4
-      # Only the commander's submodule, with its own BehaviorTree.ROS2: the
-      # other modules have their own CI. .gitmodules lists SSH URLs, which the
-      # runner cannot use: the repositories are public, so HTTPS needs no key.
-      - name: Check out the commander
+      # Every repository of stepit.repos, at its pinned commit, over HTTPS,
+      # which needs no key. The modules are not built here, but the behaviors
+      # send goals to StepIt Freezer and read the pictures of StepIt Camera:
+      # their messages are built below.
+      - name: Import the modules
         run: |
           git config --global --add safe.directory '*'
-          git config --global url.https://github.com/.insteadOf git@github.com:
-          git submodule update --init --recursive --depth 1 modules/stepit-commander
-      # The behaviors also send goals to StepIt Freezer, and read the pictures
-      # of StepIt Camera: only their messages are built, so their own
-      # submodules are not needed.
-      - name: Check out StepIt Freezer and StepIt Camera
-        if: matrix.workspace == 'plugins'
-        run: git submodule update --init --depth 1 modules/stepit-freezer modules/stepit-camera
+          mkdir -p modules
+          vcs import --shallow --input stepit.repos modules
+      - name: Check the shared libraries
+        run: |
+          source bin/modules/common.sh
+          check_shared_libraries
       - name: Build the commander
         if: matrix.workspace == 'plugins'
         run: |
@@ -165,12 +168,13 @@ jobs:
           path: /var/cache/apt/archives/*.deb
           key: apt-objectives-${{ steps.packages.outputs.hash }}
       - uses: actions/checkout@v4
-      # Only the editor's submodule, over HTTPS, as for the commander above.
-      - name: Check out the editor
+      # The repositories of stepit.repos, as in the job build above: the
+      # editor is among them.
+      - name: Import the modules
         run: |
           git config --global --add safe.directory '*'
-          git config --global url.https://github.com/.insteadOf git@github.com:
-          git submodule update --init --depth 1 modules/stepit-editor
+          mkdir -p modules
+          vcs import --shallow --input stepit.repos modules
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: modules/stepit-editor/package.json
