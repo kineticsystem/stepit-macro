@@ -5,7 +5,7 @@
 # and the gamepad, all in one container, stepit-macro.
 #
 # The container is defined in docker-compose.yml. This script only adds what
-# compose cannot express: the submodules, the X server permission, the host
+# compose cannot express: the modules, the X server permission, the host
 # uid/gid, and compiling the code of every module inside the container.
 
 # The service that runs the rig.
@@ -17,7 +17,7 @@ MODULES=(stepit-motors stepit-commander stepit-editor stepit-camera stepit-freez
 function display_usage() {
     echo -e "\nUsage: ./dock.sh <command>\n
     Commands:
-    download  Clone the modules, including their own submodules
+    download  Import the modules of stepit.repos, or move them to its commits
     build     Build the image, then install the dependencies and compile
               the code of every module and of the rig
     start     Start the rig in the background
@@ -109,7 +109,27 @@ export PLUGDEV_GID=${PLUGDEV_GID:-$USER_GID}
 
 case "$command" in
     download)
-        git -C .. submodule update --init --recursive
+        # A checkout made before stepit.repos holds the modules as git
+        # submodules, whose .git is a file pointing into ../.git/modules: vcs
+        # cannot import over them. Stop and say how to remove them, never
+        # remove them here, as they may hold work that is not pushed.
+        leftovers=$(grep -l "^gitdir: \.\./\.\./\.git/modules/" ../modules/*/.git 2>/dev/null | xargs -r -n1 dirname | sed 's|^\.\./||')
+        if [ -n "$leftovers" ]; then
+            echo "These modules are git submodules of an earlier checkout, which vcs cannot import over:" >&2
+            echo "$leftovers" | sed 's/^/  /' >&2
+            echo "Push or save any work in them, then remove them and their git data, and download again:" >&2
+            echo "  rm -rf" $leftovers ".git/modules" >&2
+            echo "  ./docker/dock.sh download" >&2
+            exit 1
+        fi
+        # vcs runs in a container of the image the rig's is built from, so the
+        # host needs nothing but Docker, as the host user, so that the clones
+        # belong to it. A clone already there moves to its pinned commit,
+        # keeping any local change.
+        mkdir -p ../modules
+        docker run --rm --user "$USER_UID:$USER_GID" --env HOME=/tmp \
+            --volume "$(readlink -f ..):/ws" --workdir /ws ros:jazzy-ros-base \
+            vcs import --input stepit.repos modules
         ;;
     build)
         check_modules

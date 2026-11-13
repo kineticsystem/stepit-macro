@@ -1,3 +1,8 @@
+# The repositories of stepit.repos, which ./docker/dock.sh download imports
+# with vcs, all but the file that keeps colcon from crawling them.
+/modules/*
+!/modules/COLCON_IGNORE
+
 # ROS: the modules and the rig's two workspaces, built into folders of their
 # own under each of these, inside the stepit-macro container.
 build

@@ -14,16 +14,19 @@ source /opt/ros/jazzy/setup.bash
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../.."
 
 # The folders of the packages, named one by one: colcon never crawls modules/.
-# The driver and the Freezer both carry serial and framed-serial as submodules
-# of their own: colcon refuses two packages of the same name, so the driver's
-# are built, and check_shared_libraries makes sure the Freezer's are the same.
+# The libraries the modules share are built from the rig's own copies, which
+# stepit.repos lists once: serial, framed-serial and BehaviorTree.ROS2. A
+# module's own modules/ folder, where its own update.sh imports them when its
+# own container runs on this checkout, is never built here: colcon refuses two
+# packages of the same name.
 BASE_PATHS=(
     modules/stepit-motors/src
-    modules/stepit-motors/modules
     modules/stepit-freezer/src
     modules/stepit-camera/src
     modules/stepit-commander/src
-    modules/stepit-commander/modules/BehaviorTree.ROS2
+    modules/serial
+    modules/framed-serial
+    modules/BehaviorTree.ROS2
 )
 # The tests of the modules run in their own CI, and the examples are not used.
 SKIP_PACKAGES=(stepit_hardware_tests stepit_camera_tests stepit_server_tests btcpp_ros2_samples)
@@ -36,17 +39,34 @@ COLCON_OUTPUT=(--build-base build/modules --install-base install/modules)
 # page, is in ui/, with scripts of its own in bin/ui.
 WEB_PAGES=(modules/stepit-editor)
 
-# Fail if the driver and the Freezer pin different commits of a library they
-# share: the Freezer would run against the driver's copy without telling.
+# Fail if a module's own .repos file pins a library at another commit than
+# stepit.repos: the module would run against the rig's copy, a combination its
+# own CI never built. Each module of stepit.repos is checked, so a new module
+# with a .repos file of its own is checked too.
 function check_shared_libraries() {
-    local library driver freezer
-    for library in serial framed-serial; do
-        driver=$(git -C modules/stepit-motors/modules/$library rev-parse HEAD)
-        freezer=$(git -C modules/stepit-freezer/modules/$library rev-parse HEAD)
-        if [ "$driver" != "$freezer" ]; then
-            echo "stepit-motors and stepit-freezer pin different commits of $library:" >&2
-            echo "  $driver and $freezer. Move both modules to the same one." >&2
-            exit 1
-        fi
-    done
+    python3 - <<'EOF'
+import glob
+import sys
+
+import yaml
+
+
+def pins(path):
+    with open(path) as file:
+        repositories = yaml.safe_load(file)["repositories"]
+    return {name: str(repository["version"]) for name, repository in repositories.items()}
+
+
+rig = pins("stepit.repos")
+different = False
+for module in rig:
+    for path in glob.glob(f"modules/{module}/*.repos"):
+        for name, version in pins(path).items():
+            if rig.get(name) != version:
+                print(f"{path} pins {name} at {version}, stepit.repos at {rig.get(name)}.", file=sys.stderr)
+                different = True
+if different:
+    print("Move the rig and the modules to the same commits.", file=sys.stderr)
+    sys.exit(1)
+EOF
 }

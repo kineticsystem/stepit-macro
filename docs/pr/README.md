@@ -20,6 +20,7 @@ Each pull request has a notes file here. It keeps what the pull request does not
 | [114-keep-live-view-off-after-a-test-shot.md](114-keep-live-view-off-after-a-test-shot.md) | [#114](https://github.com/kineticsystem/stepit-macro/pull/114) The live view stays off after a test shot |
 | [115-rail-not-inverted.md](115-rail-not-inverted.md) | [#115](https://github.com/kineticsystem/stepit-macro/pull/115) The rail not inverted: moves by position go the right way |
 | [116-velocity-trajectory-controller.md](116-velocity-trajectory-controller.md) | [#116](https://github.com/kineticsystem/stepit-macro/pull/116) Update the modules: the velocity trajectory controller |
+| [117-ros2-workspace.md](117-ros2-workspace.md) | [#117](https://github.com/kineticsystem/stepit-macro/pull/117) The modules from `stepit.repos`, not submodules |
 
 ## How to Write One
 

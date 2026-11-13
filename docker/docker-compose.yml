@@ -6,8 +6,8 @@
 # host's groups input and plugdev, INPUT_GID/PLUGDEV_GID.
 #
 # Each module keeps its own container, for testing it alone: this one runs them
-# all, built from the submodules under ../modules into the rig's own build
-# folders (see ../bin/modules).
+# all, built from the modules of ../stepit.repos, under ../modules, into the
+# rig's own build folders (see ../bin/modules).
 #
 # The service installs the system packages its code needs (rosdep, i.e.
 # `update.sh`) the first time its container starts, unless its image has them
