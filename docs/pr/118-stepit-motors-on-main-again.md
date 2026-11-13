@@ -1,6 +1,6 @@
 # StepIt Motors at Its Commit on `main`, Again
 
-Branch `stepit-motors-on-main-again`.
+Pull request [#118](https://github.com/kineticsystem/stepit-macro/pull/118), branch `stepit-motors-on-main-again`.
 
 ## Goal
 
