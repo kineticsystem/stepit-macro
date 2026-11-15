@@ -22,7 +22,7 @@ Each pull request, from #102 on, has a notes file here. It keeps what the pull r
 | [116-velocity-trajectory-controller.md](116-velocity-trajectory-controller.md) | [#116](https://github.com/kineticsystem/stepit-macro/pull/116) Update the modules: the velocity trajectory controller |
 | [117-ros2-workspace.md](117-ros2-workspace.md) | [#117](https://github.com/kineticsystem/stepit-macro/pull/117) The modules from `stepit.repos`, not submodules |
 | [118-stepit-motors-on-main-again.md](118-stepit-motors-on-main-again.md) | [#118](https://github.com/kineticsystem/stepit-macro/pull/118) StepIt Motors at its commit on `main`, again |
-| [readme-fixes.md](readme-fixes.md) | The READMEs checked against the code |
+| [119-readme-fixes.md](119-readme-fixes.md) | [#119](https://github.com/kineticsystem/stepit-macro/pull/119) The READMEs checked against the code |
 
 ## How to Write One
 
