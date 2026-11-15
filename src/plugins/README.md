@@ -7,6 +7,7 @@ This folder holds the rig's behaviors and objectives. The `stepit-macro` contain
 | `stepit_behaviors` | The behaviors, built as one BehaviorTree.CPP plugin. |
 | `stepit_objectives` | The objectives and their subtrees, XML only. The section `stepit_server` of [`rig.yaml`](../stepit-macro/stepit_bringup/config/rig.yaml) tells the commander where to find them. |
 | `stepit_tests` | The tests of both, against a fake robot. |
+| `stepit_macro_msgs` | The messages of the rig's own topics, e.g. `StackProgress`. |
 
 **Why on top of the commander.** The commander loads `stepit_behaviors` into its own process, as a plugin. A plugin must be built against the libraries of the process that loads it, here the commander's BehaviorTree.CPP and BehaviorTree.ROS2: `bin/plugins` sources the modules' workspace first, or the commander's alone in CI, through `UNDERLAY`.
 

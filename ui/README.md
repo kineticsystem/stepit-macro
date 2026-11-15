@@ -16,7 +16,7 @@
 
 ## Introduction
 
-StepIt UI is the application of [StepIt Macro](../README.md), an automated macro photography rig for 3D focus stacking: a camera on a motorized rail, on a rotary stage, with lights. It puts the whole rig on one web page, made for a tablet with a touch screen on the rig's network, and usable from a desktop too.
+StepIt UI is the application of [StepIt Macro](../README.md), an automated macro photography rig for 3D focus stacking: a camera on a motorised rail, on a rotary stage, with lights. It puts the whole rig on one web page, made for a tablet with a touch screen on the rig's network, and usable from a desktop too.
 
 - See what the camera sees, live, and set the ISO, the shutter speed, the aperture, the white balance and the exposure compensation.
 - Take a test shot, fired by the Freezer board with the lights, and see its picture.
@@ -33,15 +33,15 @@ It is a React page, built with Vite and TypeScript, with pnpm. It needs no ROS i
 
 | Part | What it does | Through |
 |---|---|---|
-| Top bar | Whether the page reaches the rig, which task runs, whoever started it, and why the last task of this page failed. | the commander |
+| Top bar | Whether the page reaches the rig, an icon per device, the motors, the camera, the Freezer and the gamepad, showing whether it is connected, which task runs, whoever started it, and why the last task of this page failed. | the commander, and the status topic of each device |
 | **Switch the rig off** | At the bottom of the settings menu, under the tabs, away from the buttons a thumb uses all the time: **hold** for 3 seconds, the button filling in red as it lasts, to switch the rig's computer off; letting go sooner cancels, and a tap only says, in the top bar, to hold. Off while disconnected and while any objective runs, which the rig refuses anyway: stop it first. The top bar then says *Switching off…*, or why the rig refused, e.g. that polkit does not allow it. | `power_off` |
 | **Live view** | The camera's live view, in the middle, started and stopped by a button of the toolbar above it, green while the stream runs. When it is off, the middle shows the last picture the camera took, whoever fired it. The messages of the shot and of the lights show over the bottom. | the camera's driver, and web_video_server |
 | **Test shot** | Stops the live view, then runs the objective `TakeShot`: StepIt Freezer fires the camera through its jack, with the lights, and the picture goes into the folder `tests` of the pictures. It takes the place of the live view as soon as the camera has downloaded it. | the commander, then the camera's driver |
 | **Lights** | A button, green while the lights are on. It shows what the board does: a shot ends with every output off, lights included. | StepIt Freezer |
 | **Manual drive** | On and off. On, it runs the objective `ActivateTeleop`, and the sliders drive the joints; the button is green. Pressed again, it releases the sliders and runs `ActivateController` with `joint_trajectory_controller`, the controller the rig starts with. | the commander |
 | **Settings** | Under the gear, on three tabs: the camera's settings, with the values the camera accepts right now, which depend on its mode dial and its lens; the theme; the servers. Under the tabs, Switch the rig off. | the camera's driver |
-| **Mark** | Above and below the rail's slider: the ends of a stack, the camera away from the subject above, close to it below. **Hold** for 0.6 s, the button filling as it lasts, to run `MarkNear` or `MarkFar`, which save where the rail is in the rig's state file: a thumb brushing it at the end of a drag marks nothing. Green, **Marked**, once marked, on every page, with a flash at every new mark. Once both ends are marked, a **tap** runs `MoveRailToMark`, back to that end to check the focus, then manual drive again. A start of the rig forgets the marks. | the commander |
-| **Stack** | Under the live view, with **Shots**, **Turn ±**, how far the stage turns either way, and **Angles**, which the rig keeps in its state file, `focus_stack` of `rig.yaml` until a page sets them: runs `FocusStack`, with the stage from −turn to +turn; with one angle, a single stack, the stage stays where it is and Turn is off. When Stack is off, the top bar says why, e.g. *Mark the near and the far end first*. While it runs, a progress bar fills as its pictures come, on every page, and each picture takes the place of the live view. | the commander, `/focus_stack/progress` |
+| **Mark** | Above and below the rail's slider: the ends of a stack, the camera away from the subject above, close to it below. **Hold** for 0.6 s, the button filling as it lasts, to run `MarkNear` or `MarkFar`, which save where the rail is in the rig's state, in memory only: a thumb brushing it at the end of a drag marks nothing. Green, **Marked**, once marked, on every page, with a flash at every new mark. Once both ends are marked, a **tap** runs `MoveRailToMark`, back to that end to check the focus, then manual drive again. A start of the rig forgets the marks. | the commander |
+| **Stack** | Under the live view, with **Shots**, **Turn ±**, how far the stage turns either way, and **Angles**, which the rig keeps in its state file, the `defaults` of `stack_state` in `rig.yaml` until a page sets them: runs `FocusStack`, with the stage from −turn to +turn; with one angle, a single stack, the stage stays where it is and Turn is off. When Stack is off, the top bar says why, e.g. *Mark the near and the far end first*. While it runs, a progress bar fills as its pictures come, on every page, and each picture takes the place of the live view. | the commander, `/focus_stack/progress` |
 | **Stop** | At the end of the toolbar, always in the same place: stops every task, whoever started it, and lets the sliders go. Red while a task runs, or while the page does not know yet whether one does. | the commander |
 | Sliders | One at each edge, under each thumb, with an icon on the knob: the rotary stage (`joint1`) on the left, up to 0.75 turns/s, and the rail (`joint2`) on the right, up to 3 turns/s. Up is positive, as a gamepad's stick pushed up: it turns the stage clockwise, and moves the camera away from the subject. | `ui_teleop` |
 
@@ -96,12 +96,14 @@ src/commander/   the objectives: run one, stop them all, and whether one runs
 src/camera/      the camera driver's interface, its settings and live view, and the pictures
 src/shot/        the shot, and the latest pictures
 src/freezer/     the lights, as outputs of the Freezer board
+src/devices/     whether each device is connected, from its status topic
+src/stack/       the focus stack: its marks and counts on the rig, its plan, its progress
 src/motion/      the sliders: an axis per slider, sent as a gamepad
 src/power/       switching the rig's computer off, and why not
 src/components/  React, one component per part of the page
 ```
 
-Each folder keeps its state in a zustand store. The stores are kept up to date while the page is open by the `follow*()` functions, which `App.tsx` starts. The code that only computes, e.g. `motion/axis.ts`, `motion/joy.ts` and `freezer/outputs.ts`, knows nothing of the browser, so the tests run it as it is.
+Each folder but `ros` and `components` keeps its state in a zustand store. The stores are kept up to date while the page is open by the `follow*()` functions, which `App.tsx` starts. The code that only computes, e.g. `motion/axis.ts`, `motion/joy.ts` and `freezer/outputs.ts`, knows nothing of the browser, so the tests run it as it is.
 
 The client of rosbridge started as the one of StepIt Camera's test page, as did the camera's interface and the loading of the pictures; it also publishes topics, and sends action goals, the objectives:
 
@@ -121,9 +123,9 @@ It reconnects on its own, and subscribes and advertises again; a message publish
 
 **Configuring the rig goes straight to the drivers**: the camera's settings (`/camera/set_parameters`, `/camera/get_settings`), its live view (`/camera/start_streaming`, `/camera/stop_streaming`) and the lights (`/freezer/set_outputs`). Through the commander, a change of ISO would replace a running shoot.
 
-The page knows whether an objective runs, whoever started it, from the status topic of the commander's action, `/commander/execute_objective/_action/status`, and which one from the commander's `/stepit_server/objective`. Both are latched: a page opened at any time gets them at once. A commander that just started publishes no status until its first goal, but publishes an empty objective at once: until a status comes, the objective tells whether one runs. Until either comes, Stop is on, red, since the page cannot tell that the robot is still.
+The page knows whether an objective runs, and which, whoever started it, from the commander's `/stepit_server/objective`. It is latched: a page opened at any time gets it at once. The commander publishes an empty objective as soon as it starts, and at every end of a run. Until it comes, Stop is on, red, since the page cannot tell that the robot is still.
 
-**What the rig keeps, every page shows.** The page keeps nothing of the rig in the browser, only its own preferences, e.g. the theme. The marks of the rail and the counts of a stack are in the rig's state file, which the commander shows as its parameters `state.*`: the page reads them on every connection, follows them on `/parameter_events`, and sets the counts there, so that a mark or a count set on one device shows on every other. A running stack says how far it is on `/focus_stack/progress`, latched. **Stop** cancels every goal of the action, as `ros2 service call /commander/execute_objective/_action/cancel_goal action_msgs/srv/CancelGoal "{}"` does.
+**What the rig keeps, every page shows.** The page keeps nothing of the rig in the browser, only its own preferences, e.g. the theme. The marks of the rail and the counts of a stack are the parameters `state.*` of the rig's node `stack_state`, which keeps the counts in its state file and the marks in memory only: the page reads them on every connection, follows them on `/parameter_events`, and sets the counts there, so that a mark or a count set on one device shows on every other. A running stack says how far it is on `/focus_stack/progress`, latched. **Stop** cancels every goal of the action, as `ros2 service call /commander/execute_objective/_action/cancel_goal action_msgs/srv/CancelGoal "{}"` does.
 
 ### The Sliders
 
@@ -160,14 +162,15 @@ The files stay on the rig, in the folder `pictures` of the repo: the page neithe
 | `stack.test.ts` | The plan of a stack: the pictures it takes, the payload of `FocusStack`, what stops it from running, the defaults. |
 | `hold.test.ts` | A press as a tap or a hold: early release, long press, abandoned, repeated keydown. |
 | `power.test.ts` | Switching off: the service of `power_off`, its refusal passed on, when the button is off and why, a hold of 3 seconds. |
-| `stackParameters.test.ts` | The stack as the rig keeps it, in the commander's parameters: the marks, the counts, rig.yaml's angles. |
+| `stackParameters.test.ts` | The stack as the rig keeps it, in the parameters of `stack_state`: the marks, the counts, a mark not made. |
+| `devices.test.ts` | The state of each device from its status topic: connected, gone when its node is silent, and what the top bar says. |
 | `lights.test.ts` | The lights as outputs of the Freezer board. |
 
 The page itself, its layout on a tablet and the touch of the sliders, has no automated test: check it by hand on the rig.
 
 ## Design Decisions and Trade-offs
 
-**One page, not one per module.** The test pages of StepIt Camera and StepIt Freezer test their modules alone; this page runs the rig. In StepIt Macro, the test pages are turned off.
+**One page, not one per module.** The test pages of StepIt Camera and StepIt Freezer test their modules alone; this page runs the rig. In StepIt Macro, the Freezer's is turned off and the camera's is not built.
 
 **One rosbridge, the commander's.** A rosbridge only knows the messages installed next to it, which is why each module's test page has its own. In StepIt Macro every module is installed in one container, so the commander's knows them all.
 
