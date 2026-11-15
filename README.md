@@ -6,18 +6,18 @@
 
 <img src="docs/images/stepit-macro.jpg" width="80%">
 
-A ROS 2 robotic system that automates multi-angle focus stacking for macro
-photography, built end to end: the firmware of the microcontrollers, the ROS 2
+A ROS2 robotic system that automates multi-angle focus stacking for macro
+photography, built end to end: the firmware of the microcontrollers, the ROS2
 drivers of the motors, the camera and the lights, a task server that runs
 behavior trees, and a web UI to drive the rig.
 
-A camera is mounted on a motorized linear rail, which sits on a rotary stage.
+A camera is mounted on a motorised linear rail, which sits on a rotary stage.
 For each angle, the rail moves the camera through a series of focus distances
 and captures an image at each step. The stage then rotates to the next angle
 and repeats, producing a full set of focus stacks around the subject.
 
 The system also switches LED lights on and off during the shoot, so lighting
-is consistent and synchronized with each capture.
+is consistent and synchronised with each capture.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -51,7 +51,7 @@ is consistent and synchronized with each capture.
 
 - Automated focus stacking along a linear rail
 - Multi-angle capture via rotary stage
-- Synchronized LED lighting control
+- Synchronised LED lighting control
 - Output suitable for focus-stack merging and 3D reconstruction
 
 ## The Modules
@@ -64,10 +64,10 @@ StepIt Macro runs the whole rig with one command, in one Docker container, `step
 | [StepIt Commander](https://github.com/kineticsystem/stepit-commander) | The action server that runs *objectives*, behavior trees, and rosbridge on port 9090. The rig's own objectives and behaviors are in [`src/plugins`](src/plugins), see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
 | [StepIt Editor](https://github.com/kineticsystem/stepit-editor) | The web editor of the objectives, on <http://localhost:8080>, which runs them on the robot through the commander. |
 | [StepIt Camera](https://github.com/kineticsystem/stepit-camera) | The ROS2 driver of the camera, over USB: live view, settings, and the download of every picture. It serves the pictures on port 8090, and the live view through web_video_server on port 8081. |
-| [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano that fires the cameras, the flashes and the lights with a hardware timer, with a fake controller by default. |
+| [StepIt Freezer](https://github.com/kineticsystem/stepit-freezer) | The ROS2 driver of the Freezer board, an Arduino Nano R4 that fires the cameras, the flashes and the lights with a hardware timer, with a fake controller by default. |
 | [StepIt UI](ui) | The application of the whole rig, on <http://localhost:8070>, for a tablet or a desktop: the live view, the camera's settings, the shot and its pictures, the lights, and two sliders that drive the rotary stage and the rail. |
 
-Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt UI is not: it is the rig's own page, which works only against the rig, and lives in this repo. In the rig, it replaces the test pages of the camera and of the Freezer, which `rig.yaml` turns off. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
+Each module is a project of its own, with its own container, tests, CI, fake hardware and test page, to work on it alone. StepIt UI is not: it is the rig's own page, which works only against the rig, and lives in this repo. In the rig, it replaces the test pages of the camera and of the Freezer: `rig.yaml` turns the Freezer's off, and the camera's is not built, while its web server keeps running, for the pictures. StepIt Macro builds them all in its container, starts them with one launch file, and configures them with one file, [`rig.yaml`](src/stepit-macro/stepit_bringup/config/rig.yaml), see [Configuring the Rig](#configuring-the-rig). It also wires them up: the commander runs the rig's own objectives, from [`src/plugins`](src/plugins), and the editor opens them, so a tree saved in the editor is the tree the commander runs.
 
 The whole system, from the pages to the hardware, and the two projects that use the pictures afterwards:
 
@@ -88,6 +88,7 @@ To build the electronics box, the enclosure that holds all the electronics of th
 - **The lights**, switched on and off by hand.
 - **Two vertical sliders**, one at each edge under each thumb: the rotary stage (`joint1`) on the left and the rail (`joint2`) on the right, which work as the gamepad's sticks: the left one, left and right, for the stage, and the right one, up and down, for the rail, once the robot is handed to the user with **Manual drive**, the objective [`ActivateTeleop`](docs/ActivateTeleop.md). The knob rests in the middle; dragging it asks for a speed, up to 0.75 turns/s at the ends for the rotary stage and 3 turns/s, the motors' limit, for the rail; letting it go stops.
 - **The focus stack**. A **Mark** button at each end of the rail's slider marks where the camera is, when **held** for 0.6 s, so that a thumb brushing it at the end of a drag marks nothing: the one above, with the camera away from the subject and its front sharp, runs [`MarkNear`](docs/MarkNear.md); the one below, with the camera close to the subject and its back sharp, runs [`MarkFar`](docs/MarkFar.md). Marking moves nothing and keeps manual drive on; a button turns green, **Marked**, and flashes at every new mark. Once both ends are marked, a **tap** goes back to one, [`MoveRailToMark`](docs/MoveRailToMark.md), to check the focus there. A start of the rig forgets the marks: they are counts of motor steps. A bar under the live view holds **Stack**, which runs [`FocusStack`](docs/FocusStack.md), the number of shots, how far the stage turns either way, **Turn ±**, e.g. 17° for −17° to 17°, from where it is when the stack starts, and the number of angles, with the angle between two of them; the rig keeps these, in its node `stack_state` and its state file, the `defaults` of its section in `rig.yaml` until a page sets them, so that they survive a restart; while a stack runs, a progress bar fills as its pictures come, and each picture shows in place of the live view, as a test shot's does.
+- **The devices**, as icons in the top bar: whether the motors, the camera, the Freezer and the gamepad are connected, from the status topic each one publishes.
 - **Stop**, at the end of the toolbar, red while an objective runs: it stops every objective, whoever started it, and the sliders.
 - **Switch the rig off**, at the bottom of the settings menu, away from the buttons a thumb uses all the time: **held for 3 seconds**, it switches the rig's computer off, filling while it is held; letting go sooner cancels, and a tap only says to hold. It is off, and the rig refuses, while any objective runs: stop it first, see [Switching the Rig Off](#switching-the-rig-off).
 
@@ -110,9 +111,9 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 ```
 
-The modules are cloned over SSH, so a GitHub account with an
+This repository is cloned over SSH, so a GitHub account with an
 [SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-is required.
+is required. The modules are fetched over HTTPS, which needs none.
 
 For the camera, we need a camera supported by
 [libgphoto2](http://www.gphoto.org/proj/libgphoto2/support.php), such as a
@@ -121,7 +122,7 @@ Canon EOS 5D Mark II, connected over USB, with its AC adapter. See
 in the README of StepIt Camera, e.g. the mode dial on M. Without a camera, the
 rest of the rig runs anyway, and the camera driver waits for one.
 
-The Freezer board is not needed either: its driver runs with a fake controller by default. For the board, we need an Arduino Nano flashed with the firmware of the same commit of StepIt Freezer, see [Install StepIt Freezer on the Microcontroller](https://github.com/kineticsystem/stepit-freezer#install-stepit-freezer-on-the-microcontroller) in its README. The robot likewise runs on fake motors by default; its microcontroller is flashed as [StepIt Motors](https://github.com/kineticsystem/stepit-motors) tells. The container's user is in the group `dialout`, which owns the serial ports, so the host needs no grant.
+The Freezer board is not needed either: its driver runs with a fake controller by default. For the board, we need an Arduino Nano R4 flashed with the firmware of the same commit of StepIt Freezer, see [Install StepIt Freezer on the Microcontroller](https://github.com/kineticsystem/stepit-freezer#install-stepit-freezer-on-the-microcontroller) in its README. The robot likewise runs on fake motors by default; its microcontroller is flashed as the README of [StepIt Motors](https://github.com/kineticsystem/stepit-motors) tells. The container's user is in the group `dialout`, which owns the serial ports, so the host needs no grant.
 
 > [!IMPORTANT]
 > **Set _Auto power off_ to _Off_ in the camera's menu.** Otherwise the camera
@@ -249,11 +250,11 @@ The section `launch` holds the launch arguments of each module, given to the mod
 | `robot` | `baud_rate` | `9600` | The speed of its serial port, the one of the firmware. |
 | `robot` | `launch_rviz` | `false` | Open RViz, on the host's display. |
 | `freezer` | `use_fake` | `true` | A fake controller instead of the Freezer board. |
-| `freezer` | `usb_port` | `/dev/ttyUSB0` | The serial port of the Arduino Nano. |
+| `freezer` | `usb_port` | `/dev/ttyUSB0` | The serial port of the Arduino Nano R4. The board is a `/dev/ttyACM*`: the value of `rig.yaml` is a leftover, which must be changed once `use_fake` is false. |
 | `camera` | `fake` | `false` | A fake camera instead of the one on USB. libgphoto2 opens the first camera it finds: there is no port to set. |
 | `teleop` | `dev` | `/dev/input/js0` | The gamepad. |
 
-The other arguments are the servers: `rosbridge_port` of the commander, `web_port` (the pictures) and `web_video_port` (the live view) of the camera, `port` of the editor and of StepIt UI (`ui`), and the test pages of the camera and of the Freezer, which the rig turns off with `rosbridge: false` and `web: false`: StepIt UI replaces them. Any other argument of a module's launch file can be added to its section. An argument the launch file does not declare stops the rig, with its name in the log, so that a typo is not silently ignored.
+The other arguments are `inverted_joints` of the robot, the joints whose motor turns the other way, `stream` of the camera, whether the live view starts as soon as the camera connects, and the servers: `rosbridge_port` of the commander, `web_port` (the pictures) and `web_video_port` (the live view) of the camera, `port` of the editor and of StepIt UI (`ui`), `rosbridge: false` of the camera, which leaves out its own rosbridge, and `web: false` of the Freezer, which leaves out its board page and its rosbridge: StepIt UI replaces both test pages. The camera's web server keeps running on `web_port`, for the pictures; its test page is not built in the rig. Any other argument of a module's launch file can be added to its section. An argument the launch file does not declare stops the rig, with its name in the log, so that a typo is not silently ignored.
 
 For example, to drive the real robot and the real Freezer board:
 
@@ -264,11 +265,11 @@ launch:
     usb_port: /dev/serial/by-id/usb-Teensyduino_USB_Serial_12345-if00
   freezer:
     use_fake: false
-    usb_port: /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A1B2C3-if00-port0
+    usb_port: /dev/serial/by-id/usb-Arduino_Nano_R4_35062A2239313437DE0133354B573372-if00
 ```
 
 > [!IMPORTANT]
-> Name the serial ports by `/dev/serial/by-id`, as above. `/dev/ttyACM0` and `/dev/ttyUSB0` depend on the order the controllers were plugged in, and change when one is plugged in again; the name by id stays the same. List them with `ls -l /dev/serial/by-id`.
+> Name the serial ports by `/dev/serial/by-id`, as above. Both boards are `/dev/ttyACM*`, numbered in the order they were plugged in: `/dev/ttyACM0` is one or the other, and changes when one is plugged in again; the name by id stays the same. List them with `ls -l /dev/serial/by-id`.
 
 ### The Parameters of the Nodes
 
@@ -276,8 +277,8 @@ Every other section is the parameters of a node, as in any ROS2 parameter file. 
 
 | Node | What the rig sets |
 |---|---|
-| `stepit_server` | `plugins` and `behavior_trees`: the rig's behaviors and objectives, which the commander loads. |
-| `camera` | `download_directory`: the folder of the pictures, `~/ws/pictures`. The settings of the camera, e.g. `iso`, can be added here. |
+| `stepit_server` | `plugins` and `behavior_trees`: the rig's behaviors and objectives, which the commander loads; and the parameters of the behaviors, see [The Behaviors and Objectives](#the-behaviors-and-objectives). |
+| `camera` | `download_directory`: the folder of the pictures, `~/ws/pictures`, and `keep_on_camera`, false: a picture is deleted from the camera once downloaded. The settings of the camera, e.g. `iso`, can be added here. |
 | `web_server` | The camera's web server: the same `download_directory`, from which StepIt UI loads the pictures. |
 | `freezer` | `baudrate`, and the sequences of the rig, by the jacks of the board: `test_shot`, the default one, fires the camera on OUT8 with the lights on OUT1, see [`TakeShot`](docs/TakeShot.md). |
 | `stack_state` | The state of the rig: `state_file`, the file of the values it keeps across restarts, `~/ws/state/stack.yaml`; `saved`, those values, the counts of a stack; `forgotten`, the values it forgets at every start, the marks; and `defaults`, the counts of a new rig. See [The State of the Rig](#the-state-of-the-rig). |
@@ -331,7 +332,7 @@ ros2 action send_goal /commander/execute_objective \
 
 The behaviors show every shape a behavior can take: a ROS action client
 (`FollowJointTrajectory`, `Shoot`), service clients (`GetActiveControllers`,
-`SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
+`IsControllerActive`, `SwitchController`), a subscriber (`GetJointPositions`), a publisher that waits
 on a subscription (`CommandJointPositions`), a latched publisher
 (`ReportProgress`, a stack's progress for every page, `StackDone`, each
 angle of a stack whose pictures are all saved, and `AllStacksDone`, a stack
@@ -425,7 +426,7 @@ controller. No objective uses them today.
 
 ### Tests
 
-The objective tests, e.g. `test_offset_joints_by_objective`, run the real
+The objective tests, e.g. `test_direct_objectives`, run the real
 objective XML and the real behaviors against a fake robot that publishes
 `/joint_states`, serves `FollowJointTrajectory` and follows the commands of the
 position controller, so no hardware and no controller are needed. Run them in
@@ -483,7 +484,7 @@ The power button of StepIt UI switches off the computer that runs the rig, e.g. 
 - **refuses while any objective runs,** as the commander publishes it on `/stepit_server/objective`: stop it first, with Stop. The answer says so, e.g. `FocusStack is running: stop it first`, and StepIt UI shows it in the top bar. Until the commander has said anything, e.g. when it failed to start, nothing runs through it, and switching off is allowed;
 - **otherwise runs its parameter `command`:** `busctl`, asking systemd-logind to power off over the computer's system D-Bus, which the container mounts, `/run/dbus`. It answers `Switching off`, or why the computer refused.
 
-logind decides who may switch the computer off, through polkit. The rig's user may not by default: its answer is `challenge`, a password. On the rig's computer, once, install the polkit rule of [`docker/polkit`](docker/polkit), which lets that user, and only for powering off:
+logind decides who may switch the computer off, through polkit. The rig's user may not by default: its answer is `challenge`, a password. On the rig's computer, once, install the polkit rule of [`docker/polkit`](docker/polkit), which lets that user do it, and only powering off:
 
 ```bash
 sed "s/@USER@/$USER/" docker/polkit/50-stepit-power-off.rules \
@@ -512,17 +513,18 @@ The container builds three ROS workspaces, one on top of the other, each into fo
 
 StepIt UI, in [`ui`](ui), is not a ROS workspace but a pnpm project, with scripts of its own in [`bin/ui`](bin/ui), which come last: it is built into `ui/dist`.
 
-[`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins`, `src/stepit-macro` and StepIt UI: the modules run theirs in their own CI.
+[`bin/update.sh`](bin/update.sh), [`bin/build.sh`](bin/build.sh) and [`bin/test.sh`](bin/test.sh) run the scripts of every workspace in that order. In the container, this repo is mounted at `~/ws`, and they are on the `PATH` and aliased as `update`, `build` and `test`. `test` runs the tests of `src/plugins`, `src/stepit-macro` and StepIt UI, and checks that every diagram is rendered from its source: the modules run their tests in their own CI.
 
 The modules are built into the rig's folders, not into their own: a module's own container mounts it at `~/ws`, and this one at `~/ws/modules/<module>`, so their CMake caches cannot be shared. The libraries the modules share, `serial`, `framed-serial` and BehaviorTree.ROS2, are built from the rig's own copies in `modules`, never from a module's own `modules` folder, which a module's own container fills when it runs on this checkout: colcon refuses two packages of the same name. Each module also pins them in a `.repos` file of its own, for building alone, and `bin/modules/build.sh` stops if one of those pins another commit than `stepit.repos`.
 
-`src/plugins` and `src/stepit-macro` stay separate workspaces because CI builds them alone, without the modules: the first on the commander's workspace only, the second on ROS alone, as `src/stepit-macro` builds `btcpp_ros2_interfaces`, the type of the commander's action, from the rig's copy of BehaviorTree.ROS2 in `modules/BehaviorTree.ROS2`, the one the commander is built with.
+`src/plugins` and `src/stepit-macro` stay separate workspaces because CI builds them alone, without the modules: the first on the commander's workspace and the messages of the camera and of the Freezer only, the second on ROS alone, as `src/stepit-macro` builds `btcpp_ros2_interfaces`, the type of the commander's action, from the rig's copy of BehaviorTree.ROS2 in `modules/BehaviorTree.ROS2`, the one the commander is built with.
 
 The packages of `src/stepit-macro`:
 
 | Package | Role |
 |---|---|
 | `stepit_bringup` | The rig: `rig.launch.py` starts every module, the gamepad, the sliders of StepIt UI, the editor and StepIt UI, with the configuration of `config/rig.yaml`. |
+| `stepit_teleop_msgs` | `GamepadStatus`, whether the gamepad is plugged in, on `/gamepad_teleop/status`. |
 | `stepit_teleop` | The gamepad: `gamepad_teleop` turns the sticks into velocities and the stop button into `ToggleTeleop`. |
 | `stepit_power` | Switching the computer off: `power_off`, the service of StepIt UI's power button, refused while any objective runs. |
 | `stepit_state` | The state of the rig: `stack_state`, the marks and the counts of a stack, which every page shares, see [The State of the Rig](#the-state-of-the-rig). |
@@ -549,7 +551,7 @@ In the rig's container, rebuild everything with `build`, or one module's package
 
 Then restart the rig. Outside the container, `./docker/dock.sh build` rebuilds everything too, and the image if the `Dockerfile` changed. The objectives need no build: the commander reads them again before each goal.
 
-The editor's validator checks the rig's objectives from the shell, with `validate`. The web pages run with hot reload as in their own containers, e.g. `cd ~/ws/modules/stepit-freezer/web && pnpm dev`, and StepIt UI with `cd ~/ws/ui && pnpm dev`, on port 5176.
+The editor's validator checks the rig's objectives from the shell, with `validate`. StepIt UI runs with hot reload, with `cd ~/ws/ui && pnpm dev`, on port 5176. The test pages of the camera and of the Freezer run in their own containers only: the rig does not install their packages, and their rosbridges are off.
 
 If the rig stops right after starting, look at its output with `./docker/dock.sh logs`. `./docker/dock.sh shell` still opens a terminal when the rig is stopped, in a new container of the same image.
 
@@ -599,8 +601,8 @@ modules:
 
 | Workflow | What it checks |
 |---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. Both import the repositories of `stepit.repos` first, and fail if a module pins a shared library at another commit. The job of `src/plugins` then builds the commander's workspace with the commander's own scripts, and builds on it alone, with `UNDERLAY`. A third job, `ui`, type checks, tests and builds StepIt UI with Node.js, and a fourth, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
-| [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files. |
+| [`ci.yml`](.github/workflows/ci.yml) | Builds and tests the rig's two workspaces, each in a job of its own, with the scripts of [`bin`](bin), in a `ros:jazzy-ros-base` container. Both import the repositories of `stepit.repos` first, and fail if a module pins a shared library at another commit. The job of `src/plugins` then builds the commander's workspace with the commander's own scripts, and the messages of the camera and of the Freezer on top of it, and builds on those alone, with `UNDERLAY`. A third job, `ui`, type checks, tests and builds StepIt UI with Node.js, and a fourth, `objectives`, validates the objectives with the StepIt Editor's validator, see below. |
+| [`ci-format.yml`](.github/workflows/ci-format.yml) | The pre-commit hooks that need no ROS: clang-format, black, codespell, and the checks of whitespace and files; and that every diagram is rendered from its source. |
 | [`ci-ros-lint.yml`](.github/workflows/ci-ros-lint.yml) | The ament linters of every package: copyright, lint_cmake and cpplint. |
 
 The build cannot use `industrial_ci`, as the modules do: it builds one
